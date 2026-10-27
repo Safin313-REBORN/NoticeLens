@@ -56,12 +56,29 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
     }
 
     const target = selectedEvidence.text;
-    const idx = editableText.indexOf(target);
-    if (idx === -1) return editableText;
+    let start = selectedEvidence.startIndex;
+    let end = selectedEvidence.endIndex;
 
-    const before = editableText.substring(0, idx);
-    const match = editableText.substring(idx, idx + target.length);
-    const after = editableText.substring(idx + target.length);
+    // Check if the indexed slice directly matches the snippet text
+    if (
+      typeof start === 'number' &&
+      typeof end === 'number' &&
+      start >= 0 &&
+      end <= editableText.length &&
+      editableText.substring(start, end) === target
+    ) {
+      // Precise indexed match
+    } else {
+      // Fallback search
+      const idx = editableText.indexOf(target);
+      if (idx === -1) return editableText;
+      start = idx;
+      end = idx + target.length;
+    }
+
+    const before = editableText.substring(0, start);
+    const match = editableText.substring(start, end);
+    const after = editableText.substring(end);
 
     return (
       <>

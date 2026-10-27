@@ -87,9 +87,9 @@ export function extractTime(text: string): ParsedTimeResult | null {
 }
 
 function formatPeriodTime(timeNum: string, period?: string): string {
-  let [hStr, mStr] = timeNum.split(':');
+  const [hStr, mStr] = timeNum.split(':');
   let h = parseInt(hStr, 10);
-  let m = mStr ? parseInt(mStr, 10) : 0;
+  const m = mStr ? parseInt(mStr, 10) : 0;
   const mFormatted = m < 10 ? `0${m}` : `${m}`;
 
   if (period === 'সকাল') {

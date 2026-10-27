@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Camera, FileText, Image as ImageIcon, Sparkles, RefreshCw, X, ShieldAlert } from 'lucide-react';
 import { DEMO_NOTICES, DemoNoticeItem, generateDemoNoticeSvg } from '../../data/demoNotices';
 
@@ -31,6 +31,15 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+  // Clean up object URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   const validateAndSetFile = (file: File) => {
     setErrorMessage(null);
 
@@ -42,6 +51,10 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
     if (file.size > MAX_FILE_SIZE) {
       setErrorMessage('Image size exceeds 10 MB limit. Please select a smaller photo or document.');
       return false;
+    }
+
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
     }
 
     setSelectedFile(file);
@@ -227,7 +240,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                 <select
                   id="ocr-language-select"
                   value={language}
-                  onChange={(e) => setLanguage(e.target.value as any)}
+                  onChange={(e) => setLanguage(e.target.value as 'ben' | 'eng' | 'ben+eng')}
                   className="w-full text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:bg-black high-contrast:text-white high-contrast:border-white"
                 >
                   <option value="ben+eng">Bengali + English (Recommended)</option>

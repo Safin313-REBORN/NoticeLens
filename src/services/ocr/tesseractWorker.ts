@@ -78,11 +78,12 @@ export async function runOcrRecognition(
       lines,
       languageUsed: language,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Tesseract OCR Error:', error);
     const errMessage =
-      error?.message ||
-      'Failed to load OCR language worker. Please check your internet connection for language data download or retry with English mode.';
+      error instanceof Error
+        ? error.message
+        : 'Failed to load OCR language worker. Please check your internet connection for language data download or retry with English mode.';
 
     if (onProgress) {
       onProgress({

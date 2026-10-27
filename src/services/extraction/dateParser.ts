@@ -208,12 +208,12 @@ export function extractAllDates(text: string): ParsedDateResult[] {
     }
 
     // 4. Numeric dates (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)
-    const numericDatePattern = /\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4}|\d{2})\b/g;
+    const numericDatePattern = /\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})\b/g;
     let numMatch: RegExpExecArray | null;
     while ((numMatch = numericDatePattern.exec(normalizedLine)) !== null) {
-      let p1 = parseInt(numMatch[1], 10);
-      let p2 = parseInt(numMatch[2], 10);
-      let yearRaw = parseInt(numMatch[3], 10);
+      const p1 = parseInt(numMatch[1], 10);
+      const p2 = parseInt(numMatch[2], 10);
+      const yearRaw = parseInt(numMatch[3], 10);
       const year = yearRaw < 100 ? 2000 + yearRaw : yearRaw;
 
       let day = p1;

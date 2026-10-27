@@ -168,4 +168,28 @@ Register at https://fest.buet.ac.bd`);
     expect(notice.fields.requiredDocuments.value).toContain('Student ID');
     expect(notice.fields.fees.value).toContain('300');
   });
+
+  it('sanitizes extracted URLs by stripping trailing sentence punctuation and rejecting dangerous schemes', () => {
+    const noticeWithPunctuation = `Online Registration Notice
+Submit form at https://example.edu/register., or contact support.`;
+    const resPunct = extractNoticeFields(noticeWithPunctuation);
+    expect(resPunct.fields.url.value).toBe('https://example.edu/register');
+
+    const noticeWithScript = `Exam Notice
+Do not click javascript:alert(1) in the browser.`;
+    const resScript = extractNoticeFields(noticeWithScript);
+    expect(resScript.fields.url.status).toBe('not_found');
+  });
+
+  it('parses numeric date formats with hyphens and periods', () => {
+    const textHyphen = 'শেষ তারিখ: ১৫-১১-২০২৪';
+    const datesHyphen = extractAllDates(textHyphen);
+    expect(datesHyphen.length).toBeGreaterThan(0);
+    expect(datesHyphen[0].isoDate).toBe('2024-11-15');
+
+    const textDot = 'Deadline is 20.12.2024 for fees';
+    const datesDot = extractAllDates(textDot);
+    expect(datesDot.length).toBeGreaterThan(0);
+    expect(datesDot[0].isoDate).toBe('2024-12-20');
+  });
 });

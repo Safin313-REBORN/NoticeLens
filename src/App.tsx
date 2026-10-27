@@ -18,6 +18,7 @@ import { preprocessNoticeImage } from './services/ocr/imagePreprocess';
 import { processNoticeDocument } from './services/extraction/noticeEngine';
 import { generateNoticeSummary } from './services/extraction/summaryGenerator';
 import { saveNotice, getAllSavedNotices, deleteSavedNotice } from './services/storage/indexedDBService';
+import { speechService } from './services/speech/webSpeechService';
 import { DEMO_NOTICES, DemoNoticeItem, generateDemoNoticeSvg } from './data/demoNotices';
 import { ArrowRight } from 'lucide-react';
 
@@ -35,6 +36,13 @@ function AppContent() {
   const [sampleModalOpen, setSampleModalOpen] = useState<boolean>(false);
 
   const { showToast } = useToast();
+
+  const handleTabChange = (tab: ActiveTab) => {
+    if (tab !== activeTab) {
+      speechService.stop();
+    }
+    setActiveTab(tab);
+  };
 
   // Load saved notices from IndexedDB on startup
   useEffect(() => {
@@ -105,17 +113,19 @@ function AppContent() {
 
       setActiveNotice(processed);
       setIsProcessing(false);
+      speechService.stop();
       setActiveTab('workspace');
       showToast('Notice successfully processed and organized!', 'success');
       setAnnouncement(`Notice processed successfully. ${processed.title}. Switched to Notice Workspace.`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Notice processing error:', err);
       setIsProcessing(false);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process notice image.';
       setOcrProgress({
         step: 'error',
         progress: 0,
         status: 'Recognition Error',
-        errorMessage: err?.message || 'Failed to process notice image.',
+        errorMessage,
       });
       showToast('Error recognizing notice. You may retry or inspect text.', 'error');
       setAnnouncement('Notice processing failed. Please check error details.');
@@ -132,6 +142,7 @@ function AppContent() {
     });
 
     setActiveNotice(processed);
+    speechService.stop();
     setActiveTab('workspace');
     setSampleModalOpen(false);
     showToast(`Loaded demonstration sample: "${demo.title}"`, 'info');
@@ -206,9 +217,11 @@ function AppContent() {
       await loadSavedNotices();
       showToast('Notice saved privately on your device!', 'success');
       setAnnouncement('Notice saved to device local database.');
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Failed to save notice:', e);
-      showToast('Could not save notice to storage.', 'error');
+      const message = e instanceof Error ? e.message : 'Could not save notice to storage.';
+      showToast(message, 'error');
+      setAnnouncement(`Notice save failed: ${message}`);
     }
   };
 
@@ -226,6 +239,7 @@ function AppContent() {
 
   const handleOpenSavedNotice = (saved: SavedNotice) => {
     setActiveNotice(saved.notice);
+    speechService.stop();
     setActiveTab('workspace');
     showToast(`Opened: "${saved.title}"`, 'info');
     setAnnouncement(`Opened saved notice: ${saved.title}.`);
@@ -242,7 +256,9 @@ function AppContent() {
     setAnnouncement('OCR processing cancelled.');
   };
 
-  const isCurrentNoticeSaved = activeNotice ? savedNotices.some((s) => s.id === activeNotice.id) : false;
+  const savedRecord = activeNotice ? savedNotices.find((s) => s.id === activeNotice.id) : null;
+  const isCurrentNoticeSaved = savedRecord !== null && savedRecord !== undefined;
+  const hasUnsavedChanges = isCurrentNoticeSaved && savedRecord?.notice.updatedAt !== activeNotice?.updatedAt;
 
   return (
     <div className="min-h-screen flex flex-col bg-ivory-50 high-contrast:bg-black text-ink-900 high-contrast:text-white">
@@ -258,7 +274,7 @@ function AppContent() {
       {/* 4. Navigation Bar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         savedCount={savedNotices.length}
         hasActiveNotice={activeNotice !== null}
         onOpenSampleModal={() => setSampleModalOpen(true)}
@@ -291,6 +307,7 @@ function AppContent() {
             onReExtract={handleReExtractFromOcr}
             onSaveNotice={handleSaveActiveNotice}
             isSaved={isCurrentNoticeSaved}
+            hasUnsavedChanges={hasUnsavedChanges}
             onCopySuccess={() => showToast('Recognized text copied to clipboard.', 'info')}
             onDownloadIcsSuccess={() => showToast('Calendar ICS file generated and downloaded.', 'success')}
           />
@@ -302,7 +319,7 @@ function AppContent() {
             notices={savedNotices}
             onOpenNotice={handleOpenSavedNotice}
             onDeleteNotice={handleDeleteSavedNotice}
-            onScanNewNotice={() => setActiveTab('scan')}
+            onScanNewNotice={() => handleTabChange('scan')}
             onDownloadIcsSuccess={() => showToast('Calendar file downloaded.', 'success')}
           />
         )}

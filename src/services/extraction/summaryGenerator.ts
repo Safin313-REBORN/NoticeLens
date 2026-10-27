@@ -55,7 +55,7 @@ export function generateNoticeSummary(
   if (fields.requiredActions.status !== 'not_found') {
     const rawActions = fields.requiredActions.value.split('\n');
     for (const action of rawActions) {
-      const clean = action.replace(/^[•\-\*]\s*/, '').trim();
+      const clean = action.replace(/^[•\-*]\s*/, '').trim();
       if (clean) actionItems.push(clean);
     }
   }
@@ -107,7 +107,7 @@ export function generateNoticeSummary(
   if (fields.requiredDocuments.status !== 'not_found') {
     const rawDocs = fields.requiredDocuments.value.split('\n');
     for (const d of rawDocs) {
-      const clean = d.replace(/^[•\-\*]\s*/, '').trim();
+      const clean = d.replace(/^[•\-*]\s*/, '').trim();
       if (clean) requiredDocs.push(clean);
     }
   }

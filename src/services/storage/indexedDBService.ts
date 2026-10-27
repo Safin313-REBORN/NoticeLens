@@ -66,16 +66,16 @@ export async function saveNotice(notice: ProcessedNotice): Promise<SavedNotice> 
 
   try {
     const db = await getDB();
-    return new Promise((resolve, reject) => {
+    return await new Promise<SavedNotice>((resolve, reject) => {
       const tx = db.transaction(NOTICES_STORE, 'readwrite');
       const store = tx.objectStore(NOTICES_STORE);
       const req = store.put(record);
 
       req.onsuccess = () => resolve(record);
-      req.onerror = () => reject(req.error);
+      req.onerror = () => reject(req.error || new Error('IndexedDB transaction failed.'));
     });
   } catch (err) {
-    console.warn('NoticeLens: IndexedDB unavailable, falling back to localStorage', err);
+    console.warn('NoticeLens: Primary IndexedDB unavailable or failed, attempting localStorage fallback', err);
     saveToLocalStorage(record);
     return record;
   }
@@ -191,11 +191,21 @@ function getFromLocalStorage(): SavedNotice[] {
 }
 
 function saveToLocalStorage(record: SavedNotice): void {
+  const list = getFromLocalStorage().filter((n) => n.id !== record.id);
+  list.unshift(record);
   try {
-    const list = getFromLocalStorage().filter((n) => n.id !== record.id);
-    list.unshift(record);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-  } catch (err) {
-    console.error('Failed to write to localStorage', err);
+  } catch (err: unknown) {
+    const isQuota =
+      err instanceof DOMException &&
+      (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED');
+    if (isQuota) {
+      throw new Error(
+        'Browser local storage quota exceeded. Please delete some saved notices to free up space.'
+      );
+    }
+    throw new Error(
+      `Failed to save notice to browser storage: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
 }

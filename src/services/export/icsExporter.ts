@@ -1,4 +1,5 @@
 import { ProcessedNotice } from '../../types/notice';
+import { extractAllDates } from '../extraction/dateParser';
 
 export interface CalendarEventData {
   title: string;
@@ -12,22 +13,28 @@ export interface CalendarEventData {
 
 /**
  * Builds RFC 5545 compliant iCalendar (.ics) string
+ * Defends against CRLF injection and guarantees valid line formatting.
  */
 export function generateIcsContent(event: CalendarEventData): string {
   const now = new Date();
   const dtStamp = formatIcsDateTime(now);
   const uid = `noticelens-${Date.now()}-${Math.random().toString(36).substring(2, 9)}@noticelens.app`;
 
+  // Validate startDate format (YYYY-MM-DD)
+  const dateMatch = event.startDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) {
+    throw new Error(`Invalid start date format: ${event.startDate}. Expected YYYY-MM-DD.`);
+  }
+
   let dtStartLine = '';
   let dtEndLine = '';
 
   if (event.isAllDay || !event.startTime) {
     // All-day event (YYYYMMDD)
-    const cleanDate = event.startDate.replace(/-/g, '');
+    const cleanDate = `${dateMatch[1]}${dateMatch[2]}${dateMatch[3]}`;
     dtStartLine = `DTSTART;VALUE=DATE:${cleanDate}`;
-    // For all-day events, DTEND is next day
-    const nextDay = new Date(event.startDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    // For all-day events, DTEND is next day per RFC 5545
+    const nextDay = new Date(Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]) + 1));
     const cleanEndDate = formatIcsDateOnly(nextDay);
     dtEndLine = `DTEND;VALUE=DATE:${cleanEndDate}`;
   } else {
@@ -95,6 +102,7 @@ export function downloadIcsFile(event: CalendarEventData, filename = 'notice-dea
 
 /**
  * Helper to prepare calendar data from a processed notice
+ * Supports both Bengali and English dates and numerals
  */
 export function buildEventFromNotice(notice: ProcessedNotice): CalendarEventData | null {
   const deadlineField = notice.fields.deadline;
@@ -104,21 +112,33 @@ export function buildEventFromNotice(notice: ProcessedNotice): CalendarEventData
   const targetField = deadlineField.status !== 'not_found' ? deadlineField : eventDateField;
   if (targetField.status === 'not_found') return null;
 
-  // Extract ISO date
-  const isoMatch = targetField.evidence?.text?.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  // 1. Direct ISO match in evidence or field value
+  const isoMatch =
+    targetField.value.match(/\b(\d{4})-(\d{2})-(\d{2})\b/) ||
+    targetField.evidence?.text?.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+
   let isoDate = isoMatch ? isoMatch[0] : null;
 
+  // 2. Parse date via robust extraction engine if not raw ISO
   if (!isoDate) {
-    // Attempt parsing from value or default to current year
-    const parts = targetField.value.match(/(\d{1,2})\s+([A-Za-z]+)\s*(\d{4})?/);
-    if (parts) {
-      const day = parts[1].padStart(2, '0');
-      const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-      const mIdx = monthNames.findIndex(m => m.startsWith(parts[2].toLowerCase()));
-      const year = parts[3] || String(new Date().getFullYear());
-      if (mIdx !== -1) {
-        isoDate = `${year}-${String(mIdx + 1).padStart(2, '0')}-${day}`;
+    const parsedDates = extractAllDates(targetField.value);
+    if (parsedDates.length > 0 && parsedDates[0].isoDate) {
+      isoDate = parsedDates[0].isoDate;
+    } else if (targetField.evidence?.text) {
+      const evidenceDates = extractAllDates(targetField.evidence.text);
+      if (evidenceDates.length > 0 && evidenceDates[0].isoDate) {
+        isoDate = evidenceDates[0].isoDate;
       }
+    }
+  }
+
+  // Fallback check for yearless date (default to current year)
+  if (!isoDate) {
+    const parsedDates = extractAllDates(targetField.value);
+    if (parsedDates.length > 0 && parsedDates[0].day && parsedDates[0].month) {
+      const year = new Date().getFullYear();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      isoDate = `${year}-${pad(parsedDates[0].month)}-${pad(parsedDates[0].day)}`;
     }
   }
 
@@ -130,10 +150,14 @@ export function buildEventFromNotice(notice: ProcessedNotice): CalendarEventData
     `Institution: ${notice.fields.institution.value}`,
     notice.summary.criticalDeadline ? `Critical Deadline: ${notice.summary.criticalDeadline}` : '',
     notice.fields.venue.status !== 'not_found' ? `Venue: ${notice.fields.venue.value}` : '',
-    notice.fields.requiredDocuments.status !== 'not_found' ? `Required Documents:\n${notice.fields.requiredDocuments.value}` : '',
+    notice.fields.requiredDocuments.status !== 'not_found'
+      ? `Required Documents:\n${notice.fields.requiredDocuments.value}`
+      : '',
     notice.fields.url.status !== 'not_found' ? `Portal URL: ${notice.fields.url.value}` : '',
     'Processed and verified with NoticeLens.',
-  ].filter(Boolean).join('\n\n');
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 
   const location = notice.fields.venue.status !== 'not_found' ? notice.fields.venue.value : undefined;
   const startTime = notice.fields.startTime.status !== 'not_found' ? notice.fields.startTime.value : null;
@@ -150,8 +174,19 @@ export function buildEventFromNotice(notice: ProcessedNotice): CalendarEventData
   };
 }
 
-function escapeIcsText(str: string): string {
-  return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+/**
+ * Escapes characters for RFC 5545 compliance and neutralizes CRLF injection.
+ */
+export function escapeIcsText(str: string): string {
+  if (!str) return '';
+  // Normalize CRLF and bare CR to LF
+  const normalized = str.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // RFC 5545 escaping: backslash, semicolon, comma, and newline
+  return normalized
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
 }
 
 function formatIcsDateTime(date: Date): string {
@@ -163,7 +198,7 @@ function formatIcsDateTime(date: Date): string {
 
 function formatIcsDateOnly(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+  return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`;
 }
 
 function parseDateTimeToDate(dateStr: string, timeStr: string): Date {
@@ -181,5 +216,5 @@ function parseDateTimeToDate(dateStr: string, timeStr: string): Date {
     if (meridiem === 'AM' && hours === 12) hours = 0;
   }
 
-  return new Date(year, month - 1, day, hours, minutes, 0);
+  return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
 }

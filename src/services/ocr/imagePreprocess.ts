@@ -17,7 +17,15 @@ export async function preprocessNoticeImage(
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
+    const isObjectUrl = typeof imageSource !== 'string';
+    const cleanup = () => {
+      if (isObjectUrl && img.src.startsWith('blob:')) {
+        URL.revokeObjectURL(img.src);
+      }
+    };
+
     img.onload = () => {
+      cleanup();
       let width = img.naturalWidth || img.width;
       let height = img.naturalHeight || img.height;
 
@@ -76,6 +84,7 @@ export async function preprocessNoticeImage(
     };
 
     img.onerror = () => {
+      cleanup();
       reject(new Error('Failed to load image for preprocessing.'));
     };
 

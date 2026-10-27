@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateIcsContent, buildEventFromNotice } from '../../services/export/icsExporter';
+import { generateIcsContent, buildEventFromNotice, escapeIcsText } from '../../services/export/icsExporter';
 import { processNoticeDocument } from '../../services/extraction/noticeEngine';
 import { DEMO_NOTICES } from '../../data/demoNotices';
 
@@ -35,5 +35,50 @@ describe('ICS Calendar Exporter', () => {
     expect(eventData?.title).toContain('Notice');
     expect(eventData?.startDate).toBeDefined();
     expect(eventData?.description).toContain('NoticeLens');
+  });
+
+  it('neutralizes CRLF injection in title and description (SEC-01)', () => {
+    const maliciousEvent = {
+      title: 'Exam Notice\r\nLOCATION:Attacker Injected Site\r\nSTATUS:CANCELLED',
+      description: 'Important details\r\nBEGIN:VEVENT\r\nUID:fake-uid',
+      location: 'Room 101\r\nX-INJECTED:Header',
+      startDate: '2024-12-01',
+      startTime: null,
+      isAllDay: true,
+    };
+
+    const ics = generateIcsContent(maliciousEvent);
+
+    // Verify unescaped CRLF injection did not break the structure into separate raw lines
+    // In RFC 5545, literal newlines inside text properties MUST be escaped as "\n"
+    expect(ics).not.toContain('\r\nLOCATION:Attacker Injected Site');
+    expect(ics).not.toContain('\r\nSTATUS:CANCELLED');
+    expect(ics).toContain('SUMMARY:Exam Notice\\nLOCATION:Attacker Injected Site\\nSTATUS:CANCELLED');
+    expect(ics).toContain('DESCRIPTION:Important details\\nBEGIN:VEVENT\\nUID:fake-uid');
+
+    // Test raw escape helper
+    const escaped = escapeIcsText('Hello\r\nWorld\rInjected');
+    expect(escaped).toBe('Hello\\nWorld\\nInjected');
+  });
+
+  it('successfully extracts calendar event from Bengali-language date circulars (DAT-03)', () => {
+    const bengaliNotice = processNoticeDocument(DEMO_NOTICES[0].ocrText);
+    const eventData = buildEventFromNotice(bengaliNotice);
+
+    expect(eventData).not.toBeNull();
+    // Demo 0 has deadline "৫ নভেম্বর ২০২৪" (2024-11-05)
+    expect(eventData?.startDate).toBe('2024-11-05');
+    expect(eventData?.title).toContain('NoticeLens');
+  });
+
+  it('throws descriptive error on malformed start date format', () => {
+    const invalidEvent = {
+      title: 'Test Event',
+      description: 'Description',
+      startDate: 'invalid-date-string',
+      isAllDay: true,
+    };
+
+    expect(() => generateIcsContent(invalidEvent)).toThrowError(/Invalid start date format/);
   });
 });

@@ -13,6 +13,7 @@ interface NoticeWorkspaceProps {
   onReExtract: () => void;
   onSaveNotice: () => void;
   isSaved: boolean;
+  hasUnsavedChanges?: boolean;
   onCopySuccess: () => void;
   onDownloadIcsSuccess: () => void;
 }
@@ -24,6 +25,7 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
   onReExtract,
   onSaveNotice,
   isSaved,
+  hasUnsavedChanges = false,
   onCopySuccess,
   onDownloadIcsSuccess,
 }) => {
@@ -79,6 +81,7 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
         notice={notice}
         onSave={onSaveNotice}
         isSaved={isSaved}
+        hasUnsavedChanges={hasUnsavedChanges}
         onDownloadIcsSuccess={onDownloadIcsSuccess}
       />
 

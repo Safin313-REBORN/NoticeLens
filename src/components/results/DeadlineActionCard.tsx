@@ -1,5 +1,4 @@
-import React from 'react';
-import { Calendar, Download, Bookmark, Check, AlertCircle } from 'lucide-react';
+import { Calendar, Download, Bookmark, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { ProcessedNotice } from '../../types/notice';
 import { buildEventFromNotice, downloadIcsFile } from '../../services/export/icsExporter';
 
@@ -7,6 +6,7 @@ interface DeadlineActionCardProps {
   notice: ProcessedNotice;
   onSave: () => void;
   isSaved: boolean;
+  hasUnsavedChanges?: boolean;
   onDownloadIcsSuccess: () => void;
 }
 
@@ -14,6 +14,7 @@ export const DeadlineActionCard: React.FC<DeadlineActionCardProps> = ({
   notice,
   onSave,
   isSaved,
+  hasUnsavedChanges = false,
   onDownloadIcsSuccess,
 }) => {
   const deadlineField = notice.fields.deadline;
@@ -76,15 +77,37 @@ export const DeadlineActionCard: React.FC<DeadlineActionCardProps> = ({
 
           <button
             onClick={onSave}
-            aria-label={isSaved ? 'Notice saved in private local storage' : 'Save notice to private local storage'}
+            aria-label={
+              hasUnsavedChanges
+                ? 'Save your changes to private local storage'
+                : isSaved
+                ? 'Notice saved in private local storage'
+                : 'Save notice to private local storage'
+            }
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-teal-500 ${
-              isSaved
+              hasUnsavedChanges
+                ? 'bg-amber-600 text-white hover:bg-amber-700 high-contrast:bg-yellow-400 high-contrast:text-black'
+                : isSaved
                 ? 'bg-teal-50 text-teal-800 border border-teal-300 high-contrast:bg-yellow-400 high-contrast:text-black'
                 : 'bg-teal-700 text-white hover:bg-teal-800 high-contrast:bg-slate-900 high-contrast:text-white high-contrast:border-white high-contrast:border'
             }`}
           >
-            {isSaved ? <Check className="w-4 h-4 text-teal-600 high-contrast:text-black" /> : <Bookmark className="w-4 h-4" />}
-            <span>{isSaved ? 'Notice Saved' : 'Save Notice'}</span>
+            {hasUnsavedChanges ? (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                <span>Save Changes</span>
+              </>
+            ) : isSaved ? (
+              <>
+                <Check className="w-4 h-4 text-teal-600 high-contrast:text-black" />
+                <span>Notice Saved</span>
+              </>
+            ) : (
+              <>
+                <Bookmark className="w-4 h-4" />
+                <span>Save Notice</span>
+              </>
+            )}
           </button>
         </div>
       </div>

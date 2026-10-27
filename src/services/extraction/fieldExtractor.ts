@@ -388,8 +388,8 @@ function extractRequiredDocuments(lines: string[], fullText: string): ExtractedF
 function extractFees(lines: string[], fullText: string): ExtractedField {
   for (const line of lines) {
     const normLine = bengaliToEnglishNumerals(line);
-    if (/ফি|টাকা|Tk|BDT|\/\=|\/\-/i.test(line) && /\d+/.test(normLine)) {
-      const match = normLine.match(/(?:Tk\.?|BDT|ফি|টাকা)?\s*(\d+(?:,\d{3})*(?:\/\=|\/\-)?)\s*(?:টাকা|Tk\.?|BDT)?/i);
+    if (/ফি|টাকা|Tk|BDT|\/=|\/-/i.test(line) && /\d+/.test(normLine)) {
+      const match = normLine.match(/(?:Tk\.?|BDT|ফি|টাকা)?\s*(\d+(?:,\d{3})*(?:\/=|\/-)?)\s*(?:টাকা|Tk\.?|BDT)?/i);
       if (match) {
         return {
           key: 'fees',
@@ -461,12 +461,21 @@ function extractUrl(text: string): ExtractedField {
   const urlMatch = text.match(/\b(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.(?:edu\.bd|ac\.bd|gov\.bd))\b/i);
 
   if (urlMatch) {
+    let cleanUrl = urlMatch[0].trim();
+    // Strip trailing sentence punctuation: . , ; : ! ? ) ' " > ]
+    cleanUrl = cleanUrl.replace(/[.,;:!?)'">\]]+$/, '');
+
+    // Defend against malicious URI schemes
+    if (/^(javascript|data|vbscript|file):/i.test(cleanUrl)) {
+      return createNotFoundField('url', 'Website / Portal Link', 'অনলাইন পোর্টাল লিংক');
+    }
+
     return {
       key: 'url',
       label: 'Website / Portal Link',
       labelBn: 'অনলাইন পোর্টাল লিংক',
-      value: urlMatch[0],
-      evidence: matchEvidence(text, urlMatch[0], 'URL'),
+      value: cleanUrl,
+      evidence: matchEvidence(text, cleanUrl, 'URL') || matchEvidence(text, urlMatch[0], 'URL'),
       status: 'confirmed',
     };
   }
