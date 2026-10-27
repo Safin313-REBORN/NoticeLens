@@ -82,5 +82,9 @@ export default {
       }
     },
   },
-  plugins: [],
-}
+  plugins: [
+    function({ addVariant }) {
+      addVariant('high-contrast', ['.high-contrast &', '&.high-contrast', 'body.high-contrast &', 'html.high-contrast &']);
+    },
+  ],
+};

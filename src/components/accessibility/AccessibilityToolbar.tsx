@@ -44,8 +44,10 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
 
   useEffect(() => {
     if (highContrast) {
+      document.documentElement.classList.add('high-contrast');
       document.body.classList.add('high-contrast');
     } else {
+      document.documentElement.classList.remove('high-contrast');
       document.body.classList.remove('high-contrast');
     }
     safeSetStorage('noticelens_high_contrast', String(highContrast));
@@ -114,7 +116,7 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>High Contrast (7:1+)</span>
+            <span>High Contrast Mode</span>
           </button>
 
           <button

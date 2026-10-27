@@ -19,8 +19,8 @@ describe('ICS Calendar Exporter', () => {
     expect(ics).toContain('BEGIN:VCALENDAR');
     expect(ics).toContain('VERSION:2.0');
     expect(ics).toContain('SUMMARY:CSE Semester Final Exam');
-    expect(ics).toContain('DTSTART:');
-    expect(ics).toContain('DTEND:');
+    expect(ics).toContain('DTSTART;TZID=Asia/Dhaka:');
+    expect(ics).toContain('DTEND;TZID=Asia/Dhaka:');
     expect(ics).toContain('LOCATION:Room 402\\, Kazi Motahar Hossain Building');
     expect(ics).toContain('BEGIN:VALARM');
     expect(ics).toContain('TRIGGER:-PT24H');

@@ -6,18 +6,18 @@ import { speechService } from '../../services/speech/webSpeechService';
 interface OcrTranscriptEditorProps {
   ocrText: string;
   ocrConfidence?: number;
+  sourceType?: 'upload' | 'camera' | 'demo' | 'manual';
   selectedEvidence?: EvidenceSnippet | null;
-  onTextChange: (newText: string) => void;
-  onReExtract: () => void;
+  onApplyTranscriptEdit: (newText: string) => void;
   onCopySuccess: () => void;
 }
 
 export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
   ocrText,
   ocrConfidence,
+  sourceType,
   selectedEvidence,
-  onTextChange,
-  onReExtract,
+  onApplyTranscriptEdit,
   onCopySuccess,
 }) => {
   const [editableText, setEditableText] = useState(ocrText);
@@ -44,8 +44,7 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
   };
 
   const handleApplyChanges = () => {
-    onTextChange(editableText);
-    onReExtract();
+    onApplyTranscriptEdit(editableText);
     setIsEditing(false);
   };
 
@@ -83,7 +82,12 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
     return (
       <>
         {before}
-        <mark className="evidence-highlight">{match}</mark>
+        <mark
+          className="bg-[#FFE17D] text-black font-black px-1.5 py-0.5 border-b-2 border-black high-contrast:bg-yellow-400 high-contrast:text-black"
+          title={`Supporting evidence for: ${selectedEvidence.matchedKeyword || 'extracted field'}`}
+        >
+          {match}
+        </mark>
         {after}
       </>
     );
@@ -99,14 +103,21 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
           <h2 id="ocr-transcript-heading" className="text-base font-black uppercase text-ink-900 high-contrast:text-white">
-            Raw OCR Transcript
+            OCR Document Transcript
           </h2>
-          {ocrConfidence !== undefined && ocrConfidence > 0 && (
+          {ocrConfidence !== undefined && ocrConfidence > 0 ? (
             <span
               className="brutal-badge text-[10px] px-2 py-0.5 bg-neo-yellow text-black font-black"
-              title="Raw OCR engine character score. Does not guarantee overall factual validity."
+              title="Tesseract engine character confidence estimate. Does not guarantee overall factual validity."
             >
               OCR Conf: {Math.round(ocrConfidence)}%
+            </span>
+          ) : (
+            <span
+              className="brutal-badge text-[10px] px-2 py-0.5 bg-slate-200 text-slate-800 font-bold"
+              title={sourceType === 'demo' ? 'Pre-bundled sample fixture (live OCR was not executed)' : 'User-edited transcript'}
+            >
+              {sourceType === 'demo' ? 'Preset Sample (No OCR)' : 'Transcript'}
             </span>
           )}
         </div>
@@ -137,65 +148,81 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
         <div className="mb-4 p-3 border-2 border-black bg-[#FFFDF0] text-xs text-ink-900 shadow-brutal-sm high-contrast:bg-slate-900 high-contrast:border-yellow-400 high-contrast:text-yellow-300 flex items-start gap-2">
           <Info className="w-4 h-4 text-black shrink-0 mt-0.5 stroke-[2.5] high-contrast:text-yellow-400" />
           <p className="leading-relaxed font-medium">
-            <strong>Editable Source:</strong> If Bengali font or low lighting caused an OCR typo, edit the text below and click <strong>Re-extract Details</strong>. NoticeLens will re-derive all dates, deadlines, and summaries.
+            <strong>Editable Source:</strong> If Bengali font or low lighting caused an OCR typo, edit the text below and click <strong>Apply Changes & Re-derive</strong>. NoticeLens will synchronously re-derive all dates, deadlines, and summaries.
           </p>
         </div>
 
         {/* Selected Evidence Highlight Banner */}
         {selectedEvidence && (
-          <div className="mb-4 p-2.5 border-2 border-black bg-[#FFE17D] text-xs text-ink-900 shadow-brutal-sm high-contrast:bg-slate-900 high-contrast:border-white high-contrast:text-yellow-300 flex items-center justify-between">
-            <span className="font-bold">
-              Highlighted Evidence: "{selectedEvidence.text}"
+          <div className="mb-3 px-3 py-2 bg-neo-yellow/20 border-2 border-black text-xs font-bold text-ink-900 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 bg-neo-yellow border border-black inline-block"></span>
+              <span>
+                Highlighting citation for:{' '}
+                <strong>{selectedEvidence.matchedKeyword || selectedEvidence.text}</strong>
+              </span>
             </span>
-            <span className="brutal-badge text-[9px] bg-black text-white px-1.5 py-0.5">
-              CITED SNIPPET
+            <span className="text-[10px] text-slate-500 font-semibold uppercase">
+              Position: {selectedEvidence.startIndex}..{selectedEvidence.endIndex}
             </span>
           </div>
         )}
 
-        {/* Text Area */}
-        <div className="relative">
-          <textarea
-            value={editableText}
-            onChange={(e) => {
-              setEditableText(e.target.value);
-              setIsEditing(true);
-            }}
-            rows={12}
-            aria-label="Editable OCR recognized text"
-            className="w-full p-4 text-xs font-mono leading-relaxed border-2 border-black bg-[#FFFDF0] text-ink-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black shadow-brutal-sm transition-colors high-contrast:bg-black high-contrast:border-white high-contrast:text-white"
-          />
-        </div>
-
-        {/* Highlight Preview display if an evidence snippet is chosen */}
-        {selectedEvidence && !isEditing && (
-          <div className="mt-3 p-3 border-2 border-black bg-white text-xs font-sans whitespace-pre-line leading-relaxed shadow-brutal-sm high-contrast:bg-black high-contrast:border-white high-contrast:text-white">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1">
-              Live Snippet Highlighting:
-            </span>
-            {renderHighlightedText()}
+        {/* Transcript Body: Read-only Citation View vs Editable Textarea */}
+        {isEditing ? (
+          <div className="space-y-3">
+            <textarea
+              value={editableText}
+              onChange={(e) => setEditableText(e.target.value)}
+              rows={12}
+              className="w-full p-4 text-xs font-mono border-2 border-black bg-white text-ink-900 shadow-brutal-sm focus:outline-none focus:ring-2 focus:ring-black high-contrast:bg-black high-contrast:border-white high-contrast:text-white leading-relaxed"
+              aria-label="Editable OCR transcript"
+              autoFocus
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditableText(ocrText);
+                  setIsEditing(false);
+                }}
+                className="brutal-btn px-4 py-2 bg-white text-black text-xs font-bold hover:bg-slate-100 high-contrast:bg-black high-contrast:text-white high-contrast:border-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyChanges}
+                className="brutal-btn inline-flex items-center gap-2 px-4 py-2 bg-neo-yellow text-black text-xs font-black hover:bg-yellow-300 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black"
+              >
+                <RefreshCw className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Apply Changes & Re-derive</span>
+              </button>
+            </div>
           </div>
-        )}
+        ) : (
+          <div>
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label="Recognized notice text with highlighted citation"
+              className="w-full p-4 text-xs font-mono bg-slate-50 border-2 border-black max-h-96 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-brutal-sm focus:outline-none focus:ring-2 focus:ring-black high-contrast:bg-black high-contrast:border-white high-contrast:text-white"
+            >
+              {renderHighlightedText()}
+            </div>
 
-        {/* Re-extract Action */}
-        {isEditing && (
-          <div className="mt-4 flex items-center justify-end gap-3">
-            <button
-              onClick={() => {
-                setEditableText(ocrText);
-                setIsEditing(false);
-              }}
-              className="brutal-btn px-4 py-2 bg-white text-black text-xs font-bold hover:bg-slate-100 high-contrast:border-white high-contrast:text-white"
-            >
-              Reset to Original OCR
-            </button>
-            <button
-              onClick={handleApplyChanges}
-              className="brutal-btn inline-flex items-center gap-1.5 px-4 py-2 bg-neo-yellow text-black text-xs font-black shadow-brutal hover:bg-yellow-300 high-contrast:bg-yellow-400 high-contrast:text-black"
-            >
-              <RefreshCw className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Re-extract Details from Edited Text</span>
-            </button>
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-[11px] font-bold text-slate-500 high-contrast:text-slate-400">
+                Found a typo? You can correct any sentence above.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="brutal-btn px-4 py-1.5 bg-white text-black text-xs font-black hover:bg-slate-100 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black"
+              >
+                Edit Transcript
+              </button>
+            </div>
           </div>
         )}
       </div>

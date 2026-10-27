@@ -156,6 +156,13 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
             </div>
           )}
 
+          {/* User Override Indicator */}
+          {isUserEdited && (
+            <div className="mt-2 px-2 py-1 bg-purple-50 border border-purple-200 text-[11px] text-purple-900 font-medium high-contrast:bg-black high-contrast:border-yellow-400 high-contrast:text-yellow-300">
+              <span className="font-bold">User Override:</span> Manually corrected value (overrides machine extraction).
+            </div>
+          )}
+
           {/* Supporting Evidence Snippet Pill */}
           {field.evidence && (
             <div className="mt-2.5 pt-2 border-t border-slate-100 high-contrast:border-white/20">
@@ -167,7 +174,8 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
               >
                 <Quote className="w-3 h-3 text-teal-600 shrink-0 mt-0.5 high-contrast:text-yellow-400" />
                 <span className="line-clamp-2 italic group-hover/ev:underline">
-                  Source: "{field.evidence.text}"
+                  {isUserEdited ? 'Original OCR Snippet: ' : 'Source: '}"{field.evidence.text}"
+                  {isUserEdited && <span className="font-semibold text-slate-400 not-italic ml-1">(superseded)</span>}
                 </span>
               </button>
             </div>

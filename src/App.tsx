@@ -113,6 +113,15 @@ function AppContent() {
     }
   };
 
+  const fileToDataUrl = (file: File | Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error || new Error('Failed to read file as data URL'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleProcessImage = async (
     imageSource: string | File,
     language: 'ben' | 'eng' | 'ben+eng',
@@ -147,7 +156,15 @@ function AppContent() {
       }
 
       if (!previewDataUrl) {
-        previewDataUrl = typeof imageSource === 'string' ? imageSource : URL.createObjectURL(imageSource);
+        if (typeof imageSource === 'string') {
+          previewDataUrl = imageSource;
+        } else {
+          try {
+            previewDataUrl = await fileToDataUrl(imageSource);
+          } catch {
+            previewDataUrl = URL.createObjectURL(imageSource);
+          }
+        }
       }
 
       const ocrResult = await runOcrRecognition(finalImageSource, language, (prog) => {
@@ -191,11 +208,11 @@ function AppContent() {
     }
   };
 
-  const handleLoadDemoDirectly = (demo: DemoNoticeItem) => {
+  const handleLoadDemoDirectly = useCallback((demo: DemoNoticeItem) => {
     const svgPreview = generateDemoNoticeSvg(demo);
     const processed = processNoticeDocument(demo.ocrText, {
       ocrLanguage: demo.language,
-      ocrConfidence: 94,
+      ocrConfidence: undefined, // Truthful: no live OCR was executed for instant pre-parsed sample
       imageDataUrl: svgPreview,
       sourceType: 'demo',
     });
@@ -206,7 +223,29 @@ function AppContent() {
     setSampleModalOpen(false);
     showToast(`Loaded demonstration sample: "${demo.title}"`, 'info');
     setAnnouncement(`Loaded sample notice: ${demo.title}. Navigated to Notice Workspace.`);
-  };
+  }, [showToast]);
+
+  // Support URL search params for deep-linking samples, tabs, and high-contrast
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const sampleParam = params.get('sample');
+      if (sampleParam) {
+        const demo = DEMO_NOTICES.find((d) => d.id === sampleParam) || DEMO_NOTICES[0];
+        handleLoadDemoDirectly(demo);
+      }
+      if (params.get('highcontrast') === 'true') {
+        document.documentElement.classList.add('high-contrast');
+        document.body.classList.add('high-contrast');
+      }
+      const tabParam = params.get('tab');
+      if (tabParam && ['scan', 'workspace', 'saved', 'studio', 'transparency'].includes(tabParam)) {
+        setActiveTab(tabParam as ActiveTab);
+      }
+    } catch {
+      // ignore
+    }
+  }, [handleLoadDemoDirectly]);
 
   const handleUpdateNoticeField = (key: string, newValue: string) => {
     if (!activeNotice) return;
@@ -236,19 +275,16 @@ function AppContent() {
     setAnnouncement(`Field ${key} updated.`);
   };
 
-  const handleUpdateOcrText = (newText: string) => {
+  const handleApplyTranscriptEdit = (newText: string) => {
     if (!activeNotice) return;
-    setActiveNotice({
-      ...activeNotice,
-      ocrText: newText,
-      updatedAt: new Date().toISOString(),
-    });
-  };
+    const trimmed = newText.trim();
+    if (!trimmed) {
+      showToast('Transcript cannot be empty.', 'error');
+      return;
+    }
 
-  const handleReExtractFromOcr = () => {
-    if (!activeNotice) return;
-
-    const reprocessed = processNoticeDocument(activeNotice.ocrText, {
+    // Atomic re-extraction using the exact edited string
+    const reprocessed = processNoticeDocument(trimmed, {
       ocrLanguage: activeNotice.ocrLanguage,
       ocrConfidence: activeNotice.ocrConfidence,
       imageDataUrl: activeNotice.imageDataUrl,
@@ -377,8 +413,7 @@ function AppContent() {
             <NoticeWorkspace
               notice={activeNotice}
               onUpdateNoticeField={handleUpdateNoticeField}
-              onUpdateOcrText={handleUpdateOcrText}
-              onReExtract={handleReExtractFromOcr}
+              onApplyTranscriptEdit={handleApplyTranscriptEdit}
               onSaveNotice={handleSaveActiveNotice}
               isSaved={isCurrentNoticeSaved}
               hasUnsavedChanges={hasUnsavedChanges}
@@ -467,13 +502,25 @@ function AppContent() {
               <p className="text-xs text-slate-500 high-contrast:text-yellow-300 mt-1">
                 {demo.description}
               </p>
-              <div className="mt-3 flex items-center justify-end">
+              <div className="mt-3 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setSampleModalOpen(false);
+                    const svgUri = generateDemoNoticeSvg(demo);
+                    handleProcessImage(svgUri, demo.language, false, 'demo');
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-400 text-black text-xs font-black hover:bg-yellow-300 border border-black high-contrast:bg-yellow-400 high-contrast:text-black"
+                  title="Run actual OCR recognition on sample notice image"
+                >
+                  <span>Run Live OCR</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
                 <button
                   onClick={() => handleLoadDemoDirectly(demo)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-700 text-white text-xs font-bold hover:bg-teal-800 high-contrast:bg-yellow-400 high-contrast:text-black"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-700 text-white text-xs font-bold hover:bg-teal-800 high-contrast:bg-slate-900 high-contrast:text-white"
+                  title="Load pre-parsed demo text immediately"
                 >
-                  <span>Load Sample</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Instant Sample</span>
                 </button>
               </div>
             </div>

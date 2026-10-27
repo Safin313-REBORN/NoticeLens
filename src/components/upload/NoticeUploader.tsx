@@ -107,6 +107,12 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
     onLoadDemoDirectly(demo);
   };
 
+  const handleScanSampleLive = (demo: DemoNoticeItem) => {
+    clearSelection();
+    const svgUri = generateDemoNoticeSvg(demo);
+    onProcessImage(svgUri, demo.language, false, 'demo');
+  };
+
   return (
     <div className="space-y-8">
       {/* Hero Introduction */}
@@ -323,21 +329,43 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {DEMO_NOTICES.map((demo) => (
-            <button
+            <div
               key={demo.id}
-              onClick={() => handleSelectDemo(demo)}
-              className="brutal-card brutal-card-hover text-left p-4 bg-white transition-all group focus-visible:ring-2 focus-visible:ring-black high-contrast:bg-black high-contrast:border-white"
+              className="brutal-card text-left p-4 bg-white high-contrast:bg-black high-contrast:border-white flex flex-col justify-between"
             >
-              <span className="brutal-badge inline-block px-2 py-0.5 bg-neo-pink text-black mb-2 shadow-brutal-sm">
-                {demo.category}
-              </span>
-              <h3 className="text-xs font-black text-ink-900 high-contrast:text-white line-clamp-1 group-hover:underline">
-                {demo.title}
-              </h3>
-              <p className="text-[11px] font-medium text-slate-600 high-contrast:text-slate-300 line-clamp-2 mt-1 leading-snug">
-                {demo.description}
-              </p>
-            </button>
+              <div>
+                <span className="brutal-badge inline-block px-2 py-0.5 bg-neo-pink text-black mb-2 shadow-brutal-sm text-[10px] font-black">
+                  {demo.category} • {demo.language.toUpperCase()}
+                </span>
+                <h3 className="text-xs font-black text-ink-900 high-contrast:text-white line-clamp-1">
+                  {demo.title}
+                </h3>
+                <p className="text-[11px] font-medium text-slate-600 high-contrast:text-slate-300 line-clamp-2 mt-1 leading-snug">
+                  {demo.description}
+                </p>
+              </div>
+
+              <div className="mt-3 pt-3 border-t-2 border-black high-contrast:border-white flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleScanSampleLive(demo)}
+                  disabled={isProcessing}
+                  className="brutal-btn py-1.5 px-2 bg-neo-yellow text-black text-[11px] font-black hover:bg-yellow-300 text-center high-contrast:bg-yellow-400 high-contrast:text-black shadow-brutal-sm disabled:opacity-50"
+                  title="Executes actual Tesseract OCR engine on this sample notice image"
+                >
+                  ⚡ Run Live OCR on Image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectDemo(demo)}
+                  disabled={isProcessing}
+                  className="brutal-btn py-1 px-2 bg-white text-slate-700 text-[10px] font-bold hover:bg-slate-100 text-center high-contrast:bg-slate-900 high-contrast:text-white disabled:opacity-50"
+                  title="Loads pre-parsed text immediately without running OCR recognition"
+                >
+                  Instant Sample Data (Preset)
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </div>

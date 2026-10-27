@@ -9,8 +9,7 @@ import { Image as ImageIcon, CheckCircle2, AlertTriangle, Layers } from 'lucide-
 interface NoticeWorkspaceProps {
   notice: ProcessedNotice;
   onUpdateNoticeField: (key: string, newValue: string) => void;
-  onUpdateOcrText: (newText: string) => void;
-  onReExtract: () => void;
+  onApplyTranscriptEdit: (newText: string) => void;
   onSaveNotice: () => void;
   isSaved: boolean;
   hasUnsavedChanges?: boolean;
@@ -21,8 +20,7 @@ interface NoticeWorkspaceProps {
 export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
   notice,
   onUpdateNoticeField,
-  onUpdateOcrText,
-  onReExtract,
+  onApplyTranscriptEdit,
   onSaveNotice,
   isSaved,
   hasUnsavedChanges = false,
@@ -47,7 +45,6 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
   return (
     <div className="space-y-6">
       {/* Workspace Subheader Banner */}
-      {/* Workspace Subheader Banner */}
       <div className="brutal-card flex flex-wrap items-center justify-between gap-4 bg-white p-5 high-contrast:bg-black high-contrast:border-white">
         <div>
           <span className="brutal-badge text-xs px-2.5 py-1 bg-neo-yellow text-black -rotate-1 inline-block shadow-brutal-sm">
@@ -61,7 +58,6 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
           </p>
         </div>
 
-        {/* Verification Stats Pills */}
         <div className="flex items-center gap-2.5">
           <div className="brutal-badge flex items-center gap-1.5 px-3 py-1.5 bg-neo-mint text-black shadow-brutal-sm">
             <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
@@ -109,40 +105,38 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setFieldFilter('all')}
-                  aria-pressed={fieldFilter === 'all'}
-                  className={`brutal-btn px-2.5 py-1 text-xs ${
+                  className={`brutal-btn px-2.5 py-1 text-xs font-bold ${
                     fieldFilter === 'all'
-                      ? 'bg-neo-yellow text-black font-black'
-                      : 'bg-white text-ink-900 hover:bg-neutral-100 font-bold'
+                      ? 'bg-black text-white high-contrast:bg-yellow-400 high-contrast:text-black'
+                      : 'bg-white text-ink-900 hover:bg-slate-100 high-contrast:text-white'
                   }`}
                 >
-                  All
-                </button>
-                <button
-                  onClick={() => setFieldFilter('found')}
-                  aria-pressed={fieldFilter === 'found'}
-                  className={`brutal-btn px-2.5 py-1 text-xs ${
-                    fieldFilter === 'found'
-                      ? 'bg-neo-mint text-black font-black'
-                      : 'bg-white text-ink-900 hover:bg-neutral-100 font-bold'
-                  }`}
-                >
-                  Found
+                  All ({allFields.length})
                 </button>
                 <button
                   onClick={() => setFieldFilter('needs_review')}
-                  aria-pressed={fieldFilter === 'needs_review'}
-                  className={`brutal-btn px-2.5 py-1 text-xs ${
+                  className={`brutal-btn px-2.5 py-1 text-xs font-bold ${
                     fieldFilter === 'needs_review'
-                      ? 'bg-neo-coral text-white font-black'
-                      : 'bg-white text-ink-900 hover:bg-neutral-100 font-bold'
+                      ? 'bg-black text-white high-contrast:bg-yellow-400 high-contrast:text-black'
+                      : 'bg-white text-ink-900 hover:bg-slate-100 high-contrast:text-white'
                   }`}
                 >
                   Review ({needsReviewCount})
                 </button>
+                <button
+                  onClick={() => setFieldFilter('found')}
+                  className={`brutal-btn px-2.5 py-1 text-xs font-bold ${
+                    fieldFilter === 'found'
+                      ? 'bg-black text-white high-contrast:bg-yellow-400 high-contrast:text-black'
+                      : 'bg-white text-ink-900 hover:bg-slate-100 high-contrast:text-white'
+                  }`}
+                >
+                  Found ({allFields.filter((f) => f.status !== 'not_found').length})
+                </button>
               </div>
             </div>
 
+            {/* Field Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {filteredFields.map((field) => (
                 <EvidenceFieldCard
@@ -160,7 +154,7 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
         {/* Right Column (5 cols): Evidence Inspector, OCR Transcript & Document Preview */}
         <div className="lg:col-span-5 space-y-6">
           {/* Document Preview Card if image data exists */}
-          {notice.imageDataUrl && (
+          {notice.imageDataUrl ? (
             <div className="brutal-card bg-white overflow-hidden high-contrast:bg-black high-contrast:border-white">
               <div className="px-5 py-3 border-b-2 border-black flex items-center justify-between high-contrast:border-white">
                 <span className="text-xs font-black uppercase text-ink-900 high-contrast:text-white flex items-center gap-2">
@@ -184,15 +178,25 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
                 </div>
               )}
             </div>
+          ) : (
+            <div className="brutal-card bg-white p-4 high-contrast:bg-black high-contrast:border-white text-center">
+              <ImageIcon className="w-5 h-5 mx-auto text-slate-500 mb-1" />
+              <p className="text-[11px] font-bold text-slate-600 high-contrast:text-slate-300">
+                Original image was not stored in fallback storage.
+              </p>
+              <p className="text-[10px] text-slate-500 high-contrast:text-slate-400">
+                All extracted fields, dates, and plain-language summaries remain fully accessible.
+              </p>
+            </div>
           )}
 
           {/* OCR Transcript Editor & Evidence Highlighting */}
           <OcrTranscriptEditor
             ocrText={notice.ocrText}
             ocrConfidence={notice.ocrConfidence}
+            sourceType={notice.sourceType}
             selectedEvidence={selectedEvidence}
-            onTextChange={onUpdateOcrText}
-            onReExtract={onReExtract}
+            onApplyTranscriptEdit={onApplyTranscriptEdit}
             onCopySuccess={onCopySuccess}
           />
         </div>

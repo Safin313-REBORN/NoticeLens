@@ -44,6 +44,10 @@ export async function runOcrRecognition(
       report('loading_worker', 0.3, `Downloading and loading trained language models (${language})...`);
 
       activeWorker = await createWorker(language, 1, {
+        workerPath: '/tesseract/worker.min.js',
+        corePath: '/tesseract/tesseract-core-lstm.js',
+        workerBlobURL: false,
+        langPath: 'https://tessdata.projectnaptha.com/4.0.0',
         logger: (m) => {
           if (m.status === 'loading tesseract core') {
             report('loading_worker', 0.2 + (m.progress || 0) * 0.2, 'Loading OCR core engine...');
@@ -54,6 +58,9 @@ export async function runOcrRecognition(
           } else if (m.status === 'recognizing text') {
             report('recognizing', 0.6 + (m.progress || 0) * 0.35, `Recognizing text (${Math.round((m.progress || 0) * 100)}%)...`);
           }
+        },
+        errorHandler: (err) => {
+          console.error('OCR Worker Error:', err);
         },
       });
 

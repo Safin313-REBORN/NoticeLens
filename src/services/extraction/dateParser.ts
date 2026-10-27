@@ -1,5 +1,28 @@
 import { bengaliToEnglishNumerals } from './numerals';
 
+export function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+export function isValidCalendarDate(day: number, month: number, year: number | null): boolean {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const daysInMonth = [
+    31,
+    year !== null ? (isLeapYear(year) ? 29 : 28) : 29, // max 29 if year unknown, but never 30/31
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  return day <= daysInMonth[month - 1];
+}
+
 export interface ParsedDateResult {
   rawSnippet: string;
   normalizedDate: string;
@@ -123,18 +146,18 @@ export function extractAllDates(text: string): ParsedDateResult[] {
 
     // 1. Detect date with month name in Bengali (e.g., ১৫ নভেম্বর ২০২৪ or ১৫ই নভেম্বর ২০২৪)
     const bnMonthPattern =
-      /(\d{1,2})(?:ই|শে|লা|র্থ|st|nd|rd|th)?\s+(জানুয়ারি|জানুয়ারি|ফেব্রুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগষ্ট|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর|জানু|ফেব্রু|নভে|ডিসে)\s*,?\s*(\d{4})?/gi;
+      /(?<!\d)(\d{1,2})(?!\d)(?:ই|শে|লা|র্থ|st|nd|rd|th)?\s+(জানুয়ারি|জানুয়ারি|ফেব্রুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগষ্ট|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর|জানু|ফেব্রু|নভে|ডিসে)\s*,?\s*(?:(?<!\d)(\d{4})(?!\d))?/gi;
 
     let bnMatch: RegExpExecArray | null;
     while ((bnMatch = bnMonthPattern.exec(normalizedLine)) !== null) {
       const day = parseInt(bnMatch[1], 10);
-      if (day < 1 || day > 31) continue;
-
       const monthStr = bnMatch[2].toLowerCase();
       const month = BENGALI_MONTHS_MAP[monthStr];
       const year = bnMatch[3] ? parseInt(bnMatch[3], 10) : null;
-      const rawSnippet = rawLine.substring(bnMatch.index, bnMatch.index + bnMatch[0].length);
 
+      if (!isValidCalendarDate(day, month, year)) continue;
+
+      const rawSnippet = rawLine.substring(bnMatch.index, bnMatch.index + bnMatch[0].length);
       const classification = classifyDateContext(rawLine, lineIndex, lines);
 
       results.push({
@@ -148,23 +171,23 @@ export function extractAllDates(text: string): ParsedDateResult[] {
         confidence: year ? 'high' : 'medium',
         contextSnippet: rawLine.trim(),
         isAmbiguous: !year,
-        ambiguityReason: !year ? 'Year was not explicitly specified in the notice text' : undefined,
+        ambiguityReason: !year ? 'Year was not explicitly specified in the notice text; requires user verification.' : undefined,
       });
     }
 
     // 1b. Detect date with Bengali Month-Day-Year (e.g., নভেম্বর ১৫, ২০২৪ or অক্টোবর ১২)
     const bnMonthDayPattern =
-      /(জানুয়ারি|জানুয়ারি|ফেব্রুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগষ্ট|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর|জানু|ফেব্রু|নভে|ডিসে)\s+(\d{1,2})(?:ই|শে|লা|র্থ|st|nd|rd|th)?\s*,?\s*(\d{4})?/gi;
+      /(জানুয়ারি|জানুয়ারি|ফেব্রুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগষ্ট|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর|জানু|ফেব্রু|নভে|ডিসে)\s+(?<!\d)(\d{1,2})(?!\d)(?:ই|শে|লা|র্থ|st|nd|rd|th)?\s*,?\s*(?:(?<!\d)(\d{4})(?!\d))?/gi;
 
     while ((bnMatch = bnMonthDayPattern.exec(normalizedLine)) !== null) {
       const monthStr = bnMatch[1].toLowerCase();
       const month = BENGALI_MONTHS_MAP[monthStr];
       const day = parseInt(bnMatch[2], 10);
-      if (day < 1 || day > 31) continue;
-
       const year = bnMatch[3] ? parseInt(bnMatch[3], 10) : null;
-      const rawSnippet = rawLine.substring(bnMatch.index, bnMatch.index + bnMatch[0].length);
 
+      if (!isValidCalendarDate(day, month, year)) continue;
+
+      const rawSnippet = rawLine.substring(bnMatch.index, bnMatch.index + bnMatch[0].length);
       const classification = classifyDateContext(rawLine, lineIndex, lines);
 
       results.push({
@@ -178,7 +201,7 @@ export function extractAllDates(text: string): ParsedDateResult[] {
         confidence: year ? 'high' : 'medium',
         contextSnippet: rawLine.trim(),
         isAmbiguous: !year,
-        ambiguityReason: !year ? 'Year was not explicitly specified in the notice text' : undefined,
+        ambiguityReason: !year ? 'Year was not explicitly specified in the notice text; requires user verification.' : undefined,
       });
     }
 
@@ -189,13 +212,13 @@ export function extractAllDates(text: string): ParsedDateResult[] {
     let enMatch: RegExpExecArray | null;
     while ((enMatch = enDayMonthPattern.exec(normalizedLine)) !== null) {
       const day = parseInt(enMatch[1], 10);
-      if (day < 1 || day > 31) continue;
-
       const monthName = enMatch[2].toLowerCase();
       const month = ENGLISH_MONTHS_MAP[monthName];
       const year = enMatch[3] ? parseInt(enMatch[3], 10) : null;
-      const rawSnippet = rawLine.substring(enMatch.index, enMatch.index + enMatch[0].length);
 
+      if (!isValidCalendarDate(day, month, year)) continue;
+
+      const rawSnippet = rawLine.substring(enMatch.index, enMatch.index + enMatch[0].length);
       const classification = classifyDateContext(rawLine, lineIndex, lines);
 
       results.push({
@@ -209,7 +232,7 @@ export function extractAllDates(text: string): ParsedDateResult[] {
         confidence: year ? 'high' : 'medium',
         contextSnippet: rawLine.trim(),
         isAmbiguous: !year,
-        ambiguityReason: !year ? 'Year was not explicitly specified' : undefined,
+        ambiguityReason: !year ? 'Year was not explicitly specified; requires user verification.' : undefined,
       });
     }
 
@@ -221,11 +244,11 @@ export function extractAllDates(text: string): ParsedDateResult[] {
       const monthName = enMatch[1].toLowerCase();
       const month = ENGLISH_MONTHS_MAP[monthName];
       const day = parseInt(enMatch[2], 10);
-      if (day < 1 || day > 31) continue;
-
       const year = enMatch[3] ? parseInt(enMatch[3], 10) : null;
-      const rawSnippet = rawLine.substring(enMatch.index, enMatch.index + enMatch[0].length);
 
+      if (!isValidCalendarDate(day, month, year)) continue;
+
+      const rawSnippet = rawLine.substring(enMatch.index, enMatch.index + enMatch[0].length);
       const classification = classifyDateContext(rawLine, lineIndex, lines);
 
       results.push({
@@ -239,7 +262,7 @@ export function extractAllDates(text: string): ParsedDateResult[] {
         confidence: year ? 'high' : 'medium',
         contextSnippet: rawLine.trim(),
         isAmbiguous: !year,
-        ambiguityReason: !year ? 'Year was not explicitly specified' : undefined,
+        ambiguityReason: !year ? 'Year was not explicitly specified; requires user verification.' : undefined,
       });
     }
 
@@ -262,10 +285,10 @@ export function extractAllDates(text: string): ParsedDateResult[] {
         day = p2;
       } else if (day <= 12 && month <= 12) {
         isAmbiguous = true;
-        ambiguityReason = 'Could be interpreted as Day/Month or Month/Day; assumed DD/MM/YYYY by regional convention.';
+        ambiguityReason = 'Could be interpreted as Day/Month or Month/Day; assumed DD/MM/YYYY by regional convention; requires user verification.';
       }
 
-      if (day > 31 || month > 12 || month < 1) continue;
+      if (!isValidCalendarDate(day, month, year)) continue;
 
       const rawSnippet = rawLine.substring(numMatch.index, numMatch.index + numMatch[0].length);
       const classification = classifyDateContext(rawLine, lineIndex, lines);

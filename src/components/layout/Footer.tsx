@@ -40,7 +40,7 @@ export const Footer: React.FC = () => {
         <div className="border-t-2 border-black high-contrast:border-white mt-6 pt-4 flex flex-col sm:flex-row items-center justify-between text-xs font-bold text-slate-700 high-contrast:text-yellow-300">
           <p>© 2024 NoticeLens • Built for university accessibility in Bangladesh</p>
           <div className="flex items-center gap-2 mt-2 sm:mt-0">
-            <span className="brutal-badge px-2 py-0.5 bg-neo-mint text-black">WCAG 2.2 AAA</span>
+            <span className="brutal-badge px-2 py-0.5 bg-neo-mint text-black">WCAG 2.2 AA Aligned</span>
             <span className="brutal-badge px-2 py-0.5 bg-neo-yellow text-black">100% On-Device</span>
           </div>
         </div>

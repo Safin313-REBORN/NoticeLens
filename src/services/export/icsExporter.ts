@@ -6,8 +6,8 @@ export interface CalendarEventData {
   title: string;
   description: string;
   location?: string;
-  startDate: string; // ISO date 'YYYY-MM-DD'
-  startTime?: string | null; // e.g. "10:00 AM" or "14:30"
+  startDate: string; // YYYY-MM-DD
+  startTime?: string | null;
   endTime?: string | null;
   isAllDay: boolean;
 }
@@ -33,8 +33,23 @@ export function generateSafeCalendarFilename(title: string, suffix = 'deadline')
 }
 
 /**
- * Builds RFC 5545 compliant iCalendar (.ics) string
- * Defends against CRLF injection and guarantees valid line formatting.
+ * RFC 5545 line folding: folds lines exceeding 75 octets with CRLF followed by single space
+ */
+export function foldIcsLine(line: string): string {
+  if (line.length <= 75) return line;
+  const chunks: string[] = [];
+  chunks.push(line.substring(0, 75));
+  let remaining = line.substring(75);
+  while (remaining.length > 0) {
+    chunks.push(' ' + remaining.substring(0, 74));
+    remaining = remaining.substring(74);
+  }
+  return chunks.join('\r\n');
+}
+
+/**
+ * Builds RFC 5545 compliant iCalendar (.ics) string.
+ * Defends against CRLF injection, folds lines, and accurately handles Bangladesh timezone (Asia/Dhaka).
  */
 export function generateIcsContent(event: CalendarEventData): string {
   const now = new Date();
@@ -49,27 +64,28 @@ export function generateIcsContent(event: CalendarEventData): string {
 
   let dtStartLine = '';
   let dtEndLine = '';
+  const includeTimezone = !event.isAllDay && Boolean(event.startTime);
 
   if (event.isAllDay || !event.startTime) {
     // All-day event (YYYYMMDD)
     const cleanDate = `${dateMatch[1]}${dateMatch[2]}${dateMatch[3]}`;
     dtStartLine = `DTSTART;VALUE=DATE:${cleanDate}`;
-    // For all-day events, DTEND is next day per RFC 5545
+    // For all-day events, DTEND is next day per RFC 5545 section 3.6.1
     const nextDay = new Date(Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]) + 1));
     const cleanEndDate = formatIcsDateOnly(nextDay);
     dtEndLine = `DTEND;VALUE=DATE:${cleanEndDate}`;
   } else {
-    // Date with time
+    // Date with time in Asia/Dhaka (+06:00)
     const startIso = parseDateTimeToDate(event.startDate, event.startTime);
-    dtStartLine = `DTSTART:${formatIcsDateTime(startIso)}`;
+    dtStartLine = `DTSTART;TZID=Asia/Dhaka:${formatIcsLocalDateTime(startIso)}`;
 
     if (event.endTime) {
       const endIso = parseDateTimeToDate(event.startDate, event.endTime);
-      dtEndLine = `DTEND:${formatIcsDateTime(endIso)}`;
+      dtEndLine = `DTEND;TZID=Asia/Dhaka:${formatIcsLocalDateTime(endIso)}`;
     } else {
       // Default to 1 hour duration
       const endIso = new Date(startIso.getTime() + 60 * 60 * 1000);
-      dtEndLine = `DTEND:${formatIcsDateTime(endIso)}`;
+      dtEndLine = `DTEND;TZID=Asia/Dhaka:${formatIcsLocalDateTime(endIso)}`;
     }
   }
 
@@ -77,12 +93,28 @@ export function generateIcsContent(event: CalendarEventData): string {
   const cleanDesc = escapeIcsText(event.description);
   const cleanLoc = event.location ? escapeIcsText(event.location) : '';
 
+  const vtimezoneLines = includeTimezone
+    ? [
+        'BEGIN:VTIMEZONE',
+        'TZID:Asia/Dhaka',
+        'X-LIC-LOCATION:Asia/Dhaka',
+        'BEGIN:STANDARD',
+        'TZOFFSETFROM:+0600',
+        'TZOFFSETTO:+0600',
+        'TZNAME:BST',
+        'DTSTART:19700101T000000',
+        'END:STANDARD',
+        'END:VTIMEZONE',
+      ]
+    : [];
+
   const icsLines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//NoticeLens//Notice Intelligence Calendar//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
+    ...vtimezoneLines,
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${dtStamp}`,
@@ -100,9 +132,9 @@ export function generateIcsContent(event: CalendarEventData): string {
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
-  return icsLines.join('\r\n');
+  return icsLines.map(foldIcsLine).join('\r\n');
 }
 
 /**
@@ -122,8 +154,8 @@ export function downloadIcsFile(event: CalendarEventData, filename = 'notice-dea
 }
 
 /**
- * Helper to prepare calendar data from a processed notice
- * Supports both Bengali and English dates and numerals
+ * Helper to prepare calendar data from a processed notice.
+ * Strictly adheres to extracted facts; NEVER invents missing years.
  */
 export function buildEventFromNotice(notice: ProcessedNotice): CalendarEventData | null {
   const deadlineField = notice.fields.deadline;
@@ -140,7 +172,7 @@ export function buildEventFromNotice(notice: ProcessedNotice): CalendarEventData
 
   let isoDate = isoMatch ? isoMatch[0] : null;
 
-  // 2. Parse date via robust extraction engine if not raw ISO
+  // 2. Parse date via extraction engine if not raw ISO
   if (!isoDate) {
     const parsedDates = extractAllDates(targetField.value);
     if (parsedDates.length > 0 && parsedDates[0].isoDate) {
@@ -153,16 +185,7 @@ export function buildEventFromNotice(notice: ProcessedNotice): CalendarEventData
     }
   }
 
-  // Fallback check for yearless date (default to current year)
-  if (!isoDate) {
-    const parsedDates = extractAllDates(targetField.value);
-    if (parsedDates.length > 0 && parsedDates[0].day && parsedDates[0].month) {
-      const year = new Date().getFullYear();
-      const pad = (n: number) => String(n).padStart(2, '0');
-      isoDate = `${year}-${pad(parsedDates[0].month)}-${pad(parsedDates[0].day)}`;
-    }
-  }
-
+  // Never invent missing year! If notice lacks explicit year, export must be confirmed or user-edited.
   if (!isoDate) return null;
 
   const title = `[NoticeLens] ${notice.title}`;
@@ -175,7 +198,7 @@ export function buildEventFromNotice(notice: ProcessedNotice): CalendarEventData
       ? `Required Documents:\n${notice.fields.requiredDocuments.value}`
       : '',
     notice.fields.url.status !== 'not_found' ? `Portal URL: ${notice.fields.url.value}` : '',
-    'Processed and verified with NoticeLens.',
+    'Notice details extracted by NoticeLens. Please verify against official university circulars.',
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -210,14 +233,21 @@ export function escapeIcsText(str: string): string {
     .replace(/\n/g, '\\n');
 }
 
-function formatIcsDateTime(date: Date): string {
+export function formatIcsDateTime(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(
     date.getUTCHours()
   )}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
 }
 
-function formatIcsDateOnly(date: Date): string {
+export function formatIcsLocalDateTime(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(
+    date.getUTCHours()
+  )}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}`;
+}
+
+export function formatIcsDateOnly(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`;
 }
@@ -240,3 +270,17 @@ export function parseDateTimeToDate(dateStr: string, timeStr: string): Date {
 
   return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
 }
+
+/**
+ * Review gate: determines whether a notice has a verified, non-ambiguous deadline ready for calendar export.
+ * Rejects export if deadline is missing, missing a year, or flagged for review unless user confirmed.
+ */
+export function isExportAllowed(notice: ProcessedNotice): boolean {
+  const deadline = notice.fields.deadline;
+  if (!deadline || deadline.status === 'not_found') return false;
+  if (deadline.status === 'user_edited') return true;
+  if (deadline.isAmbiguous || deadline.status === 'needs_review') return false;
+  const event = buildEventFromNotice(notice);
+  return event !== null;
+}
+
