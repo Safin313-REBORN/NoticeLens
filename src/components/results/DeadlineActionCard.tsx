@@ -1,6 +1,6 @@
 import { Calendar, Download, Bookmark, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { ProcessedNotice } from '../../types/notice';
-import { buildEventFromNotice, downloadIcsFile } from '../../services/export/icsExporter';
+import { buildEventFromNotice, downloadIcsFile, generateSafeCalendarFilename } from '../../services/export/icsExporter';
 
 interface DeadlineActionCardProps {
   notice: ProcessedNotice;
@@ -29,7 +29,7 @@ export const DeadlineActionCard: React.FC<DeadlineActionCardProps> = ({
   const handleExportIcs = () => {
     const eventData = buildEventFromNotice(notice);
     if (eventData) {
-      downloadIcsFile(eventData, `${notice.title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)}_deadline.ics`);
+      downloadIcsFile(eventData, generateSafeCalendarFilename(notice.title, 'deadline'));
       onDownloadIcsSuccess();
     }
   };

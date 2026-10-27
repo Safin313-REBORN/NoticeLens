@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { SavedNotice } from '../../types/notice';
 import { Bookmark, Search, Calendar, Trash2, ArrowUpRight, Download, AlertCircle, Scan } from 'lucide-react';
 import { Modal } from '../common/Modal';
-import { buildEventFromNotice, downloadIcsFile } from '../../services/export/icsExporter';
+import { buildEventFromNotice, downloadIcsFile, generateSafeCalendarFilename } from '../../services/export/icsExporter';
 
 interface SavedNoticesListProps {
   notices: SavedNotice[];
@@ -39,7 +39,7 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
     e.stopPropagation();
     const eventData = buildEventFromNotice(saved.notice);
     if (eventData) {
-      downloadIcsFile(eventData, `${saved.title.replace(/[^a-zA-Z0-9]/g, '_')}.ics`);
+      downloadIcsFile(eventData, generateSafeCalendarFilename(saved.title, 'deadline'));
       onDownloadIcsSuccess();
     }
   };

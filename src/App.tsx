@@ -222,9 +222,11 @@ function AppContent() {
     }
 
     const updatedSummary = generateNoticeSummary(updatedFields, activeNotice.summary.language);
+    const updatedTitle = key === 'title' ? newValue : activeNotice.title;
 
     setActiveNotice({
       ...activeNotice,
+      title: updatedTitle,
       fields: updatedFields,
       summary: updatedSummary,
       updatedAt: new Date().toISOString(),
@@ -259,6 +261,11 @@ function AppContent() {
       if (v.status === 'user_edited') {
         reprocessed.fields[k as keyof typeof reprocessed.fields] = v;
       }
+    }
+
+    // Preserve user-edited title on reprocessed notice object
+    if (reprocessed.fields.title.status === 'user_edited') {
+      reprocessed.title = reprocessed.fields.title.value;
     }
 
     reprocessed.summary = generateNoticeSummary(reprocessed.fields, reprocessed.summary.language);

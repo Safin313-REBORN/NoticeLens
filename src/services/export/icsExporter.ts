@@ -1,5 +1,6 @@
 import { ProcessedNotice } from '../../types/notice';
 import { extractAllDates } from '../extraction/dateParser';
+import { bengaliToEnglishNumerals } from '../extraction/numerals';
 
 export interface CalendarEventData {
   title: string;
@@ -9,6 +10,26 @@ export interface CalendarEventData {
   startTime?: string | null; // e.g. "10:00 AM" or "14:30"
   endTime?: string | null;
   isAllDay: boolean;
+}
+
+/**
+ * Generates an OS-safe and Unicode-aware filename for iCalendar downloads.
+ * Preserves Bengali and international script letters while sanitizing filesystem-reserved characters.
+ */
+export function generateSafeCalendarFilename(title: string, suffix = 'deadline'): string {
+  if (!title || !title.trim()) {
+    return `notice_${suffix}.ics`;
+  }
+  const sanitized = title
+    .trim()
+    .replace(/[\\/:*?"<>|\r\n\t]+/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .substring(0, 40);
+
+  const base = sanitized || 'notice';
+  return `${base}_${suffix}.ics`;
 }
 
 /**
@@ -201,9 +222,10 @@ function formatIcsDateOnly(date: Date): string {
   return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`;
 }
 
-function parseDateTimeToDate(dateStr: string, timeStr: string): Date {
+export function parseDateTimeToDate(dateStr: string, timeStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number);
-  const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  const normalizedTime = bengaliToEnglishNumerals(timeStr || '');
+  const match = normalizedTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
 
   let hours = 9;
   let minutes = 0;

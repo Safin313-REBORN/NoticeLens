@@ -199,6 +199,18 @@ export async function clearAllSavedNotices(): Promise<void> {
 }
 
 // Fallback localStorage helpers
+export function sanitizeRecordForLocalStorage(record: SavedNotice): SavedNotice {
+  // Strip heavy base64 image data URL to guarantee localStorage stays within 5 MB browser limit
+  const sanitizedNotice = {
+    ...record.notice,
+    imageDataUrl: undefined,
+  };
+  return {
+    ...record,
+    notice: sanitizedNotice,
+  };
+}
+
 function getFromLocalStorage(): SavedNotice[] {
   try {
     const data = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -210,8 +222,9 @@ function getFromLocalStorage(): SavedNotice[] {
 }
 
 function saveToLocalStorage(record: SavedNotice): void {
-  const list = getFromLocalStorage().filter((n) => n.id !== record.id);
-  list.unshift(record);
+  const sanitized = sanitizeRecordForLocalStorage(record);
+  const list = getFromLocalStorage().filter((n) => n.id !== sanitized.id);
+  list.unshift(sanitized);
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
   } catch (err: unknown) {

@@ -128,6 +128,8 @@ export function extractAllDates(text: string): ParsedDateResult[] {
     let bnMatch: RegExpExecArray | null;
     while ((bnMatch = bnMonthPattern.exec(normalizedLine)) !== null) {
       const day = parseInt(bnMatch[1], 10);
+      if (day < 1 || day > 31) continue;
+
       const monthStr = bnMatch[2].toLowerCase();
       const month = BENGALI_MONTHS_MAP[monthStr];
       const year = bnMatch[3] ? parseInt(bnMatch[3], 10) : null;
@@ -158,6 +160,8 @@ export function extractAllDates(text: string): ParsedDateResult[] {
       const monthStr = bnMatch[1].toLowerCase();
       const month = BENGALI_MONTHS_MAP[monthStr];
       const day = parseInt(bnMatch[2], 10);
+      if (day < 1 || day > 31) continue;
+
       const year = bnMatch[3] ? parseInt(bnMatch[3], 10) : null;
       const rawSnippet = rawLine.substring(bnMatch.index, bnMatch.index + bnMatch[0].length);
 
@@ -185,6 +189,8 @@ export function extractAllDates(text: string): ParsedDateResult[] {
     let enMatch: RegExpExecArray | null;
     while ((enMatch = enDayMonthPattern.exec(normalizedLine)) !== null) {
       const day = parseInt(enMatch[1], 10);
+      if (day < 1 || day > 31) continue;
+
       const monthName = enMatch[2].toLowerCase();
       const month = ENGLISH_MONTHS_MAP[monthName];
       const year = enMatch[3] ? parseInt(enMatch[3], 10) : null;
@@ -215,6 +221,8 @@ export function extractAllDates(text: string): ParsedDateResult[] {
       const monthName = enMatch[1].toLowerCase();
       const month = ENGLISH_MONTHS_MAP[monthName];
       const day = parseInt(enMatch[2], 10);
+      if (day < 1 || day > 31) continue;
+
       const year = enMatch[3] ? parseInt(enMatch[3], 10) : null;
       const rawSnippet = rawLine.substring(enMatch.index, enMatch.index + enMatch[0].length);
 

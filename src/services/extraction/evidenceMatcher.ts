@@ -58,12 +58,6 @@ export function matchEvidence(
     }
   }
 
-  // Fallback: return snippet without range
-  return {
-    text: trimmedTarget,
-    startIndex: 0,
-    endIndex: trimmedTarget.length,
-    confidence: 'low',
-    matchedKeyword,
-  };
+  // Target snippet could not be matched anywhere in the full text
+  return null;
 }
