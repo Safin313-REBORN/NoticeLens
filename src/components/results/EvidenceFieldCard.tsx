@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Volume2, Edit3, Check, X, Quote, AlertCircle } from 'lucide-react';
 import { ExtractedField, EvidenceSnippet } from '../../types/notice';
 import { speechService } from '../../services/speech/webSpeechService';
@@ -18,6 +18,10 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(field.value);
+
+  useEffect(() => {
+    setEditValue(field.value);
+  }, [field.value]);
 
   const handleSave = () => {
     onUpdateField(field.key, editValue);

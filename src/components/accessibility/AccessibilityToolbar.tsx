@@ -8,13 +8,29 @@ interface AccessibilityToolbarProps {
   onAnnouncement?: (text: string) => void;
 }
 
+function safeGetStorage(key: string, fallback: string | null = null): string | null {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeSetStorage(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore restricted storage environments
+  }
+}
+
 export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ onAnnouncement }) => {
   const [highContrast, setHighContrast] = useState<boolean>(() => {
-    return localStorage.getItem('noticelens_high_contrast') === 'true';
+    return safeGetStorage('noticelens_high_contrast') === 'true';
   });
 
   const [textScale, setTextScale] = useState<TextScale>(() => {
-    return (localStorage.getItem('noticelens_text_scale') as TextScale) || 'normal';
+    return (safeGetStorage('noticelens_text_scale') as TextScale) || 'normal';
   });
 
   const [hasBnVoice, setHasBnVoice] = useState<boolean>(false);
@@ -26,7 +42,7 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ onAn
     } else {
       document.body.classList.remove('high-contrast');
     }
-    localStorage.setItem('noticelens_high_contrast', String(highContrast));
+    safeSetStorage('noticelens_high_contrast', String(highContrast));
   }, [highContrast]);
 
   useEffect(() => {
@@ -37,7 +53,7 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ onAn
     } else if (textScale === 'xlarge') {
       document.body.classList.add('text-scale-xlarge');
     }
-    localStorage.setItem('noticelens_text_scale', textScale);
+    safeSetStorage('noticelens_text_scale', textScale);
   }, [textScale]);
 
   useEffect(() => {

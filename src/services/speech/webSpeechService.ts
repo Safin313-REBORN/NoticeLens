@@ -32,7 +32,11 @@ class WebSpeechService {
       this.synth = window.speechSynthesis;
       this.loadVoices();
 
-      if (this.synth.onvoiceschanged !== undefined) {
+      if (this.synth.addEventListener) {
+        this.synth.addEventListener('voiceschanged', () => {
+          this.loadVoices();
+        });
+      } else if (this.synth.onvoiceschanged !== undefined) {
         this.synth.onvoiceschanged = () => {
           this.loadVoices();
         };

@@ -150,6 +150,34 @@ export function extractAllDates(text: string): ParsedDateResult[] {
       });
     }
 
+    // 1b. Detect date with Bengali Month-Day-Year (e.g., নভেম্বর ১৫, ২০২৪ or অক্টোবর ১২)
+    const bnMonthDayPattern =
+      /(জানুয়ারি|জানুয়ারি|ফেব্রুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগষ্ট|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর|জানু|ফেব্রু|নভে|ডিসে)\s+(\d{1,2})(?:ই|শে|লা|র্থ|st|nd|rd|th)?\s*,?\s*(\d{4})?/gi;
+
+    while ((bnMatch = bnMonthDayPattern.exec(normalizedLine)) !== null) {
+      const monthStr = bnMatch[1].toLowerCase();
+      const month = BENGALI_MONTHS_MAP[monthStr];
+      const day = parseInt(bnMatch[2], 10);
+      const year = bnMatch[3] ? parseInt(bnMatch[3], 10) : null;
+      const rawSnippet = rawLine.substring(bnMatch.index, bnMatch.index + bnMatch[0].length);
+
+      const classification = classifyDateContext(rawLine, lineIndex, lines);
+
+      results.push({
+        rawSnippet,
+        normalizedDate: formatDateDisplay(day, month, year),
+        isoDate: year && month && day ? `${year}-${pad2(month)}-${pad2(day)}` : null,
+        day,
+        month,
+        year,
+        dateType: classification.type,
+        confidence: year ? 'high' : 'medium',
+        contextSnippet: rawLine.trim(),
+        isAmbiguous: !year,
+        ambiguityReason: !year ? 'Year was not explicitly specified in the notice text' : undefined,
+      });
+    }
+
     // 2. English Day-Month-Year (e.g., 25th November 2024 or 25 Nov 2024)
     const enDayMonthPattern =
       /\b(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s*,?\s*(\d{4})?\b/gi;

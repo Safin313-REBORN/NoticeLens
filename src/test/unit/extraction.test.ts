@@ -56,6 +56,16 @@ describe('Bilingual Date Parsing', () => {
     expect(dates[0].dateType).toBe('event');
   });
 
+  it('extracts Bengali Month-Day-Year format (e.g. অক্টোবর ১৫, ২০২৪)', () => {
+    const text = 'আবেদনের শেষ তারিখ: অক্টোবর ১৫, ২০২৪ খ্রি.';
+    const dates = extractAllDates(text);
+    expect(dates.length).toBeGreaterThan(0);
+    expect(dates[0].isoDate).toBe('2024-10-15');
+    expect(dates[0].day).toBe(15);
+    expect(dates[0].month).toBe(10);
+    expect(dates[0].year).toBe(2024);
+  });
+
   it('extracts English dates with ordinal suffixes (e.g. 25th November 2024)', () => {
     const text = 'All students must submit the project report by 25th November 2024.';
     const dates = extractAllDates(text);

@@ -108,6 +108,7 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
               <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold high-contrast:bg-slate-900 high-contrast:border-white high-contrast:border">
                 <button
                   onClick={() => setFieldFilter('all')}
+                  aria-pressed={fieldFilter === 'all'}
                   className={`px-2.5 py-1 rounded-lg transition-colors ${
                     fieldFilter === 'all'
                       ? 'bg-white shadow-sm text-ink-900 font-bold high-contrast:bg-yellow-400 high-contrast:text-black'
@@ -118,6 +119,7 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
                 </button>
                 <button
                   onClick={() => setFieldFilter('found')}
+                  aria-pressed={fieldFilter === 'found'}
                   className={`px-2.5 py-1 rounded-lg transition-colors ${
                     fieldFilter === 'found'
                       ? 'bg-white shadow-sm text-ink-900 font-bold high-contrast:bg-yellow-400 high-contrast:text-black'
@@ -128,6 +130,7 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
                 </button>
                 <button
                   onClick={() => setFieldFilter('needs_review')}
+                  aria-pressed={fieldFilter === 'needs_review'}
                   className={`px-2.5 py-1 rounded-lg transition-colors ${
                     fieldFilter === 'needs_review'
                       ? 'bg-white shadow-sm text-amber-900 font-bold high-contrast:bg-yellow-400 high-contrast:text-black'

@@ -38,6 +38,15 @@ async function getDB(): Promise<IDBDatabase> {
 
     request.onsuccess = () => {
       dbInstance = request.result;
+      dbInstance.onclose = () => {
+        dbInstance = null;
+      };
+      dbInstance.onversionchange = () => {
+        if (dbInstance) {
+          dbInstance.close();
+          dbInstance = null;
+        }
+      };
       resolve(dbInstance);
     };
 
@@ -54,10 +63,20 @@ export async function saveNotice(notice: ProcessedNotice): Promise<SavedNotice> 
   const hasDeadline = notice.fields.deadline.status !== 'not_found';
   const deadlineDate = hasDeadline ? notice.fields.deadline.value : undefined;
 
+  let createdAt = new Date().toISOString();
+  try {
+    const existing = await getSavedNoticeById(notice.id);
+    if (existing?.createdAt) {
+      createdAt = existing.createdAt;
+    }
+  } catch {
+    // Retain fallback timestamp
+  }
+
   const record: SavedNotice = {
     id: notice.id,
     title: notice.title || 'Untitled Notice',
-    createdAt: new Date().toISOString(),
+    createdAt,
     notice,
     hasDeadline,
     deadlineDate,

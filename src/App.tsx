@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SkipLink } from './components/accessibility/SkipLink';
 import { AccessibilityToolbar } from './components/accessibility/AccessibilityToolbar';
 import { ScreenReaderLive } from './components/accessibility/ScreenReaderLive';
@@ -35,6 +35,7 @@ function AppContent() {
   const [announcement, setAnnouncement] = useState<string>('Welcome to NoticeLens. Accessible notice reader.');
   const [sampleModalOpen, setSampleModalOpen] = useState<boolean>(false);
 
+  const isCancelledRef = useRef<boolean>(false);
   const { showToast } = useToast();
 
   const handleTabChange = (tab: ActiveTab) => {
@@ -64,6 +65,7 @@ function AppContent() {
     applyPreprocessing: boolean,
     sourceType: 'upload' | 'camera' | 'demo'
   ) => {
+    isCancelledRef.current = false;
     setIsProcessing(true);
     setAnnouncement('Starting notice document recognition. Please wait.');
 
@@ -118,6 +120,9 @@ function AppContent() {
       showToast('Notice successfully processed and organized!', 'success');
       setAnnouncement(`Notice processed successfully. ${processed.title}. Switched to Notice Workspace.`);
     } catch (err: unknown) {
+      if (isCancelledRef.current) {
+        return;
+      }
       console.error('Notice processing error:', err);
       setIsProcessing(false);
       const errorMessage = err instanceof Error ? err.message : 'Failed to process notice image.';
@@ -246,6 +251,7 @@ function AppContent() {
   };
 
   const handleCancelOcr = () => {
+    isCancelledRef.current = true;
     terminateOcrWorker();
     setIsProcessing(false);
     setOcrProgress({

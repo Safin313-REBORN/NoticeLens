@@ -14,6 +14,8 @@ export const AudioPlayerBar: React.FC = () => {
     const unsub = speechService.subscribe((state) => {
       setSpeechState(state);
       if (state.voiceName) setSelectedVoiceName(state.voiceName);
+      const vList = speechService.getAvailableVoices();
+      if (vList.length > 0) setVoices(vList);
     });
 
     const vList = speechService.getAvailableVoices();

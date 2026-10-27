@@ -115,8 +115,17 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
             return (
               <div
                 key={item.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onOpenNotice(item)}
-                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-400 transition-all cursor-pointer flex flex-col justify-between group high-contrast:bg-black high-contrast:border-white high-contrast:hover:border-yellow-400"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onOpenNotice(item);
+                  }
+                }}
+                aria-label={`Open ${item.title}`}
+                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-all cursor-pointer flex flex-col justify-between group high-contrast:bg-black high-contrast:border-white high-contrast:hover:border-yellow-400"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
