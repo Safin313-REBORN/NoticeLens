@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #faf8f2;
+    --bg-surface: #ffffff;
+    --bg-muted: #f4efe4;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --teal-primary: #0d9488;
+    --teal-hover: #0f766e;
+    --amber-warning: #d97706;
+  }
+
+  /* High Contrast Mode for low vision users */
+  .high-contrast {
+    --bg-primary: #000000;
+    --bg-surface: #0a0a0a;
+    --bg-muted: #1e1e1e;
+    --text-primary: #ffffff;
+    --text-secondary: #fef08a;
+    --text-muted: #e2e8f0;
+    --border-color: #ffffff;
+    --teal-primary: #38bdf8;
+    --teal-hover: #7dd3fc;
+    --amber-warning: #facc15;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Bengali', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Text Scaling Modes */
+  body.text-scale-large {
+    font-size: 1.15rem;
+  }
+
+  body.text-scale-xlarge {
+    font-size: 1.3rem;
+  }
+
+  /* High-visibility accessible focus indicators (WCAG 2.4.7, 2.4.13) */
+  :focus-visible {
+    outline: 3px solid #0d9488 !important;
+    outline-offset: 3px !important;
+    border-radius: 4px;
+  }
+
+  .high-contrast :focus-visible {
+    outline: 4px solid #facc15 !important;
+    outline-offset: 3px !important;
+  }
+
+  /* Skip to main content link for keyboard users */
+  .skip-to-content {
+    position: absolute;
+    top: -9999px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f172a;
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    z-index: 9999;
+    font-weight: 600;
+    border-radius: 0 0 0.5rem 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+  }
+
+  .skip-to-content:focus {
+    top: 0;
+  }
+
+  .high-contrast .skip-to-content {
+    background: #facc15;
+    color: #000000;
+    border: 3px solid #ffffff;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Accessible minimum touch target sizes */
+button,
+a,
+input,
+select,
+textarea {
+  min-height: 44px;
+}
+
+/* Utility classes for evidence highlighting */
+.evidence-highlight {
+  background-color: #fef08a;
+  color: #854d0e;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  border-bottom: 2px solid #ca8a04;
+}
+
+.high-contrast .evidence-highlight {
+  background-color: #facc15;
+  color: #000000;
+  border-bottom: 2px solid #ffffff;
+}
