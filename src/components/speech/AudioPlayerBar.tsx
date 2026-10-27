@@ -64,71 +64,71 @@ export const AudioPlayerBar: React.FC = () => {
 
   return (
     <div
-      className="bg-white border-t border-slate-200 shadow-xl px-4 py-3 sticky bottom-0 z-30 high-contrast:bg-black high-contrast:border-white"
+      className="bg-white border-t-4 border-black shadow-brutal px-4 py-3 sticky bottom-0 z-30 high-contrast:bg-black high-contrast:border-white"
       role="region"
       aria-label="Text to Speech Audio Controls"
     >
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
         {/* Playback Status & Currently Reading snippet */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center text-teal-800 shrink-0 high-contrast:bg-yellow-400 high-contrast:text-black">
-            <Volume2 className="w-5 h-5" />
+          <div className="w-10 h-10 border-2 border-black bg-neo-yellow flex items-center justify-center text-black shrink-0 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black">
+            <Volume2 className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-ink-900 high-contrast:text-white">
+              <span className="text-xs font-black uppercase text-ink-900 high-contrast:text-white">
                 Audio Reader
               </span>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                className={`brutal-badge text-[10px] px-2 py-0.5 ${
                   speechState.status === 'playing'
-                    ? 'bg-teal-100 text-teal-800 animate-pulse high-contrast:bg-yellow-400 high-contrast:text-black'
+                    ? 'bg-neo-mint text-black animate-pulse high-contrast:bg-yellow-400 high-contrast:text-black'
                     : speechState.status === 'paused'
-                    ? 'bg-amber-100 text-amber-800 high-contrast:bg-yellow-400 high-contrast:text-black'
-                    : 'bg-slate-100 text-slate-600 high-contrast:bg-slate-800 high-contrast:text-white'
+                    ? 'bg-neo-coral text-white high-contrast:bg-yellow-400 high-contrast:text-black'
+                    : 'bg-slate-200 text-slate-800 high-contrast:bg-slate-800 high-contrast:text-white'
                 }`}
               >
                 {speechState.status}
               </span>
             </div>
-            <p className="text-xs text-slate-500 high-contrast:text-yellow-300 truncate max-w-xs sm:max-w-md">
+            <p className="text-xs font-medium text-slate-600 high-contrast:text-yellow-300 truncate max-w-xs sm:max-w-md">
               {speechState.currentText ? `"${speechState.currentText}"` : 'Select a field or summary to listen'}
             </p>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {speechState.status !== 'idle' && (
             <>
               <button
                 onClick={handlePlayPause}
                 aria-label={speechState.status === 'playing' ? 'Pause speech' : 'Resume speech'}
-                className="p-2.5 rounded-lg bg-teal-700 text-white hover:bg-teal-800 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:bg-yellow-400 high-contrast:text-black"
+                className="brutal-btn p-2.5 bg-black text-white hover:bg-neutral-800 high-contrast:bg-yellow-400 high-contrast:text-black"
               >
-                {speechState.status === 'playing' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                {speechState.status === 'playing' ? <Pause className="w-4 h-4 stroke-[2.5]" /> : <Play className="w-4 h-4 stroke-[2.5]" />}
               </button>
 
               <button
                 onClick={handleStop}
                 aria-label="Stop speech playback"
-                className="p-2.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:bg-slate-800 high-contrast:text-white"
+                className="brutal-btn p-2.5 bg-neo-coral text-white hover:bg-red-600 high-contrast:bg-slate-800 high-contrast:text-white"
               >
-                <Square className="w-4 h-4" />
+                <Square className="w-4 h-4 stroke-[2.5]" />
               </button>
             </>
           )}
 
           {/* Speed Buttons */}
-          <div className="hidden sm:flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 high-contrast:border-white">
+          <div className="hidden sm:flex items-center gap-1 border-2 border-black p-0.5 bg-white high-contrast:border-white shadow-brutal-sm">
             {[0.85, 1.0, 1.25].map((rate) => (
               <button
                 key={rate}
                 onClick={() => handleRateChange(rate)}
-                className={`px-2 py-1 text-xs font-semibold rounded-md transition-colors ${
+                className={`px-2 py-0.5 text-xs font-black transition-colors ${
                   speechState.rate === rate
-                    ? 'bg-teal-600 text-white high-contrast:bg-yellow-400 high-contrast:text-black'
-                    : 'text-slate-600 hover:bg-slate-100 high-contrast:text-white high-contrast:hover:bg-slate-800'
+                    ? 'bg-black text-white high-contrast:bg-yellow-400 high-contrast:text-black'
+                    : 'text-slate-800 hover:bg-slate-100 high-contrast:text-white'
                 }`}
               >
                 {rate}x
@@ -141,9 +141,9 @@ export const AudioPlayerBar: React.FC = () => {
             onClick={() => setShowVoiceSettings(!showVoiceSettings)}
             aria-expanded={showVoiceSettings}
             aria-label="Speech Voice Settings"
-            className="p-2.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:border-white high-contrast:text-white"
+            className="brutal-btn p-2.5 bg-white text-black hover:bg-slate-100 high-contrast:border-white high-contrast:text-white"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
       </div>

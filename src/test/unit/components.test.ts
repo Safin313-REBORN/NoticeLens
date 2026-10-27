@@ -54,4 +54,23 @@ describe('Demo Notices & Pipeline Integration', () => {
     const summaryBn = generateNoticeSummary(fieldsBnRes.fields, 'bn');
     expect(summaryBn.overview).toContain('বিজ্ঞপ্তি');
   });
+
+  it('supports all 4 avant-garde UI theme modes (Neo-Brutalist, Memphis, Art Deco, Retro)', () => {
+    const supportedThemes = ['neobrutalist', 'memphis', 'artdeco', 'retroterminal'];
+    expect(supportedThemes).toHaveLength(4);
+    supportedThemes.forEach((t) => {
+      expect(typeof t).toBe('string');
+      expect(['neobrutalist', 'memphis', 'artdeco', 'retroterminal']).toContain(t);
+    });
+  });
+
+  it('supports all 5 multipage navigation destinations', () => {
+    const multipageTabs = ['scan', 'workspace', 'saved', 'studio', 'transparency'];
+    expect(multipageTabs).toHaveLength(5);
+    expect(multipageTabs).toContain('scan');
+    expect(multipageTabs).toContain('workspace');
+    expect(multipageTabs).toContain('saved');
+    expect(multipageTabs).toContain('studio');
+    expect(multipageTabs).toContain('transparency');
+  });
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { SkipLink } from './components/accessibility/SkipLink';
 import { AccessibilityToolbar } from './components/accessibility/AccessibilityToolbar';
 import { ScreenReaderLive } from './components/accessibility/ScreenReaderLive';
@@ -12,7 +12,7 @@ import { AudioPlayerBar } from './components/speech/AudioPlayerBar';
 import { ToastProvider, useToast } from './components/common/Toast';
 import { Modal } from './components/common/Modal';
 
-import { ProcessedNotice, SavedNotice, OCRProgress } from './types/notice';
+import { ProcessedNotice, SavedNotice, OCRProgress, UITheme } from './types/notice';
 import { runOcrRecognition, terminateOcrWorker } from './services/ocr/tesseractWorker';
 import { preprocessNoticeImage } from './services/ocr/imagePreprocess';
 import { processNoticeDocument } from './services/extraction/noticeEngine';
@@ -20,6 +20,8 @@ import { generateNoticeSummary } from './services/extraction/summaryGenerator';
 import { saveNotice, getAllSavedNotices, deleteSavedNotice } from './services/storage/indexedDBService';
 import { speechService } from './services/speech/webSpeechService';
 import { DEMO_NOTICES, DemoNoticeItem, generateDemoNoticeSvg } from './data/demoNotices';
+import { AccessibilityStudio } from './components/studio/AccessibilityStudio';
+import { TransparencyView } from './components/transparency/TransparencyView';
 import { ArrowRight } from 'lucide-react';
 
 function AppContent() {
@@ -33,17 +35,69 @@ function AppContent() {
     step: 'idle',
   });
   const [announcement, setAnnouncement] = useState<string>('Welcome to NoticeLens. Accessible notice reader.');
+  const [announcementLog, setAnnouncementLog] = useState<string[]>([
+    'System initialized. Welcome to NoticeLens accessible reader.',
+  ]);
   const [sampleModalOpen, setSampleModalOpen] = useState<boolean>(false);
+
+  const [currentTheme, setCurrentTheme] = useState<UITheme>(() => {
+    try {
+      return (localStorage.getItem('noticelens_theme') as UITheme) || 'neobrutalist';
+    } catch {
+      return 'neobrutalist';
+    }
+  });
 
   const isCancelledRef = useRef<boolean>(false);
   const { showToast } = useToast();
 
-  const handleTabChange = (tab: ActiveTab) => {
-    if (tab !== activeTab) {
-      speechService.stop();
-    }
-    setActiveTab(tab);
+  const broadcastAnnouncement = (msg: string) => {
+    setAnnouncement(msg);
+    setAnnouncementLog((prev) => [`${new Date().toLocaleTimeString()} - ${msg}`, ...prev.slice(0, 19)]);
   };
+
+  const handleTabChange = useCallback((tab: ActiveTab) => {
+    speechService.stop();
+    setActiveTab(tab);
+  }, []);
+
+  // Sync active theme class to document body
+  useEffect(() => {
+    document.body.classList.remove('theme-neobrutalist', 'theme-memphis', 'theme-artdeco', 'theme-retroterminal');
+    document.body.classList.add(`theme-${currentTheme}`);
+    try {
+      localStorage.setItem('noticelens_theme', currentTheme);
+    } catch {
+      // ignore
+    }
+  }, [currentTheme]);
+
+  // Global accessibility hotkeys (Alt+1 to Alt+5)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey) {
+        if (e.key === '1') {
+          e.preventDefault();
+          handleTabChange('scan');
+        } else if (e.key === '2' && activeNotice) {
+          e.preventDefault();
+          handleTabChange('workspace');
+        } else if (e.key === '3') {
+          e.preventDefault();
+          handleTabChange('saved');
+        } else if (e.key === '4') {
+          e.preventDefault();
+          handleTabChange('studio');
+        } else if (e.key === '5') {
+          e.preventDefault();
+          handleTabChange('transparency');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeNotice, handleTabChange]);
 
   // Load saved notices from IndexedDB on startup
   useEffect(() => {
@@ -275,7 +329,11 @@ function AppContent() {
       <ScreenReaderLive message={announcement} />
 
       {/* 3. Accessibility & High Contrast Toolbar */}
-      <AccessibilityToolbar onAnnouncement={(txt) => setAnnouncement(txt)} />
+      <AccessibilityToolbar
+        onAnnouncement={(txt) => broadcastAnnouncement(txt)}
+        currentTheme={currentTheme}
+        onThemeChange={setCurrentTheme}
+      />
 
       {/* 4. Navigation Bar */}
       <Navbar
@@ -284,6 +342,8 @@ function AppContent() {
         savedCount={savedNotices.length}
         hasActiveNotice={activeNotice !== null}
         onOpenSampleModal={() => setSampleModalOpen(true)}
+        currentTheme={currentTheme}
+        onThemeChange={setCurrentTheme}
       />
 
       {/* 5. Main Content Area */}
@@ -305,18 +365,41 @@ function AppContent() {
         )}
 
         {/* Tab 2: Results Workspace */}
-        {!isProcessing && activeTab === 'workspace' && activeNotice && (
-          <NoticeWorkspace
-            notice={activeNotice}
-            onUpdateNoticeField={handleUpdateNoticeField}
-            onUpdateOcrText={handleUpdateOcrText}
-            onReExtract={handleReExtractFromOcr}
-            onSaveNotice={handleSaveActiveNotice}
-            isSaved={isCurrentNoticeSaved}
-            hasUnsavedChanges={hasUnsavedChanges}
-            onCopySuccess={() => showToast('Recognized text copied to clipboard.', 'info')}
-            onDownloadIcsSuccess={() => showToast('Calendar ICS file generated and downloaded.', 'success')}
-          />
+        {!isProcessing && activeTab === 'workspace' && (
+          activeNotice ? (
+            <NoticeWorkspace
+              notice={activeNotice}
+              onUpdateNoticeField={handleUpdateNoticeField}
+              onUpdateOcrText={handleUpdateOcrText}
+              onReExtract={handleReExtractFromOcr}
+              onSaveNotice={handleSaveActiveNotice}
+              isSaved={isCurrentNoticeSaved}
+              hasUnsavedChanges={hasUnsavedChanges}
+              onCopySuccess={() => showToast('Recognized text copied to clipboard.', 'info')}
+              onDownloadIcsSuccess={() => showToast('Calendar ICS file generated and downloaded.', 'success')}
+            />
+          ) : (
+            <div className="brutal-card p-10 text-center bg-white max-w-xl mx-auto my-12">
+              <h2 className="text-2xl font-black mb-3 uppercase tracking-tight">No Active Notice In Workspace</h2>
+              <p className="text-sm font-medium text-slate-600 mb-6">
+                Ingest a university notice photo or select one of our curated sample notices to open the full analysis workspace.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  onClick={() => handleTabChange('scan')}
+                  className="brutal-btn bg-yellow-400 text-black px-5 py-2.5 font-black text-sm"
+                >
+                  Go to Notice Ingestion
+                </button>
+                <button
+                  onClick={() => setSampleModalOpen(true)}
+                  className="brutal-btn bg-white text-black px-5 py-2.5 font-black text-sm"
+                >
+                  Load Sample Notice
+                </button>
+              </div>
+            </div>
+          )
         )}
 
         {/* Tab 3: Saved Notices & Deadlines */}
@@ -328,6 +411,21 @@ function AppContent() {
             onScanNewNotice={() => handleTabChange('scan')}
             onDownloadIcsSuccess={() => showToast('Calendar file downloaded.', 'success')}
           />
+        )}
+
+        {/* Tab 4: Voice & Accessibility Studio */}
+        {!isProcessing && activeTab === 'studio' && (
+          <AccessibilityStudio
+            currentTheme={currentTheme}
+            onThemeChange={setCurrentTheme}
+            announcementLog={announcementLog}
+            onTestAnnouncement={broadcastAnnouncement}
+          />
+        )}
+
+        {/* Tab 5: Architecture & Transparency */}
+        {!isProcessing && activeTab === 'transparency' && (
+          <TransparencyView />
         )}
       </main>
 

@@ -56,19 +56,19 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 high-contrast:text-white">
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-ink-900 high-contrast:text-white">
             Saved University Notices & Deadlines
           </h1>
-          <p className="text-xs text-slate-500 high-contrast:text-yellow-300 mt-1">
+          <p className="text-xs font-bold text-slate-600 high-contrast:text-yellow-300 mt-1 uppercase tracking-wider">
             Privately stored on your device's local database. Never uploaded to external servers.
           </p>
         </div>
 
         <button
           onClick={onScanNewNotice}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-700 text-white font-bold text-xs hover:bg-teal-800 transition-colors shadow-sm high-contrast:bg-yellow-400 high-contrast:text-black"
+          className="brutal-btn inline-flex items-center gap-2 px-5 py-2.5 bg-neo-yellow text-black font-black text-xs hover:bg-yellow-300 transition-colors shadow-brutal high-contrast:bg-yellow-400 high-contrast:text-black"
         >
-          <Scan className="w-4 h-4" />
+          <Scan className="w-4 h-4 stroke-[2.5]" />
           <span>Scan Another Notice</span>
         </button>
       </div>
@@ -76,14 +76,14 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
       {/* Search and Category Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-black absolute left-3.5 top-1/2 -translate-y-1/2 stroke-[2.5]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search saved notices by title, university, or keywords..."
             aria-label="Search saved notices"
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-xs text-ink-900 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 high-contrast:bg-black high-contrast:border-white high-contrast:text-white"
+            className="w-full pl-10 pr-4 py-2.5 border-2 border-black text-xs font-bold text-ink-900 bg-white placeholder-slate-500 shadow-brutal-sm focus:outline-none focus:ring-2 focus:ring-black high-contrast:bg-black high-contrast:border-white high-contrast:text-white"
           />
         </div>
 
@@ -93,10 +93,10 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`brutal-btn px-3 py-2 text-xs font-black whitespace-nowrap transition-colors ${
                 selectedCategory === cat
-                  ? 'bg-teal-700 text-white high-contrast:bg-yellow-400 high-contrast:text-black font-bold'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 high-contrast:bg-black high-contrast:border-white high-contrast:text-white'
+                  ? 'bg-black text-white shadow-brutal high-contrast:bg-yellow-400 high-contrast:text-black'
+                  : 'bg-white text-ink-900 hover:bg-slate-100 high-contrast:bg-black high-contrast:border-white high-contrast:text-white'
               }`}
             >
               {cat === 'all' ? 'All Categories' : cat}
@@ -107,7 +107,7 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
 
       {/* Notices List */}
       {filteredNotices.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredNotices.map((item) => {
             const hasDead = item.hasDeadline && item.deadlineDate;
             const inst = item.notice.fields.institution.value;
@@ -125,49 +125,49 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
                   }
                 }}
                 aria-label={`Open ${item.title}`}
-                className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-all cursor-pointer flex flex-col justify-between group high-contrast:bg-black high-contrast:border-white high-contrast:hover:border-yellow-400"
+                className="brutal-card brutal-card-hover bg-white p-5 cursor-pointer flex flex-col justify-between group high-contrast:bg-black high-contrast:border-white"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 group-hover:bg-teal-100 group-hover:text-teal-900 high-contrast:bg-yellow-400 high-contrast:text-black">
+                    <span className="brutal-badge px-2.5 py-0.5 bg-neo-pink text-black -rotate-1 shadow-brutal-sm">
                       {item.category}
                     </span>
-                    <span className="text-[11px] text-slate-400 high-contrast:text-slate-300">
+                    <span className="text-[11px] font-bold text-slate-500 high-contrast:text-slate-300">
                       Saved {new Date(item.createdAt).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <h2 className="text-base font-bold text-ink-900 high-contrast:text-white group-hover:text-teal-800 high-contrast:group-hover:text-yellow-300 transition-colors line-clamp-2">
+                  <h2 className="text-base font-black text-ink-900 high-contrast:text-white group-hover:underline transition-colors line-clamp-2 uppercase tracking-tight">
                     {item.title}
                   </h2>
 
                   {inst && inst !== 'Not found in notice' && (
-                    <p className="text-xs text-slate-500 high-contrast:text-yellow-300 mt-1 line-clamp-1">
+                    <p className="text-xs font-bold text-slate-600 high-contrast:text-yellow-300 mt-1 line-clamp-1 uppercase tracking-wider">
                       {inst}
                     </p>
                   )}
 
                   {hasDead && (
-                    <div className="mt-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 high-contrast:bg-slate-900 high-contrast:border-yellow-400 high-contrast:text-yellow-300 flex items-center gap-2 text-xs">
-                      <Calendar className="w-4 h-4 text-amber-600 high-contrast:text-yellow-400 shrink-0" />
+                    <div className="mt-3 p-2.5 border-2 border-black bg-[#FFE17D] text-black shadow-brutal-sm high-contrast:bg-slate-900 high-contrast:border-yellow-400 high-contrast:text-yellow-300 flex items-center gap-2 text-xs">
+                      <Calendar className="w-4 h-4 stroke-[2.5] text-black high-contrast:text-yellow-400 shrink-0" />
                       <div>
-                        <span className="font-semibold block">Important Deadline:</span>
-                        <span className="font-extrabold">{item.deadlineDate}</span>
+                        <span className="font-black block uppercase text-[10px]">Important Deadline:</span>
+                        <span className="font-black text-sm">{item.deadlineDate}</span>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 high-contrast:border-white/20 flex items-center justify-between">
-                  <div className="flex items-center gap-1">
+                <div className="mt-4 pt-3 border-t-2 border-black high-contrast:border-white/40 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
                     {hasDead && (
                       <button
                         onClick={(e) => handleExportIcs(item, e)}
                         aria-label={`Export ${item.title} calendar event`}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:text-white"
+                        className="p-1.5 border border-black bg-white hover:bg-neo-yellow text-black shadow-brutal-sm transition-colors high-contrast:text-white"
                         title="Export Calendar (.ics)"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-4 h-4 stroke-[2.5]" />
                       </button>
                     )}
 
@@ -177,16 +177,16 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
                         setNoticeToDelete(item);
                       }}
                       aria-label={`Delete ${item.title}`}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-700 hover:bg-red-50 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:text-red-400"
+                      className="p-1.5 border border-black bg-white hover:bg-neo-coral hover:text-white text-black shadow-brutal-sm transition-colors high-contrast:text-red-400"
                       title="Delete saved notice"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 stroke-[2.5]" />
                     </button>
                   </div>
 
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 group-hover:translate-x-0.5 transition-transform high-contrast:text-yellow-300">
+                  <span className="inline-flex items-center gap-1 text-xs font-black uppercase text-black group-hover:translate-x-1 transition-transform high-contrast:text-yellow-300">
                     <span>Open in Workspace</span>
-                    <ArrowUpRight className="w-4 h-4" />
+                    <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
                   </span>
                 </div>
               </div>
@@ -195,23 +195,23 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
         </div>
       ) : (
         /* Empty State */
-        <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-12 text-center max-w-lg mx-auto high-contrast:bg-black high-contrast:border-white">
-          <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 mx-auto mb-4 high-contrast:bg-yellow-400 high-contrast:text-black">
-            <Bookmark className="w-8 h-8" />
+        <div className="brutal-card border-dashed p-12 text-center max-w-lg mx-auto bg-white high-contrast:bg-black high-contrast:border-white">
+          <div className="w-16 h-16 border-3 border-black bg-neo-yellow shadow-brutal flex items-center justify-center text-black mx-auto mb-4 high-contrast:bg-yellow-400 high-contrast:text-black">
+            <Bookmark className="w-8 h-8 stroke-[2.5]" />
           </div>
-          <h2 className="text-lg font-bold text-ink-900 high-contrast:text-white mb-2">
+          <h2 className="text-xl font-black uppercase text-ink-900 high-contrast:text-white mb-2 tracking-tight">
             No saved notices found
           </h2>
-          <p className="text-xs text-slate-500 high-contrast:text-slate-300 mb-6 leading-relaxed">
+          <p className="text-xs font-medium text-slate-600 high-contrast:text-slate-300 mb-6 leading-relaxed">
             {searchQuery
               ? 'No notices match your search keywords or active category filter.'
               : 'When you scan and save university notices, they will appear here privately on your device.'}
           </p>
           <button
             onClick={onScanNewNotice}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-700 text-white font-semibold text-xs hover:bg-teal-800 transition-colors high-contrast:bg-yellow-400 high-contrast:text-black"
+            className="brutal-btn inline-flex items-center gap-2 px-5 py-3 bg-neo-yellow text-black font-black text-xs hover:bg-yellow-300 transition-colors shadow-brutal high-contrast:bg-yellow-400 high-contrast:text-black"
           >
-            <Scan className="w-4 h-4" />
+            <Scan className="w-4 h-4 stroke-[2.5]" />
             <span>Scan Your First Notice</span>
           </button>
         </div>

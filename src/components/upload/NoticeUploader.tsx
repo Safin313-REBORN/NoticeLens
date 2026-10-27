@@ -111,21 +111,23 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
     <div className="space-y-8">
       {/* Hero Introduction */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold uppercase tracking-wider high-contrast:bg-yellow-400 high-contrast:text-black high-contrast:border-white">
-          <Sparkles className="w-4 h-4 text-teal-600 high-contrast:text-black" />
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 brutal-badge bg-neo-mint border-2 border-black text-black text-xs font-black uppercase tracking-wider -rotate-1 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black high-contrast:border-white">
+          <Sparkles className="w-4 h-4 text-black" />
           <span>Notice Intelligence for Low-Vision & Visually Impaired Students</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-ink-900 high-contrast:text-white tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-black text-ink-900 high-contrast:text-white uppercase tracking-tight">
           Transform University Notices into <br className="hidden sm:inline" />
-          <span className="text-teal-700 high-contrast:text-yellow-400">Clear, Actionable Details</span>
+          <span className="bg-neo-yellow px-2 py-0.5 border-2 border-black text-black inline-block rotate-1 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black">
+            Clear, Actionable Details
+          </span>
         </h1>
-        <p className="text-base text-slate-600 high-contrast:text-slate-300 leading-relaxed max-w-2xl mx-auto">
+        <p className="text-sm font-medium text-slate-700 high-contrast:text-slate-300 leading-relaxed max-w-2xl mx-auto">
           Scan or upload any Bengali, English, or bilingual university announcement. NoticeLens extracts deadlines, fees, rooms, and action items with verifiable source evidence and audio narration.
         </p>
       </div>
 
       {/* Main Upload Box */}
-      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 sm:p-8 max-w-3xl mx-auto high-contrast:bg-black high-contrast:border-white">
+      <div className="brutal-card bg-white p-6 sm:p-8 max-w-3xl mx-auto high-contrast:bg-black high-contrast:border-white">
         {!previewUrl ? (
           <div>
             {/* Drag & Drop Zone */}
@@ -136,20 +138,20 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
               }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all ${
+              className={`border-3 border-dashed rounded-xl p-8 sm:p-12 text-center transition-all ${
                 dragOver
-                  ? 'border-teal-500 bg-teal-50/50 scale-[1.01] high-contrast:border-yellow-400 high-contrast:bg-slate-900'
-                  : 'border-slate-300 hover:border-teal-400 bg-slate-50/50 high-contrast:border-white/50 high-contrast:bg-slate-950'
+                  ? 'border-black bg-neo-mint/30 scale-[1.01] shadow-brutal high-contrast:border-yellow-400 high-contrast:bg-slate-900'
+                  : 'border-black bg-[#FFFDF2] hover:bg-yellow-50/60 high-contrast:border-white high-contrast:bg-slate-950'
               }`}
             >
-              <div className="w-16 h-16 rounded-2xl bg-teal-100 flex items-center justify-center text-teal-700 mx-auto mb-4 high-contrast:bg-yellow-400 high-contrast:text-black">
-                <UploadCloud className="w-8 h-8" />
+              <div className="w-16 h-16 border-3 border-black bg-neo-yellow shadow-brutal flex items-center justify-center text-black mx-auto mb-4 high-contrast:bg-yellow-400 high-contrast:text-black">
+                <UploadCloud className="w-8 h-8 stroke-[2.5]" />
               </div>
 
-              <h2 className="text-lg font-bold text-ink-900 high-contrast:text-white mb-1">
+              <h2 className="text-xl font-black text-ink-900 high-contrast:text-white uppercase mb-1">
                 Drop your university notice here
               </h2>
-              <p className="text-xs text-slate-500 high-contrast:text-slate-400 mb-6">
+              <p className="text-xs font-bold text-slate-600 high-contrast:text-slate-400 mb-6 uppercase tracking-wider">
                 Supports JPEG, PNG, and WebP (up to 10 MB)
               </p>
 
@@ -157,18 +159,18 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-700 text-white font-semibold text-sm hover:bg-teal-800 transition-colors shadow-md shadow-teal-700/20 focus-visible:ring-4 focus-visible:ring-teal-400 high-contrast:bg-yellow-400 high-contrast:text-black"
+                  className="brutal-btn inline-flex items-center gap-2 px-5 py-3 bg-black text-white hover:bg-neutral-800 focus-visible:ring-4 focus-visible:ring-black high-contrast:bg-yellow-400 high-contrast:text-black"
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-4 h-4 stroke-[2.5]" />
                   <span>Choose Notice Image</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-100 text-slate-800 font-semibold text-sm hover:bg-slate-200 transition-colors border border-slate-200 focus-visible:ring-4 focus-visible:ring-teal-400 high-contrast:bg-slate-900 high-contrast:text-white high-contrast:border-white"
+                  className="brutal-btn inline-flex items-center gap-2 px-5 py-3 bg-neo-yellow text-black hover:bg-yellow-300 focus-visible:ring-4 focus-visible:ring-black high-contrast:bg-slate-900 high-contrast:text-white high-contrast:border-white"
                 >
-                  <Camera className="w-4 h-4 text-teal-600 high-contrast:text-yellow-400" />
+                  <Camera className="w-4 h-4 stroke-[2.5]" />
                   <span>Take Photo with Camera</span>
                 </button>
               </div>
@@ -196,14 +198,16 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
         ) : (
           /* Image Preview & Options State */
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 high-contrast:border-white/30 pb-4">
+            <div className="flex items-center justify-between border-b-3 border-black high-contrast:border-white pb-4">
               <div className="flex items-center gap-2.5">
-                <ImageIcon className="w-5 h-5 text-teal-600 high-contrast:text-yellow-400" />
+                <div className="w-8 h-8 border-2 border-black bg-neo-yellow flex items-center justify-center text-black">
+                  <ImageIcon className="w-4 h-4 stroke-[2.5]" />
+                </div>
                 <div>
-                  <h2 className="text-base font-bold text-ink-900 high-contrast:text-white">
+                  <h2 className="text-base font-black uppercase text-ink-900 high-contrast:text-white">
                     Selected Notice Document
                   </h2>
-                  <p className="text-xs text-slate-500 high-contrast:text-slate-300">
+                  <p className="text-xs font-bold text-slate-500 high-contrast:text-slate-300">
                     {selectedFile ? `${selectedFile.name} (${(selectedFile.size / 1024).toFixed(0)} KB)` : 'Demonstration Notice Document'}
                   </p>
                 </div>
@@ -211,15 +215,15 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
               <button
                 type="button"
                 onClick={clearSelection}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors high-contrast:bg-black high-contrast:border-red-400 high-contrast:text-red-300"
+                className="brutal-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-neo-coral text-white hover:bg-red-600 high-contrast:bg-black high-contrast:border-red-400 high-contrast:text-red-300"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 stroke-[2.5]" />
                 <span>Remove</span>
               </button>
             </div>
 
             {/* Document Preview Box */}
-            <div className="relative rounded-2xl overflow-hidden border border-slate-200 max-h-80 flex items-center justify-center bg-slate-50 high-contrast:bg-slate-950 high-contrast:border-white">
+            <div className="relative border-3 border-black overflow-hidden max-h-80 flex items-center justify-center bg-slate-100 high-contrast:bg-slate-950 high-contrast:border-white shadow-brutal-sm">
               <img
                 src={previewUrl}
                 alt="Selected university notice document"
@@ -228,7 +232,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
             </div>
 
             {/* Recognition Controls */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 high-contrast:bg-slate-900 high-contrast:border-white">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#FFFDF0] p-4 border-2 border-black high-contrast:bg-slate-900 high-contrast:border-white">
               {/* Language Selection */}
               <div>
                 <label
@@ -241,7 +245,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                   id="ocr-language-select"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as 'ben' | 'eng' | 'ben+eng')}
-                  className="w-full text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-800 focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:bg-black high-contrast:text-white high-contrast:border-white"
+                  className="w-full text-xs font-bold px-3 py-2 border-2 border-black bg-white text-ink-900 focus-visible:ring-2 focus-visible:ring-black high-contrast:bg-black high-contrast:text-white high-contrast:border-white shadow-brutal-sm"
                 >
                   <option value="ben+eng">Bengali + English (Recommended)</option>
                   <option value="ben">Bengali Only (বাংলা)</option>
@@ -256,11 +260,11 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                   type="checkbox"
                   checked={preprocess}
                   onChange={(e) => setPreprocess(e.target.checked)}
-                  className="w-4 h-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
+                  className="w-5 h-5 border-2 border-black rounded-none text-black focus:ring-black accent-black cursor-pointer"
                 />
                 <label
                   htmlFor="preprocess-toggle"
-                  className="text-xs font-semibold text-slate-700 high-contrast:text-white cursor-pointer"
+                  className="text-xs font-bold text-ink-900 high-contrast:text-white cursor-pointer select-none"
                 >
                   Enhance contrast for printed notice readability
                 </label>
@@ -273,16 +277,16 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                 type="button"
                 onClick={handleStartOCR}
                 disabled={isProcessing}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-teal-700 text-white font-bold text-base hover:bg-teal-800 transition-all shadow-lg shadow-teal-700/25 focus-visible:ring-4 focus-visible:ring-teal-400 disabled:opacity-50 high-contrast:bg-yellow-400 high-contrast:text-black"
+                className="flex-1 brutal-btn inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-neo-yellow text-black font-black text-base hover:bg-yellow-300 transition-all shadow-brutal disabled:opacity-50 high-contrast:bg-yellow-400 high-contrast:text-black"
               >
-                <RefreshCw className={`w-5 h-5 ${isProcessing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-5 h-5 stroke-[2.5] ${isProcessing ? 'animate-spin' : ''}`} />
                 <span>{isProcessing ? 'Processing Notice...' : 'Start Notice Recognition (OCR)'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-3 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition-colors high-contrast:border-white high-contrast:text-white"
+                className="brutal-btn px-4 py-3 bg-white text-black font-bold text-sm hover:bg-slate-100 high-contrast:border-white high-contrast:text-white"
               >
                 Replace Image
               </button>
@@ -294,12 +298,12 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
         {errorMessage && (
           <div
             role="alert"
-            className="mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 text-sm flex items-start gap-2.5 high-contrast:bg-black high-contrast:border-red-400 high-contrast:text-red-200"
+            className="mt-6 p-4 border-3 border-black bg-neo-coral text-white text-sm flex items-start gap-2.5 shadow-brutal high-contrast:bg-black high-contrast:border-red-400 high-contrast:text-red-200"
           >
-            <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <ShieldAlert className="w-5 h-5 stroke-[2.5] shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold">Validation Issue</p>
-              <p className="text-xs mt-1">{errorMessage}</p>
+              <p className="font-black uppercase tracking-wider">Validation Issue</p>
+              <p className="text-xs font-bold mt-1">{errorMessage}</p>
             </div>
           </div>
         )}
@@ -308,29 +312,29 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
       {/* Fictional Sample Notice Presets for Live Testing */}
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 high-contrast:text-yellow-300 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-teal-600 high-contrast:text-yellow-400" />
+          <h2 className="text-xs font-black uppercase tracking-wider text-ink-900 high-contrast:text-yellow-300 flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-black high-contrast:text-yellow-400" />
             <span>Try Fictional University Notice Samples</span>
           </h2>
-          <span className="text-[11px] text-slate-400 high-contrast:text-slate-300 font-medium">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 high-contrast:text-slate-300">
             Pre-bundled for evaluation
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {DEMO_NOTICES.map((demo) => (
             <button
               key={demo.id}
               onClick={() => handleSelectDemo(demo)}
-              className="text-left p-3.5 rounded-xl border border-slate-200 bg-white hover:border-teal-500 hover:shadow-md transition-all group focus-visible:ring-2 focus-visible:ring-teal-600 high-contrast:bg-black high-contrast:border-white high-contrast:hover:border-yellow-400"
+              className="brutal-card brutal-card-hover text-left p-4 bg-white transition-all group focus-visible:ring-2 focus-visible:ring-black high-contrast:bg-black high-contrast:border-white"
             >
-              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-700 group-hover:bg-teal-100 group-hover:text-teal-800 mb-1.5 high-contrast:bg-yellow-400 high-contrast:text-black">
+              <span className="brutal-badge inline-block px-2 py-0.5 bg-neo-pink text-black mb-2 shadow-brutal-sm">
                 {demo.category}
               </span>
-              <h3 className="text-xs font-bold text-ink-900 high-contrast:text-white line-clamp-1 group-hover:text-teal-700 high-contrast:group-hover:text-yellow-300">
+              <h3 className="text-xs font-black text-ink-900 high-contrast:text-white line-clamp-1 group-hover:underline">
                 {demo.title}
               </h3>
-              <p className="text-[11px] text-slate-500 high-contrast:text-slate-400 line-clamp-2 mt-1 leading-snug">
+              <p className="text-[11px] font-medium text-slate-600 high-contrast:text-slate-300 line-clamp-2 mt-1 leading-snug">
                 {demo.description}
               </p>
             </button>

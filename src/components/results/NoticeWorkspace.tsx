@@ -47,29 +47,30 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
   return (
     <div className="space-y-6">
       {/* Workspace Subheader Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm high-contrast:bg-black high-contrast:border-white">
+      {/* Workspace Subheader Banner */}
+      <div className="brutal-card flex flex-wrap items-center justify-between gap-4 bg-white p-5 high-contrast:bg-black high-contrast:border-white">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-teal-800 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200 high-contrast:bg-yellow-400 high-contrast:text-black">
+          <span className="brutal-badge text-xs px-2.5 py-1 bg-neo-yellow text-black -rotate-1 inline-block shadow-brutal-sm">
             {notice.fields.category.value} Notice
           </span>
-          <h1 className="text-xl sm:text-2xl font-black text-ink-900 high-contrast:text-white mt-1.5">
+          <h1 className="text-xl sm:text-2xl font-black text-ink-900 high-contrast:text-white mt-2 uppercase tracking-tight">
             {notice.title}
           </h1>
-          <p className="text-xs text-slate-500 high-contrast:text-yellow-300 mt-0.5">
+          <p className="text-xs font-bold text-slate-600 high-contrast:text-yellow-300 mt-1 uppercase tracking-wider">
             Issued by: {notice.fields.institution.value}
           </p>
         </div>
 
         {/* Verification Stats Pills */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 border border-teal-200 text-teal-900 text-xs font-bold high-contrast:bg-slate-900 high-contrast:border-white high-contrast:text-white">
-            <CheckCircle2 className="w-4 h-4 text-teal-600 high-contrast:text-yellow-400" />
+        <div className="flex items-center gap-2.5">
+          <div className="brutal-badge flex items-center gap-1.5 px-3 py-1.5 bg-neo-mint text-black shadow-brutal-sm">
+            <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
             <span>{confirmedCount} Confirmed Facts</span>
           </div>
 
           {needsReviewCount > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold high-contrast:bg-slate-900 high-contrast:border-yellow-400 high-contrast:text-yellow-300">
-              <AlertTriangle className="w-4 h-4 text-amber-600 high-contrast:text-yellow-400" />
+            <div className="brutal-badge flex items-center gap-1.5 px-3 py-1.5 bg-neo-coral text-white shadow-brutal-sm">
+              <AlertTriangle className="w-4 h-4 stroke-[2.5]" />
               <span>{needsReviewCount} Needs Review</span>
             </div>
           )}
@@ -93,26 +94,26 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
 
           {/* Structured Fields Section */}
           <section
-            className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 high-contrast:bg-black high-contrast:border-white"
+            className="brutal-card bg-white p-6 high-contrast:bg-black high-contrast:border-white"
             aria-labelledby="fields-section-heading"
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 high-contrast:border-white/30">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b-2 border-black high-contrast:border-white">
               <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-teal-700 high-contrast:text-yellow-400" />
-                <h2 id="fields-section-heading" className="text-base font-bold text-ink-900 high-contrast:text-white">
+                <Layers className="w-5 h-5 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
+                <h2 id="fields-section-heading" className="text-base font-black uppercase text-ink-900 high-contrast:text-white">
                   Extracted Notice Details ({filteredFields.length})
                 </h2>
               </div>
 
               {/* Filter controls */}
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold high-contrast:bg-slate-900 high-contrast:border-white high-contrast:border">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setFieldFilter('all')}
                   aria-pressed={fieldFilter === 'all'}
-                  className={`px-2.5 py-1 rounded-lg transition-colors ${
+                  className={`brutal-btn px-2.5 py-1 text-xs ${
                     fieldFilter === 'all'
-                      ? 'bg-white shadow-sm text-ink-900 font-bold high-contrast:bg-yellow-400 high-contrast:text-black'
-                      : 'text-slate-600 hover:text-ink-900 high-contrast:text-white'
+                      ? 'bg-neo-yellow text-black font-black'
+                      : 'bg-white text-ink-900 hover:bg-neutral-100 font-bold'
                   }`}
                 >
                   All
@@ -120,24 +121,24 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
                 <button
                   onClick={() => setFieldFilter('found')}
                   aria-pressed={fieldFilter === 'found'}
-                  className={`px-2.5 py-1 rounded-lg transition-colors ${
+                  className={`brutal-btn px-2.5 py-1 text-xs ${
                     fieldFilter === 'found'
-                      ? 'bg-white shadow-sm text-ink-900 font-bold high-contrast:bg-yellow-400 high-contrast:text-black'
-                      : 'text-slate-600 hover:text-ink-900 high-contrast:text-white'
+                      ? 'bg-neo-mint text-black font-black'
+                      : 'bg-white text-ink-900 hover:bg-neutral-100 font-bold'
                   }`}
                 >
-                  Found Only
+                  Found
                 </button>
                 <button
                   onClick={() => setFieldFilter('needs_review')}
                   aria-pressed={fieldFilter === 'needs_review'}
-                  className={`px-2.5 py-1 rounded-lg transition-colors ${
+                  className={`brutal-btn px-2.5 py-1 text-xs ${
                     fieldFilter === 'needs_review'
-                      ? 'bg-white shadow-sm text-amber-900 font-bold high-contrast:bg-yellow-400 high-contrast:text-black'
-                      : 'text-slate-600 hover:text-ink-900 high-contrast:text-white'
+                      ? 'bg-neo-coral text-white font-black'
+                      : 'bg-white text-ink-900 hover:bg-neutral-100 font-bold'
                   }`}
                 >
-                  Needs Review ({needsReviewCount})
+                  Review ({needsReviewCount})
                 </button>
               </div>
             </div>
@@ -160,25 +161,25 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
         <div className="lg:col-span-5 space-y-6">
           {/* Document Preview Card if image data exists */}
           {notice.imageDataUrl && (
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden high-contrast:bg-black high-contrast:border-white">
-              <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between high-contrast:border-white/30">
-                <span className="text-xs font-bold text-ink-900 high-contrast:text-white flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-teal-600 high-contrast:text-yellow-400" />
+            <div className="brutal-card bg-white overflow-hidden high-contrast:bg-black high-contrast:border-white">
+              <div className="px-5 py-3 border-b-2 border-black flex items-center justify-between high-contrast:border-white">
+                <span className="text-xs font-black uppercase text-ink-900 high-contrast:text-white flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
                   <span>Original Document Preview</span>
                 </span>
                 <button
                   onClick={() => setShowOriginalImage(!showOriginalImage)}
-                  className="text-xs font-semibold text-teal-700 hover:underline high-contrast:text-yellow-300"
+                  className="text-xs font-black uppercase text-slate-800 hover:underline high-contrast:text-yellow-300"
                 >
                   {showOriginalImage ? 'Collapse' : 'Expand'}
                 </button>
               </div>
               {showOriginalImage && (
-                <div className="p-3 bg-slate-50 flex items-center justify-center max-h-64 overflow-hidden high-contrast:bg-slate-950">
+                <div className="p-3 bg-slate-100 flex items-center justify-center max-h-64 overflow-hidden high-contrast:bg-slate-950">
                   <img
                     src={notice.imageDataUrl}
                     alt="Original scanned notice"
-                    className="max-h-60 w-auto object-contain rounded border border-slate-200"
+                    className="max-h-60 w-auto object-contain border-2 border-black"
                   />
                 </div>
               )}

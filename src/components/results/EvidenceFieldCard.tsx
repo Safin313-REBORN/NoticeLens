@@ -44,19 +44,19 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
 
   return (
     <div
-      className={`p-4 rounded-xl border transition-all ${
+      className={`p-4 border-2 border-black transition-all ${
         isSelected
-          ? 'border-teal-500 bg-teal-50/40 ring-2 ring-teal-400 high-contrast:bg-slate-900 high-contrast:border-yellow-400 high-contrast:ring-yellow-400'
+          ? 'border-3 border-black bg-[#FFF275] shadow-brutal ring-2 ring-black high-contrast:bg-slate-900 high-contrast:border-yellow-400 high-contrast:ring-yellow-400'
           : isNotFound
-          ? 'border-slate-200 bg-slate-50/60 opacity-80 high-contrast:bg-black high-contrast:border-white/30'
-          : 'border-slate-200 bg-white hover:border-slate-300 shadow-sm high-contrast:bg-black high-contrast:border-white'
+          ? 'bg-slate-100 opacity-80 high-contrast:bg-black high-contrast:border-white/50'
+          : 'bg-white shadow-brutal-sm hover:shadow-brutal high-contrast:bg-black high-contrast:border-white'
       }`}
     >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
-          <span className="text-xs font-bold text-ink-900 high-contrast:text-white flex items-center gap-1.5">
+          <span className="text-xs font-black uppercase text-ink-900 high-contrast:text-white flex items-center gap-1.5">
             {field.label}
-            <span className="text-[11px] font-normal text-slate-500 high-contrast:text-yellow-300">
+            <span className="text-[11px] font-bold text-slate-500 high-contrast:text-yellow-300">
               ({field.labelBn})
             </span>
           </span>
@@ -65,20 +65,20 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Status Badge */}
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+            className={`brutal-badge px-2 py-0.5 text-[10px] ${
               isUserEdited
-                ? 'bg-blue-100 text-blue-800 border border-blue-200 high-contrast:bg-yellow-400 high-contrast:text-black'
+                ? 'bg-neo-purple text-white high-contrast:bg-yellow-400 high-contrast:text-black'
                 : needsReview
-                ? 'bg-amber-100 text-amber-900 border border-amber-300 high-contrast:bg-yellow-400 high-contrast:text-black'
+                ? 'bg-neo-coral text-white high-contrast:bg-yellow-400 high-contrast:text-black'
                 : isNotFound
-                ? 'bg-slate-200 text-slate-700 border border-slate-300 high-contrast:bg-slate-800 high-contrast:text-white'
-                : 'bg-teal-100 text-teal-800 border border-teal-200 high-contrast:bg-yellow-400 high-contrast:text-black'
+                ? 'bg-slate-200 text-slate-800 high-contrast:bg-slate-800 high-contrast:text-white'
+                : 'bg-neo-mint text-black high-contrast:bg-yellow-400 high-contrast:text-black'
             }`}
           >
             {isUserEdited
               ? 'User Edited'
               : needsReview
-              ? 'Needs Review'
+              ? 'Review'
               : isNotFound
               ? 'Not Found'
               : 'Confirmed'}
@@ -88,9 +88,9 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
             <button
               onClick={handleSpeak}
               aria-label={`Listen to ${field.label}`}
-              className="p-1 rounded text-slate-400 hover:text-teal-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:text-white"
+              className="p-1 border border-black bg-white hover:bg-neo-yellow text-black shadow-brutal-sm high-contrast:text-white"
             >
-              <Volume2 className="w-3.5 h-3.5" />
+              <Volume2 className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
           )}
 

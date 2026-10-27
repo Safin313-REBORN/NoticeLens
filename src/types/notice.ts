@@ -83,3 +83,5 @@ export interface VoiceOption {
   isBengali: boolean;
   isEnglish: boolean;
 }
+
+export type UITheme = 'neobrutalist' | 'memphis' | 'artdeco' | 'retroterminal';
