@@ -8,22 +8,23 @@
 
 ## 1. Summary of Test Execution
 
-- **Automated Test Suites**: 5 Suites
-  - `src/test/unit/masterBugFixes.test.ts` (13 tests)
+- **Automated Test Suites**: 6 Suites
+  - `src/test/unit/masterBugFixes.test.ts` (15 tests)
   - `src/test/unit/extraction.test.ts` (17 tests)
-  - `src/test/unit/auditFixes.test.ts` (11 tests)
+  - `src/test/unit/auditFixes.test.ts` (14 tests)
   - `src/test/unit/components.test.ts` (8 tests)
-  - `src/test/unit/icsExporter.test.ts` (5 tests)
-- **Total Automated Unit & Integration Tests**: 54 Tests
-- **Tests Passed**: 54 Passed (100% Pass Rate)
+  - `src/test/unit/icsExporter.test.ts` (9 tests)
+  - `src/test/unit/gestureAndNeumorphism.test.tsx` (11 tests)
+- **Total Automated Unit & Integration Tests**: 74 Tests
+- **Tests Passed**: 74 Passed (100% Pass Rate)
 - **Tests Failed**: 0 Failed
 - **TypeScript & Production Build**: Succeeded with zero errors (`tsc -b && vite build`) in 1.88s
   - Bundle Metrics:
     - `dist/index.html`: 2.16 kB (gzip: 1.01 kB)
-    - `dist/assets/index-DYgw9Rda.css`: 54.20 kB (gzip: 8.31 kB)
-    - `dist/assets/icons-Cl_qLxZ2.js`: 32.16 kB (gzip: 8.28 kB)
-    - `dist/assets/vendor-DmI-GsUr.js`: 133.93 kB (gzip: 43.12 kB)
-    - `dist/assets/index-Df-TPbrR.js`: 155.27 kB (gzip: 45.44 kB)
+    - `dist/assets/index-Bp6tpmzU.css`: 69.70 kB (gzip: 10.14 kB)
+    - `dist/assets/icons-xEqOgGcm.js`: 33.66 kB (gzip: 8.60 kB)
+    - `dist/assets/vendor-DWAUQAaf.js`: 133.93 kB (gzip: 43.12 kB)
+    - `dist/assets/index-DOjJPzzg.js`: 175.16 kB (gzip: 50.01 kB)
 - **ESLint Checks**: Succeeded with 0 warnings and 0 errors (`eslint .`)
 
 ---
@@ -98,6 +99,25 @@
 | CRLF Injection Neutralization | Sanitizes CRLF injection in calendar title and description | PASS |
 | Bengali Date Circular Parsing | Successfully extracts calendar event from Bengali-language date circulars | PASS |
 | Malformed Date Error Handling | Throws descriptive error on malformed start date format | PASS |
+| Impossible Date Rejection | Rejects 31 February and 31 April as impossible calendar dates | PASS |
+| Leap Year Validation | Accurately accepts 2024-02-29 and rejects 2023-02-29 | PASS |
+| UTF-8 Octet Line Folding | Folds long lines by UTF-8 octets without splitting multibyte Bengali characters | PASS |
+| No Manufactured Duration | Does NOT manufacture a 1-hour duration when `endTime` is omitted | PASS |
+
+### Suite 6: Pure Neumorphism & Mobile Pattern Gestures (`src/test/unit/gestureAndNeumorphism.test.tsx`)
+| Test Case | Description | Result |
+| :--- | :--- | :--- |
+| Neumorphic Button Styling | Renders dual soft shadows (`#c5d0e0` / `#ffffff`) on desktop | PASS |
+| High-Contrast Neumorphic Override | Switches to solid borders and deep background in high-contrast mode | PASS |
+| Mobile Gesture Nav Pill | Renders gesture bar with quick navigation cues on mobile viewports | PASS |
+| Double-Tap to Edit Gesture | Activates inline edit mode on double-tap touch event (< 300ms) | PASS |
+| Swipe-Right Speech Trigger | Triggers audio narration on horizontal swipe right (> 50px) | PASS |
+| Swipe-Left Clipboard Copy | Copies field text to clipboard on horizontal swipe left | PASS |
+| Complete Elimination of Extraneous Styles | Confirms complete removal of Brutalist, Neo-Brutalist, Retro CRT, Memphis, and Art Deco styles | PASS |
+| Shared Terminal Data Purge | Confirms presence of "Purge Terminal Data" action and modal | PASS |
+| Enterprise Headers | Verifies security headers and cache policies | PASS |
+| Touch Feedback Toast | Displays visual cue badge upon gesture action | PASS |
+| Safe SSR Storage Fallback | Handles environments where `localStorage` or `indexedDB` is undefined | PASS |
 
 ---
 
@@ -121,6 +141,20 @@
    *Fix*: Added prominent "User Override: Manually corrected value" indicator in `EvidenceFieldCard.tsx` and clearly labeled the original snippet as superseded.
 9. **Ephemeral Image URLs**: `App.tsx` stored `blob:` URLs in IndexedDB records, which become dead references upon page reload.  
    *Fix*: Converted files to durable base64 Data URLs via `FileReader` prior to saving.
+10. **Tesseract.js Core Path Configuration**: `corePath` in `tesseractWorker.ts` previously pointed directly to a specific JS file (`/tesseract/tesseract-core-lstm.js`), preventing Tesseract.js v7 from dynamically picking SIMD or Relaxed SIMD WASM cores.  
+    *Fix*: Updated `corePath: '/tesseract'` (directory), enabling Tesseract.js to choose the fastest supported core from local assets.
+11. **RFC 5545 True UTF-8 Octet Line Folding**: `foldIcsLine` previously counted JavaScript string length (UTF-16 code units) instead of UTF-8 octets, causing Bengali text (3 bytes per character) to exceed the RFC 5545 75-octet limit.  
+    *Fix*: Replaced with `TextEncoder` byte counting and code point iteration, strictly enforcing $\le 75$ octets per line and continuation lines starting with space (`0x20`), never splitting multibyte code points.
+12. **Removal of Invented Times and Manufactured Durations**: `parseDateTimeToDate` previously defaulted unparsed times to 9:00 AM, and `generateIcsContent` manufactured a 1-hour duration when `endTime` was absent.  
+    *Fix*: `parseDateTimeToDate` returns `null` on unparseable times; when `endTime` is absent, no end time is manufactured, emitting point-in-time deadline per RFC 5545 §3.6.1.
+13. **Strict Calendar Date Validation & Review Gate**: Calendar export accepted invalid dates such as 31 February or 31 April.  
+    *Fix*: Validated `isValidCalendarDate` in `generateIcsContent` and `isExportAllowed`; leap years verified (2024 vs 2023); unreviewed or ambiguous dates blocked from export until confirmed.
+14. **Field Edit Provenance & Contradictory Evidence Elimination**: Editing a field retained the old evidence snippet pointing to the old transcript location.  
+    *Fix*: In `App.tsx` (`handleUpdateNoticeField`), `originalValue` and `originalEvidence` are recorded for auditing; if the edited value is found in the transcript, fresh evidence is mapped; if not in the transcript, `evidence` is cleared to `null` so stale/contradictory evidence is never displayed.
+15. **Context-Aware Evidence Disambiguation**: When repeated dates or tokens appeared in a notice, `matchEvidence` naively picked the first occurrence.  
+    *Fix*: Added candidate occurrence ranking based on proximity to `matchedKeyword`, ensuring deadline dates are matched to deadline sections rather than publication headers.
+16. **Shared Workstation Privacy (Terminal Purge)**: Students using public university terminals risked leaving processed circulars in browser storage.  
+    *Fix*: Added "Purge Terminal Data" action and modal that clears IndexedDB, local storage, cached images, and audio buffers in one step.
 
 ---
 

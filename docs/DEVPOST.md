@@ -83,12 +83,12 @@ NoticeLens provides **evidence-backed notice intelligence**:
 
 ## 9. Technologies Used
 - **Frontend Framework**: React 18, TypeScript (Strict Mode), Vite 5
-- **Styling & Design System**: Tailwind CSS v3 with custom `.high-contrast` variant plugin
+- **Styling & Design System**: Tailwind CSS v3 with custom `.high-contrast` variant plugin, Neumorphic Soft UI on desktop, and Pattern Gesture UI on mobile
 - **OCR Engine**: Tesseract.js v7 (Self-hosted local worker assets, bilingual `ben+eng` / `ben` / `eng`)
 - **Audio & Accessibility**: Web Speech API (`SpeechSynthesis`), ARIA Live Regions, WCAG 2.2 AA Focus Management
-- **Persistence**: IndexedDB API (`NoticeLensDB`) with `localStorage` fallback
-- **Calendar Standard**: RFC 5545 iCalendar specification with `Asia/Dhaka` timezone
-- **Test Automation**: Vitest v2, React Testing Library, Happy-DOM (54 passing automated tests)
+- **Persistence**: IndexedDB API (`NoticeLensDB`) with `localStorage` fallback and Shared Terminal Purge
+- **Calendar Standard**: RFC 5545 iCalendar specification with UTF-8 octet line folding and `Asia/Dhaka` timezone
+- **Test Automation**: Vitest v2, React Testing Library, Happy-DOM (74 passing automated tests across 6 suites)
 
 ---
 

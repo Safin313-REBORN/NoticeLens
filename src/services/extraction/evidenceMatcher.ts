@@ -27,8 +27,25 @@ export function buildNormalizedIndexMap(text: string): { normalized: string; ind
 }
 
 /**
+ * Helper to find all character start indices of a substring in text (case-insensitive)
+ */
+function findAllOccurrences(haystack: string, needle: string): number[] {
+  const indices: number[] = [];
+  if (!haystack || !needle) return indices;
+  const lowerHaystack = haystack.toLowerCase();
+  const lowerNeedle = needle.toLowerCase();
+  let pos = 0;
+  while ((pos = lowerHaystack.indexOf(lowerNeedle, pos)) !== -1) {
+    indices.push(pos);
+    pos += Math.max(1, lowerNeedle.length);
+  }
+  return indices;
+}
+
+/**
  * Finds the exact or best-effort character range of an evidence snippet in the raw OCR text
  * with accurate character offsets mapped back to the original transcript.
+ * Disambiguates repeated dates, tokens, or words by prioritizing proximity to matchedKeyword context.
  */
 export function matchEvidence(
   fullText: string,
@@ -41,41 +58,92 @@ export function matchEvidence(
   const trimmedTarget = targetSnippet.trim();
   if (!trimmedTarget) return null;
 
-  // 1. Direct exact search in original text
-  let startIndex = fullText.indexOf(trimmedTarget);
-  if (startIndex !== -1) {
+  // 1. Find all candidate occurrences in original text
+  const exactCandidates = findAllOccurrences(fullText, trimmedTarget);
+
+  if (exactCandidates.length === 1) {
+    const startIndex = exactCandidates[0];
+    const endIndex = startIndex + trimmedTarget.length;
     return {
-      text: trimmedTarget,
+      text: fullText.substring(startIndex, endIndex),
       startIndex,
-      endIndex: startIndex + trimmedTarget.length,
+      endIndex,
       confidence,
       matchedKeyword,
     };
   }
 
-  // 2. Case-insensitive exact search in original text
-  startIndex = fullText.toLowerCase().indexOf(trimmedTarget.toLowerCase());
-  if (startIndex !== -1) {
+  if (exactCandidates.length > 1) {
+    // Multiple occurrences found: disambiguate using matchedKeyword proximity
+    if (matchedKeyword && matchedKeyword.trim()) {
+      const keywordOccurrences = findAllOccurrences(fullText, matchedKeyword.trim());
+      if (keywordOccurrences.length > 0) {
+        let bestIndex = exactCandidates[0];
+        let minDistance = Infinity;
+
+        for (const candIdx of exactCandidates) {
+          for (const kwIdx of keywordOccurrences) {
+            const dist = Math.abs(candIdx - kwIdx);
+            if (dist < minDistance) {
+              minDistance = dist;
+              bestIndex = candIdx;
+            }
+          }
+        }
+
+        const endIndex = bestIndex + trimmedTarget.length;
+        return {
+          text: fullText.substring(bestIndex, endIndex),
+          startIndex: bestIndex,
+          endIndex,
+          confidence: minDistance <= 250 ? 'high' : 'medium',
+          matchedKeyword,
+        };
+      }
+    }
+
+    // No keyword provided or couldn't disambiguate: use first with medium confidence
+    const startIndex = exactCandidates[0];
+    const endIndex = startIndex + trimmedTarget.length;
     return {
-      text: fullText.substring(startIndex, startIndex + trimmedTarget.length),
+      text: fullText.substring(startIndex, endIndex),
       startIndex,
-      endIndex: startIndex + trimmedTarget.length,
-      confidence,
+      endIndex,
+      confidence: 'medium',
       matchedKeyword,
     };
   }
 
-  // 3. Index-mapped whitespace-tolerant search
+  // 2. Index-mapped whitespace-tolerant search (handles tabs, multiple spaces, line wraps)
   const { normalized: normFull, indexMap } = buildNormalizedIndexMap(fullText);
   const { normalized: normTarget } = buildNormalizedIndexMap(trimmedTarget);
 
   if (!normTarget || !normFull) return null;
 
-  // Search case-insensitively in normalized text
-  const normIdx = normFull.toLowerCase().indexOf(normTarget.toLowerCase());
-  if (normIdx !== -1) {
-    const startOrig = indexMap[normIdx];
-    const endOrig = indexMap[normIdx + normTarget.length - 1] + 1;
+  const normCandidates = findAllOccurrences(normFull, normTarget);
+
+  if (normCandidates.length > 0) {
+    let chosenNormIdx = normCandidates[0];
+
+    if (normCandidates.length > 1 && matchedKeyword && matchedKeyword.trim()) {
+      const { normalized: normKw } = buildNormalizedIndexMap(matchedKeyword.trim());
+      const kwNormCandidates = findAllOccurrences(normFull, normKw);
+      if (kwNormCandidates.length > 0) {
+        let minDistance = Infinity;
+        for (const cand of normCandidates) {
+          for (const kw of kwNormCandidates) {
+            const dist = Math.abs(cand - kw);
+            if (dist < minDistance) {
+              minDistance = dist;
+              chosenNormIdx = cand;
+            }
+          }
+        }
+      }
+    }
+
+    const startOrig = indexMap[chosenNormIdx];
+    const endOrig = indexMap[chosenNormIdx + normTarget.length - 1] + 1;
 
     if (
       typeof startOrig === 'number' &&
@@ -94,7 +162,7 @@ export function matchEvidence(
     }
   }
 
-  // 4. Word-token proximity matching if multiline or OCR noise
+  // 3. Word-token proximity matching if multiline or OCR noise
   const targetWords = normTarget.split(' ').filter((w) => w.length > 1);
   if (targetWords.length >= 2) {
     const firstWord = targetWords[0];

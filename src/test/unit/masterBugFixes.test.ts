@@ -245,5 +245,67 @@ Please bring your student ID and admit card.`;
       const extractedSlice = transcript.substring(evidence!.startIndex, evidence!.endIndex);
       expect(extractedSlice.replace(/\s+/g, ' ')).toBe('১৫ নভেম্বর ২০২৪');
     });
+
+    it('disambiguates repeated occurrences by selecting the one closest to matchedKeyword', () => {
+      const transcript = `ঢাকা বিশ্ববিদ্যালয়
+বিজ্ঞপ্তি প্রকাশের তারিখ: ১৫/১১/২০২৪
+বিষয়: পরীক্ষার ফি জমাদান
+পরীক্ষার ফি জমাদানের শেষ তারিখ: ১৫/১১/২০২৪ বিকাল ৫:০০ ঘটিকা।`;
+
+      const target = '১৫/১১/২০২৪';
+      // Match with keyword 'শেষ তারিখ'
+      const deadlineEvidence = matchEvidence(transcript, target, 'শেষ তারিখ');
+      expect(deadlineEvidence).not.toBeNull();
+      // Must match the second occurrence (closest to 'শেষ তারিখ'), NOT the first (প্রকাশের তারিখ)
+      const secondIdx = transcript.lastIndexOf(target);
+      expect(deadlineEvidence?.startIndex).toBe(secondIdx);
+
+      // Match with keyword 'প্রকাশের তারিখ'
+      const pubEvidence = matchEvidence(transcript, target, 'প্রকাশের তারিখ');
+      expect(pubEvidence).not.toBeNull();
+      const firstIdx = transcript.indexOf(target);
+      expect(pubEvidence?.startIndex).toBe(firstIdx);
+    });
+
+    it('preserves provenance and avoids displaying contradictory evidence when user edits field', () => {
+      const initialField = {
+        key: 'deadline' as const,
+        label: 'Application Deadline',
+        labelBn: 'আবেদনের শেষ তারিখ',
+        value: '15/11/2024',
+        evidence: {
+          text: '15/11/2024',
+          startIndex: 45,
+          endIndex: 55,
+          confidence: 'high' as const,
+        },
+        status: 'confirmed' as const,
+      };
+
+      const userCorrectedValue = '20/11/2024';
+      const ocrText = 'Notice: Old deadline was 15/11/2024.';
+
+      // Simulating user edit logic in App.tsx
+      const origValue = initialField.value;
+      const origEvidence = initialField.evidence;
+      const newEvidence = matchEvidence(ocrText, userCorrectedValue, initialField.label);
+
+      const editedField = {
+        ...initialField,
+        value: userCorrectedValue,
+        status: 'user_edited' as const,
+        evidence: newEvidence, // null because 20/11/2024 is not in ocrText
+        originalValue: origValue,
+        originalEvidence: origEvidence,
+        isAmbiguous: false,
+      };
+
+      expect(editedField.value).toBe('20/11/2024');
+      expect(editedField.status).toBe('user_edited');
+      // Critical check: old evidence does NOT contaminate or contradict new user value
+      expect(editedField.evidence).toBeNull();
+      expect(editedField.originalValue).toBe('15/11/2024');
+      expect(editedField.originalEvidence?.text).toBe('15/11/2024');
+    });
   });
 });

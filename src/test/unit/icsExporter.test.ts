@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateIcsContent, buildEventFromNotice, escapeIcsText } from '../../services/export/icsExporter';
+import { generateIcsContent, buildEventFromNotice, escapeIcsText, foldIcsLine } from '../../services/export/icsExporter';
 import { processNoticeDocument } from '../../services/extraction/noticeEngine';
 import { DEMO_NOTICES } from '../../data/demoNotices';
 
@@ -80,5 +80,75 @@ describe('ICS Calendar Exporter', () => {
     };
 
     expect(() => generateIcsContent(invalidEvent)).toThrowError(/Invalid start date format/);
+  });
+
+  it('rejects impossible calendar dates like 31 February or 31 April', () => {
+    const feb31Event = {
+      title: 'Impossible Date',
+      description: 'Test',
+      startDate: '2024-02-31',
+      isAllDay: true,
+    };
+    expect(() => generateIcsContent(feb31Event)).toThrowError(/Invalid calendar date/);
+
+    const apr31Event = {
+      title: '31 April Test',
+      description: 'Test',
+      startDate: '2024-04-31',
+      isAllDay: true,
+    };
+    expect(() => generateIcsContent(apr31Event)).toThrowError(/Invalid calendar date/);
+  });
+
+  it('handles leap years accurately: accepts 2024-02-29 and rejects 2023-02-29', () => {
+    const leapYearEvent = {
+      title: 'Leap Year Event',
+      description: 'Test',
+      startDate: '2024-02-29',
+      isAllDay: true,
+    };
+    expect(() => generateIcsContent(leapYearEvent)).not.toThrow();
+
+    const nonLeapYearEvent = {
+      title: 'Non Leap Year Event',
+      description: 'Test',
+      startDate: '2023-02-29',
+      isAllDay: true,
+    };
+    expect(() => generateIcsContent(nonLeapYearEvent)).toThrowError(/Invalid calendar date/);
+  });
+
+  it('folds long lines by UTF-8 octets without splitting multibyte Bengali characters', () => {
+    // 35 Bengali characters = 105 UTF-8 bytes (exceeds 75 octet limit)
+    const longBengali = 'ঢাকা বিশ্ববিদ্যালয় ভর্তি পরীক্ষার সময়সূচী ও নির্দেশনাবলী বিস্তারিত প্রকাশ';
+    const folded = foldIcsLine(`SUMMARY:${longBengali}`);
+
+    const lines = folded.split('\r\n');
+    expect(lines.length).toBeGreaterThan(1);
+
+    const encoder = new TextEncoder();
+    for (let i = 0; i < lines.length; i++) {
+      const lineBytes = encoder.encode(lines[i]).length;
+      expect(lineBytes).toBeLessThanOrEqual(75);
+      if (i > 0) {
+        // Continuation lines must begin with a single space
+        expect(lines[i].startsWith(' ')).toBe(true);
+      }
+    }
+  });
+
+  it('does NOT manufacture a 1-hour duration when endTime is omitted', () => {
+    const pointInTimeEvent = {
+      title: 'Application Deadline 5 PM',
+      description: 'Submit fees by 5 PM sharp',
+      startDate: '2024-11-15',
+      startTime: '5:00 PM',
+      isAllDay: false,
+    };
+
+    const ics = generateIcsContent(pointInTimeEvent);
+    expect(ics).toContain('DTSTART;TZID=Asia/Dhaka:20241115T170000');
+    // Per RFC 5545, when endTime is omitted, no manufactured DTEND is produced
+    expect(ics).not.toContain('DTEND;TZID=Asia/Dhaka:20241115T180000');
   });
 });

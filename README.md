@@ -7,7 +7,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8.svg)](https://tailwindcss.com/)
 [![WCAG 2.2 AA](https://img.shields.io/badge/Accessibility-WCAG%202.2%20AA%20Aligned-green.svg)](https://www.w3.org/WAI/standards-guidelines/wcag/)
-[![Tests](https://img.shields.io/badge/Tests-54%20Passing-emerald.svg)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/Tests-74%20Passing-emerald.svg)](https://vitest.dev/)
 [![Design System](https://img.shields.io/badge/Design-Neomorphism%20(Soft%20UI)-sky.svg)](https://tailwindcss.com/)
 
 **NoticeLens** is an AI-assisted accessibility and document intelligence web application designed for university students with visual impairments or low vision in Bangladesh. It transforms printed and photographed Bengali, English, and mixed-language university notices into an accessible, structured, verifiable, and actionable workspace.
@@ -100,7 +100,7 @@ NoticeLens provides **evidence-backed notice intelligence**:
 - **Storage**: IndexedDB (`NoticeLensDB`) with `localStorage` fallback and base64 persistence
 - **Export**: RFC 5545 iCalendar (`.ics`) with line folding and `Asia/Dhaka` timezone support
 - **Icons**: Lucide React
-- **Testing**: Vitest v2, React Testing Library, Happy-DOM (54 automated unit & integration tests)
+- **Testing**: Vitest v2, React Testing Library, Happy-DOM (74 automated unit & integration tests)
 
 ---
 
@@ -134,7 +134,7 @@ npm run dev
 | :--- | :--- |
 | `npm run dev` | Starts Vite local development server with Hot Module Replacement (HMR) |
 | `npm run build` | Compiles TypeScript (`tsc -b`) and builds optimized production bundle via Vite in `dist/` |
-| `npm run test` | Executes all 54 automated Vitest unit and integration test suites |
+| `npm run test` | Executes all 74 automated Vitest unit and integration test suites |
 | `npm run lint` | Runs ESLint checks across the TypeScript codebase |
 | `npm run preview` | Serves the production build locally |
 
@@ -159,16 +159,17 @@ NoticeLens inspects the host device's available voice catalog using `speechSynth
 ## Privacy & Data Protection
 - **No External Uploads**: Documents and notice images are processed entirely in browser memory.
 - **Local Private Storage**: Saved notices, titles, and extracted deadlines reside strictly in the browser's local IndexedDB (`NoticeLensDB`). Images are stored as durable base64 Data URLs so records survive browser restarts without broken `blob:` references.
+- **Shared Terminal Purge**: On shared lab workstations, students can click "Purge Terminal Data" to wipe all IndexedDB records, cached images, and temporary sessions with a single action.
 - **Data Cleanup**: Clearing browser site data immediately removes all stored notices. An explicit "Delete Notice" dialog with focus trap allows students to erase items anytime.
 
 ---
 
 ## Quality Assurance & Test Verification
-All 54 unit and integration tests run cleanly:
+All 74 unit and integration tests across 6 suites run cleanly:
 ```bash
 npm run test
 ```
-Test coverage across 5 suites includes:
+Test coverage across 6 suites includes:
 - **Atomic Transcript Re-extraction**: Editing a date or text in the transcript string re-derives fields from the updated text, replaces old dates, and updates summaries without race conditions.
 - **Strict Calendar Date Validation**: Validates month lengths, leap years (2024 leap vs 2023 non-leap), and rejects impossible dates (e.g. 31 Feb, 30 Feb, 31 Apr).
 - **Date Provenance**: Yearless dates are never silently assigned the current year; ambiguous dates require explicit review.

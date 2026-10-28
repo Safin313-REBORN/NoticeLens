@@ -19,6 +19,7 @@ import { processNoticeDocument } from './services/extraction/noticeEngine';
 import { generateNoticeSummary } from './services/extraction/summaryGenerator';
 import { saveNotice, getAllSavedNotices, deleteSavedNotice, clearAllSavedNotices } from './services/storage/indexedDBService';
 import { speechService } from './services/speech/webSpeechService';
+import { matchEvidence } from './services/extraction/evidenceMatcher';
 import { DEMO_NOTICES, DemoNoticeItem, generateDemoNoticeSvg } from './data/demoNotices';
 import { AccessibilityStudio } from './components/studio/AccessibilityStudio';
 import { TransparencyView } from './components/transparency/TransparencyView';
@@ -279,10 +280,26 @@ function AppContent() {
     const updatedFields = { ...activeNotice.fields };
     if (updatedFields[key as keyof typeof updatedFields]) {
       const field = updatedFields[key as keyof typeof updatedFields];
+      const origValue = field.originalValue || field.value;
+      const origEvidence = field.originalEvidence !== undefined ? field.originalEvidence : field.evidence;
+
+      // When value changes, do NOT retain stale contradictory evidence
+      // If the edited value exists in activeNotice.ocrText, match fresh evidence; otherwise null
+      let newEvidence = null;
+      if (newValue && newValue.trim() && activeNotice.ocrText) {
+        newEvidence = matchEvidence(activeNotice.ocrText, newValue.trim(), field.label);
+      }
+
       updatedFields[key as keyof typeof updatedFields] = {
         ...field,
         value: newValue,
         status: 'user_edited',
+        isAmbiguous: false,
+        evidence: newEvidence,
+        originalValue: origValue,
+        originalEvidence: origEvidence,
+        editedAt: new Date().toISOString(),
+        provenance: 'user_edited',
       };
     }
 

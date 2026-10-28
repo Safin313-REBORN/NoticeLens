@@ -218,28 +218,39 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
 
           {/* User Override Indicator */}
           {isUserEdited && (
-            <div className="mt-2 px-2 py-1 bg-purple-50 border border-purple-200 text-[11px] text-purple-900 font-medium high-contrast:bg-black high-contrast:border-yellow-400 high-contrast:text-yellow-300">
-              <span className="font-bold">User Override:</span> Manually corrected value (overrides machine extraction).
+            <div className="mt-2 p-2 bg-purple-50/80 rounded-xl border border-purple-200/80 text-[11px] text-purple-900 font-medium high-contrast:!bg-black high-contrast:!border-yellow-400 high-contrast:!text-yellow-300">
+              <div className="font-bold flex items-center gap-1">
+                <span>✏️ User Override:</span>
+                <span className="font-normal text-purple-700 high-contrast:!text-yellow-200">Manually verified value</span>
+              </div>
+              {field.originalValue && field.originalValue !== field.value && (
+                <div className="mt-1 text-[10px] text-slate-500 high-contrast:!text-white/80">
+                  <span className="font-semibold">Original OCR:</span> "{field.originalValue}"
+                </div>
+              )}
             </div>
           )}
 
           {/* Supporting Evidence Snippet Pill */}
-          {field.evidence && (
-            <div className="mt-2.5 pt-2 border-t border-slate-100 high-contrast:border-white/20">
+          {field.evidence ? (
+            <div className="mt-2.5 pt-2 border-t border-slate-200/50 high-contrast:border-white/20">
               <button
                 type="button"
                 onClick={() => onSelectEvidence && onSelectEvidence(field.evidence!)}
                 aria-label={`Highlight evidence in OCR text: ${field.evidence.text}`}
-                className="text-left w-full group/ev flex items-start gap-1.5 text-[11px] text-slate-500 high-contrast:text-slate-300 hover:text-teal-800 transition-colors"
+                className="text-left w-full group/ev flex items-start gap-1.5 text-[11px] text-slate-500 high-contrast:text-slate-300 hover:text-sky-700 transition-colors"
               >
-                <Quote className="w-3 h-3 text-teal-600 shrink-0 mt-0.5 high-contrast:text-yellow-400" />
+                <Quote className="w-3 h-3 text-sky-600 shrink-0 mt-0.5 high-contrast:text-yellow-400" />
                 <span className="line-clamp-2 italic group-hover/ev:underline">
-                  {isUserEdited ? 'Original OCR Snippet: ' : 'Source: '}"{field.evidence.text}"
-                  {isUserEdited && <span className="font-semibold text-slate-400 not-italic ml-1">(superseded)</span>}
+                  Source: "{field.evidence.text}"
                 </span>
               </button>
             </div>
-          )}
+          ) : isUserEdited ? (
+            <div className="mt-2 pt-1 border-t border-slate-200/40 text-[10px] italic text-slate-400 high-contrast:text-slate-300">
+              Evidence: User-provided correction (not in raw transcript).
+            </div>
+          ) : null}
         </div>
       )}
 

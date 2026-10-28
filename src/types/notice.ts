@@ -33,6 +33,10 @@ export interface ExtractedField {
   status: ReviewStatus;
   explanation?: string;
   isAmbiguous?: boolean;
+  originalValue?: string;
+  originalEvidence?: EvidenceSnippet | null;
+  editedAt?: string;
+  provenance?: 'ocr_extracted' | 'user_edited' | 'user_confirmed';
 }
 
 export interface NoticeSummary {

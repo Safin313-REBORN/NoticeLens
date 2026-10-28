@@ -51,7 +51,7 @@ export async function runOcrRecognition(
 
       activeWorker = await createWorker(language, 1, {
         workerPath: '/tesseract/worker.min.js',
-        corePath: '/tesseract/tesseract-core-lstm.js',
+        corePath: '/tesseract',
         workerBlobURL: false,
         langPath: 'https://tessdata.projectnaptha.com/4.0.0',
         logger: (m) => {

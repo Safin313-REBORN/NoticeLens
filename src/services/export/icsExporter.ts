@@ -1,5 +1,5 @@
 import { ProcessedNotice } from '../../types/notice';
-import { extractAllDates } from '../extraction/dateParser';
+import { extractAllDates, isValidCalendarDate } from '../extraction/dateParser';
 import { bengaliToEnglishNumerals } from '../extraction/numerals';
 
 export interface CalendarEventData {
@@ -33,23 +33,44 @@ export function generateSafeCalendarFilename(title: string, suffix = 'deadline')
 }
 
 /**
- * RFC 5545 line folding: folds lines exceeding 75 octets with CRLF followed by single space
+ * RFC 5545 line folding: folds lines exceeding 75 UTF-8 octets with CRLF followed by single space.
+ * Correctly counts UTF-8 byte length (not UTF-16 code units) and never splits multibyte characters.
  */
 export function foldIcsLine(line: string): string {
-  if (line.length <= 75) return line;
+  const encoder = new TextEncoder();
+  if (encoder.encode(line).length <= 75) return line;
+
   const chunks: string[] = [];
-  chunks.push(line.substring(0, 75));
-  let remaining = line.substring(75);
-  while (remaining.length > 0) {
-    chunks.push(' ' + remaining.substring(0, 74));
-    remaining = remaining.substring(74);
+  let currentChunk = '';
+  let currentByteLen = 0;
+  let isFirstLine = true;
+
+  for (const char of line) {
+    const charBytes = encoder.encode(char).length;
+    const limit = isFirstLine ? 75 : 74; // 1 byte reserved for leading space in continuation lines
+
+    if (currentByteLen + charBytes > limit && currentChunk.length > 0) {
+      chunks.push(isFirstLine ? currentChunk : ' ' + currentChunk);
+      currentChunk = char;
+      currentByteLen = charBytes;
+      isFirstLine = false;
+    } else {
+      currentChunk += char;
+      currentByteLen += charBytes;
+    }
   }
+
+  if (currentChunk.length > 0) {
+    chunks.push(isFirstLine ? currentChunk : ' ' + currentChunk);
+  }
+
   return chunks.join('\r\n');
 }
 
 /**
  * Builds RFC 5545 compliant iCalendar (.ics) string.
- * Defends against CRLF injection, folds lines, and accurately handles Bangladesh timezone (Asia/Dhaka).
+ * Defends against CRLF injection, folds lines by UTF-8 octets, and accurately handles Bangladesh timezone (Asia/Dhaka).
+ * Does NOT invent missing years, start times, or event durations.
  */
 export function generateIcsContent(event: CalendarEventData): string {
   const now = new Date();
@@ -62,6 +83,16 @@ export function generateIcsContent(event: CalendarEventData): string {
     throw new Error(`Invalid start date format: ${event.startDate}. Expected YYYY-MM-DD.`);
   }
 
+  const startYear = parseInt(dateMatch[1], 10);
+  const startMonth = parseInt(dateMatch[2], 10);
+  const startDay = parseInt(dateMatch[3], 10);
+
+  if (!isValidCalendarDate(startDay, startMonth, startYear)) {
+    throw new Error(
+      `Invalid calendar date: ${event.startDate}. Day ${startDay} does not exist in month ${startMonth} for year ${startYear}.`
+    );
+  }
+
   let dtStartLine = '';
   let dtEndLine = '';
   const includeTimezone = !event.isAllDay && Boolean(event.startTime);
@@ -71,22 +102,24 @@ export function generateIcsContent(event: CalendarEventData): string {
     const cleanDate = `${dateMatch[1]}${dateMatch[2]}${dateMatch[3]}`;
     dtStartLine = `DTSTART;VALUE=DATE:${cleanDate}`;
     // For all-day events, DTEND is next day per RFC 5545 section 3.6.1
-    const nextDay = new Date(Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]) + 1));
+    const nextDay = new Date(Date.UTC(startYear, startMonth - 1, startDay + 1));
     const cleanEndDate = formatIcsDateOnly(nextDay);
     dtEndLine = `DTEND;VALUE=DATE:${cleanEndDate}`;
   } else {
     // Date with time in Asia/Dhaka (+06:00)
     const startIso = parseDateTimeToDate(event.startDate, event.startTime);
+    if (!startIso) {
+      throw new Error(`Invalid or unparseable event start time: "${event.startTime}". Review required.`);
+    }
     dtStartLine = `DTSTART;TZID=Asia/Dhaka:${formatIcsLocalDateTime(startIso)}`;
 
     if (event.endTime) {
       const endIso = parseDateTimeToDate(event.startDate, event.endTime);
-      dtEndLine = `DTEND;TZID=Asia/Dhaka:${formatIcsLocalDateTime(endIso)}`;
-    } else {
-      // Default to 1 hour duration
-      const endIso = new Date(startIso.getTime() + 60 * 60 * 1000);
-      dtEndLine = `DTEND;TZID=Asia/Dhaka:${formatIcsLocalDateTime(endIso)}`;
+      if (endIso) {
+        dtEndLine = `DTEND;TZID=Asia/Dhaka:${formatIcsLocalDateTime(endIso)}`;
+      }
     }
+    // Per RFC 5545 §3.6.1: when endTime is omitted, no duration is manufactured.
   }
 
   const cleanTitle = escapeIcsText(event.title);
@@ -252,18 +285,35 @@ export function formatIcsDateOnly(date: Date): string {
   return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`;
 }
 
-export function parseDateTimeToDate(dateStr: string, timeStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const normalizedTime = bengaliToEnglishNumerals(timeStr || '');
-  const match = normalizedTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+export function parseDateTimeToDate(dateStr: string, timeStr: string): Date | null {
+  if (!dateStr || !timeStr || !timeStr.trim()) return null;
 
-  let hours = 9;
-  let minutes = 0;
+  const dateMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) return null;
 
-  if (match) {
-    hours = parseInt(match[1], 10);
-    minutes = parseInt(match[2], 10);
-    const meridiem = match[3]?.toUpperCase();
+  const year = parseInt(dateMatch[1], 10);
+  const month = parseInt(dateMatch[2], 10);
+  const day = parseInt(dateMatch[3], 10);
+
+  if (!isValidCalendarDate(day, month, year)) return null;
+
+  const normalizedTime = bengaliToEnglishNumerals(timeStr.trim());
+  const match = normalizedTime.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+
+  if (!match) {
+    return null;
+  }
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const meridiem = match[4]?.toUpperCase();
+
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  if (meridiem) {
+    if (hours > 12) return null;
     if (meridiem === 'PM' && hours < 12) hours += 12;
     if (meridiem === 'AM' && hours === 12) hours = 0;
   }
@@ -277,10 +327,24 @@ export function parseDateTimeToDate(dateStr: string, timeStr: string): Date {
  */
 export function isExportAllowed(notice: ProcessedNotice): boolean {
   const deadline = notice.fields.deadline;
-  if (!deadline || deadline.status === 'not_found') return false;
-  if (deadline.status === 'user_edited') return true;
-  if (deadline.isAmbiguous || deadline.status === 'needs_review') return false;
+  const eventDate = notice.fields.eventDate;
+  const targetField = deadline && deadline.status !== 'not_found' ? deadline : eventDate;
+
+  if (!targetField || targetField.status === 'not_found') return false;
+  if (targetField.status !== 'user_edited' && (targetField.isAmbiguous || targetField.status === 'needs_review')) {
+    return false;
+  }
+
   const event = buildEventFromNotice(notice);
-  return event !== null;
+  if (!event) return false;
+
+  const dateMatch = event.startDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) return false;
+
+  const y = parseInt(dateMatch[1], 10);
+  const m = parseInt(dateMatch[2], 10);
+  const d = parseInt(dateMatch[3], 10);
+  return isValidCalendarDate(d, m, y);
 }
+
 

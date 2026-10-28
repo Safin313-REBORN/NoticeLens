@@ -84,24 +84,33 @@ describe('Production Audit Remediations', () => {
       const dateStr = '2024-11-15';
       // "১০:৩০ AM" in Bengali digits
       const parsedBengaliTime = parseDateTimeToDate(dateStr, '১০:৩০ AM');
-      expect(parsedBengaliTime.getUTCHours()).toBe(10);
-      expect(parsedBengaliTime.getUTCMinutes()).toBe(30);
+      expect(parsedBengaliTime).not.toBeNull();
+      expect(parsedBengaliTime!.getUTCHours()).toBe(10);
+      expect(parsedBengaliTime!.getUTCMinutes()).toBe(30);
 
       // "০২:৪৫ PM" in Bengali digits (14:45 UTC)
       const parsedBengaliPm = parseDateTimeToDate(dateStr, '০২:৪৫ PM');
-      expect(parsedBengaliPm.getUTCHours()).toBe(14);
-      expect(parsedBengaliPm.getUTCMinutes()).toBe(45);
+      expect(parsedBengaliPm).not.toBeNull();
+      expect(parsedBengaliPm!.getUTCHours()).toBe(14);
+      expect(parsedBengaliPm!.getUTCMinutes()).toBe(45);
     });
 
     it('correctly parses standard English 12-hour time strings', () => {
       const dateStr = '2024-11-15';
       const parsedAm = parseDateTimeToDate(dateStr, '09:15 AM');
-      expect(parsedAm.getUTCHours()).toBe(9);
-      expect(parsedAm.getUTCMinutes()).toBe(15);
+      expect(parsedAm).not.toBeNull();
+      expect(parsedAm!.getUTCHours()).toBe(9);
+      expect(parsedAm!.getUTCMinutes()).toBe(15);
 
       const parsedPm = parseDateTimeToDate(dateStr, '03:45 PM');
-      expect(parsedPm.getUTCHours()).toBe(15);
-      expect(parsedPm.getUTCMinutes()).toBe(45);
+      expect(parsedPm).not.toBeNull();
+      expect(parsedPm!.getUTCHours()).toBe(15);
+      expect(parsedPm!.getUTCMinutes()).toBe(45);
+    });
+
+    it('returns null on invalid or unparseable time strings without inventing 9:00 AM', () => {
+      expect(parseDateTimeToDate('2024-11-15', 'invalid-time')).toBeNull();
+      expect(parseDateTimeToDate('2024-11-15', '')).toBeNull();
     });
   });
 
