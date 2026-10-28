@@ -125,14 +125,14 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Status Badge */}
           <span
-            className={`brutal-badge px-2 py-0.5 text-[10px] ${
+            className={`neu-badge px-2.5 py-0.5 text-[10px] font-bold ${
               isUserEdited
-                ? 'bg-neo-purple text-white high-contrast:bg-yellow-400 high-contrast:text-black'
+                ? 'bg-purple-100 text-purple-800 high-contrast:!bg-yellow-400 high-contrast:!text-black'
                 : needsReview
-                ? 'bg-neo-coral text-white high-contrast:bg-yellow-400 high-contrast:text-black'
+                ? 'bg-amber-100 text-amber-800 high-contrast:!bg-yellow-400 high-contrast:!text-black'
                 : isNotFound
-                ? 'bg-slate-200 text-slate-800 high-contrast:bg-slate-800 high-contrast:text-white'
-                : 'bg-neo-mint text-black high-contrast:bg-yellow-400 high-contrast:text-black'
+                ? 'bg-slate-200 text-slate-700 high-contrast:!bg-slate-800 high-contrast:!text-white'
+                : 'bg-emerald-100 text-emerald-800 high-contrast:!bg-yellow-400 high-contrast:!text-black'
             }`}
           >
             {isUserEdited
@@ -148,7 +148,7 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
             <button
               onClick={handleSpeak}
               aria-label={`Listen to ${field.label}`}
-              className="p-1 border border-black bg-white hover:bg-neo-yellow text-black shadow-brutal-sm high-contrast:text-white"
+              className="p-1.5 neu-btn rounded-xl bg-[#eef2f8] text-slate-700 shadow-[2px_2px_4px_#c5d0e0,-2px_-2px_4px_#ffffff] hover:text-slate-900 border border-white/60 high-contrast:!border high-contrast:!border-white high-contrast:!text-white"
             >
               <Volume2 className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
@@ -161,7 +161,7 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
                 setIsEditing(true);
               }}
               aria-label={`Edit ${field.label}`}
-              className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:text-white"
+              className="p-1.5 neu-btn rounded-xl bg-[#eef2f8] text-slate-700 shadow-[2px_2px_4px_#c5d0e0,-2px_-2px_4px_#ffffff] hover:text-slate-900 border border-white/60 focus-visible:ring-2 focus-visible:ring-sky-500 high-contrast:!border high-contrast:!border-white high-contrast:!text-white"
             >
               <Edit3 className="w-3.5 h-3.5" />
             </button>

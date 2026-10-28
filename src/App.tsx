@@ -12,7 +12,7 @@ import { AudioPlayerBar } from './components/speech/AudioPlayerBar';
 import { ToastProvider, useToast } from './components/common/Toast';
 import { Modal } from './components/common/Modal';
 
-import { ProcessedNotice, SavedNotice, OCRProgress, UITheme } from './types/notice';
+import { ProcessedNotice, SavedNotice, OCRProgress } from './types/notice';
 import { runOcrRecognition, terminateOcrWorker } from './services/ocr/tesseractWorker';
 import { preprocessNoticeImage } from './services/ocr/imagePreprocess';
 import { processNoticeDocument } from './services/extraction/noticeEngine';
@@ -42,15 +42,6 @@ function AppContent() {
     'System initialized. Welcome to NoticeLens accessible reader.',
   ]);
   const [sampleModalOpen, setSampleModalOpen] = useState<boolean>(false);
-
-  const [currentTheme, setCurrentTheme] = useState<UITheme>(() => {
-    try {
-      return (localStorage.getItem('noticelens_theme') as UITheme) || 'neomorphism';
-    } catch {
-      return 'neomorphism';
-    }
-  });
-
   const isCancelledRef = useRef<boolean>(false);
   const { showToast } = useToast();
 
@@ -102,16 +93,10 @@ function AppContent() {
     minDistance: 45,
   });
 
-  // Sync active theme class to document body
+  // Set Neumorphism as the primary active design system
   useEffect(() => {
-    document.body.classList.remove('theme-neomorphism', 'theme-neobrutalist', 'theme-memphis', 'theme-artdeco', 'theme-retroterminal');
-    document.body.classList.add(`theme-${currentTheme}`);
-    try {
-      localStorage.setItem('noticelens_theme', currentTheme);
-    } catch {
-      // ignore
-    }
-  }, [currentTheme]);
+    document.body.classList.add('theme-neomorphism');
+  }, []);
 
   // Global accessibility hotkeys (Alt+1 to Alt+5)
   useEffect(() => {
@@ -425,8 +410,6 @@ function AppContent() {
       {/* 3. Accessibility & High Contrast Toolbar */}
       <AccessibilityToolbar
         onAnnouncement={(txt) => broadcastAnnouncement(txt)}
-        currentTheme={currentTheme}
-        onThemeChange={setCurrentTheme}
       />
 
       {/* 4. Navigation Bar */}
@@ -436,8 +419,6 @@ function AppContent() {
         savedCount={savedNotices.length}
         hasActiveNotice={activeNotice !== null}
         onOpenSampleModal={() => setSampleModalOpen(true)}
-        currentTheme={currentTheme}
-        onThemeChange={setCurrentTheme}
       />
 
       {/* 5. Main Content Area */}
@@ -472,21 +453,21 @@ function AppContent() {
               onDownloadIcsSuccess={() => showToast('Calendar ICS file generated and downloaded.', 'success')}
             />
           ) : (
-            <div className="brutal-card p-10 text-center bg-white max-w-xl mx-auto my-12">
-              <h2 className="text-2xl font-black mb-3 uppercase tracking-tight">No Active Notice In Workspace</h2>
-              <p className="text-sm font-medium text-slate-600 mb-6">
+            <div className="neu-card p-10 text-center max-w-xl mx-auto my-12">
+              <h2 className="text-2xl font-bold mb-3 tracking-tight text-slate-800 high-contrast:text-white">No Active Notice In Workspace</h2>
+              <p className="text-sm font-medium text-slate-600 mb-6 high-contrast:text-slate-300">
                 Ingest a university notice photo or select one of our curated sample notices to open the full analysis workspace.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
                   onClick={() => handleTabChange('scan')}
-                  className="brutal-btn bg-yellow-400 text-black px-5 py-2.5 font-black text-sm"
+                  className="neu-btn bg-sky-600 text-white px-5 py-2.5 font-bold text-sm hover:bg-sky-700 high-contrast:!bg-yellow-400 high-contrast:!text-black"
                 >
                   Go to Notice Ingestion
                 </button>
                 <button
                   onClick={() => setSampleModalOpen(true)}
-                  className="brutal-btn bg-white text-black px-5 py-2.5 font-black text-sm"
+                  className="neu-btn px-5 py-2.5 font-bold text-sm text-slate-700 hover:text-slate-900 high-contrast:!bg-slate-900 high-contrast:!text-white"
                 >
                   Load Sample Notice
                 </button>
@@ -509,8 +490,6 @@ function AppContent() {
         {/* Tab 4: Voice & Accessibility Studio */}
         {!isProcessing && activeTab === 'studio' && (
           <AccessibilityStudio
-            currentTheme={currentTheme}
-            onThemeChange={setCurrentTheme}
             announcementLog={announcementLog}
             onTestAnnouncement={broadcastAnnouncement}
           />

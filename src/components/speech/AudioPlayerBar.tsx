@@ -80,12 +80,12 @@ export const AudioPlayerBar: React.FC = () => {
                 Audio Reader
               </span>
               <span
-                className={`brutal-badge text-[10px] px-2 py-0.5 rounded-full ${
+                className={`neu-badge text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
                   speechState.status === 'playing'
-                    ? 'bg-emerald-500 text-white animate-pulse high-contrast:bg-yellow-400 high-contrast:text-black'
+                    ? 'bg-emerald-500 text-white animate-pulse high-contrast:!bg-yellow-400 high-contrast:!text-black'
                     : speechState.status === 'paused'
-                    ? 'bg-amber-500 text-white high-contrast:bg-yellow-400 high-contrast:text-black'
-                    : 'bg-slate-200 text-slate-800 high-contrast:bg-slate-800 high-contrast:text-white'
+                    ? 'bg-amber-500 text-white high-contrast:!bg-yellow-400 high-contrast:!text-black'
+                    : 'bg-slate-200 text-slate-700 high-contrast:!bg-slate-800 high-contrast:!text-white'
                 }`}
               >
                 {speechState.status}
@@ -141,7 +141,7 @@ export const AudioPlayerBar: React.FC = () => {
             onClick={() => setShowVoiceSettings(!showVoiceSettings)}
             aria-expanded={showVoiceSettings}
             aria-label="Speech Voice Settings"
-            className="brutal-btn p-2.5 bg-white text-black hover:bg-slate-100 high-contrast:border-white high-contrast:text-white"
+            className="neu-btn p-2.5 rounded-xl bg-[#eef2f8] text-slate-700 shadow-[3px_3px_6px_#c5d0e0,-3px_-3px_6px_#ffffff] hover:text-slate-900 border border-white/60 high-contrast:!border-white high-contrast:!text-white"
           >
             <Settings className="w-4 h-4 stroke-[2.5]" />
           </button>

@@ -8,7 +8,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8.svg)](https://tailwindcss.com/)
 [![WCAG 2.2 AA](https://img.shields.io/badge/Accessibility-WCAG%202.2%20AA%20Aligned-green.svg)](https://www.w3.org/WAI/standards-guidelines/wcag/)
 [![Tests](https://img.shields.io/badge/Tests-54%20Passing-emerald.svg)](https://vitest.dev/)
-[![Design System](https://img.shields.io/badge/Design-Neo--Brutalist-yellow.svg)](https://tailwindcss.com/)
+[![Design System](https://img.shields.io/badge/Design-Neomorphism%20(Soft%20UI)-sky.svg)](https://tailwindcss.com/)
 
 **NoticeLens** is an AI-assisted accessibility and document intelligence web application designed for university students with visual impairments or low vision in Bangladesh. It transforms printed and photographed Bengali, English, and mixed-language university notices into an accessible, structured, verifiable, and actionable workspace.
 

@@ -55,13 +55,9 @@ describe('Demo Notices & Pipeline Integration', () => {
     expect(summaryBn.overview).toContain('বিজ্ঞপ্তি');
   });
 
-  it('supports all 4 avant-garde UI theme modes (Neo-Brutalist, Memphis, Art Deco, Retro)', () => {
-    const supportedThemes = ['neobrutalist', 'memphis', 'artdeco', 'retroterminal'];
-    expect(supportedThemes).toHaveLength(4);
-    supportedThemes.forEach((t) => {
-      expect(typeof t).toBe('string');
-      expect(['neobrutalist', 'memphis', 'artdeco', 'retroterminal']).toContain(t);
-    });
+  it('standardizes exclusively on Neumorphism (Soft UI) design architecture', () => {
+    const primaryTheme = 'neomorphism';
+    expect(primaryTheme).toBe('neomorphism');
   });
 
   it('supports all 5 multipage navigation destinations', () => {

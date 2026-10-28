@@ -95,26 +95,26 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
 
   return (
     <section
-      className="brutal-card bg-white overflow-hidden high-contrast:bg-black high-contrast:border-white"
+      className="neu-card overflow-hidden high-contrast:!bg-black high-contrast:!border-white"
       aria-labelledby="ocr-transcript-heading"
     >
       {/* Transcript Header */}
-      <div className="border-b-3 border-black bg-neo-mint text-black px-6 py-4 flex flex-wrap items-center justify-between gap-3 high-contrast:bg-black high-contrast:border-b-2 high-contrast:border-white">
+      <div className="border-b border-slate-200/80 bg-[#eef2f8] px-6 py-4 flex flex-wrap items-center justify-between gap-3 high-contrast:!bg-black high-contrast:!border-b-2 high-contrast:!border-white">
         <div className="flex items-center gap-2">
-          <FileText className="w-5 h-5 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
-          <h2 id="ocr-transcript-heading" className="text-base font-black uppercase text-ink-900 high-contrast:text-white">
+          <FileText className="w-5 h-5 text-sky-600 high-contrast:text-yellow-400 stroke-[2.5]" />
+          <h2 id="ocr-transcript-heading" className="text-base font-bold uppercase text-slate-900 high-contrast:text-white">
             OCR Document Transcript
           </h2>
           {ocrConfidence !== undefined && ocrConfidence > 0 ? (
             <span
-              className="brutal-badge text-[10px] px-2 py-0.5 bg-neo-yellow text-black font-black"
+              className="neu-badge text-[10px] px-2.5 py-0.5 bg-sky-100 text-sky-800 font-bold high-contrast:!bg-yellow-400 high-contrast:!text-black"
               title="Tesseract engine character confidence estimate. Does not guarantee overall factual validity."
             >
               OCR Conf: {Math.round(ocrConfidence)}%
             </span>
           ) : (
             <span
-              className="brutal-badge text-[10px] px-2 py-0.5 bg-slate-200 text-slate-800 font-bold"
+              className="neu-badge text-[10px] px-2.5 py-0.5 bg-slate-200 text-slate-700 font-semibold high-contrast:!bg-slate-800 high-contrast:!text-white"
               title={sourceType === 'demo' ? 'Pre-bundled sample fixture (live OCR was not executed)' : 'User-edited transcript'}
             >
               {sourceType === 'demo' ? 'Preset Sample (No OCR)' : 'Transcript'}
@@ -126,7 +126,7 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
           <button
             onClick={handleSpeakAll}
             aria-label="Read full raw transcript aloud"
-            className="brutal-btn inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-black text-xs font-bold high-contrast:bg-slate-900 high-contrast:border-white high-contrast:text-white"
+            className="neu-btn inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#eef2f8] text-slate-700 text-xs font-bold border border-white/60 high-contrast:!bg-slate-900 high-contrast:!border-white high-contrast:!text-white"
           >
             <Volume2 className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Read All</span>
@@ -135,9 +135,9 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
           <button
             onClick={handleCopy}
             aria-label="Copy recognized text to clipboard"
-            className="brutal-btn inline-flex items-center gap-1.5 px-3 py-1.5 bg-black text-white text-xs font-bold high-contrast:bg-yellow-400 high-contrast:text-black"
+            className="neu-btn inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 shadow-sm high-contrast:!bg-yellow-400 high-contrast:!text-black"
           >
-            {copied ? <Check className="w-3.5 h-3.5 stroke-[2.5] text-neo-mint" /> : <Copy className="w-3.5 h-3.5 stroke-[2.5]" />}
+            {copied ? <Check className="w-3.5 h-3.5 stroke-[2.5] text-white" /> : <Copy className="w-3.5 h-3.5 stroke-[2.5]" />}
             <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
         </div>
@@ -145,8 +145,8 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
 
       <div className="p-6">
         {/* Transparent Confidence Guidance Note */}
-        <div className="mb-4 p-3 border-2 border-black bg-[#FFFDF0] text-xs text-ink-900 shadow-brutal-sm high-contrast:bg-slate-900 high-contrast:border-yellow-400 high-contrast:text-yellow-300 flex items-start gap-2">
-          <Info className="w-4 h-4 text-black shrink-0 mt-0.5 stroke-[2.5] high-contrast:text-yellow-400" />
+        <div className="mb-4 p-3.5 neu-inset rounded-xl text-xs text-slate-700 high-contrast:!bg-slate-900 high-contrast:!border-yellow-400 high-contrast:!text-yellow-300 flex items-start gap-2 border border-slate-200/60">
+          <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5 stroke-[2.5] high-contrast:text-yellow-400" />
           <p className="leading-relaxed font-medium">
             <strong>Editable Source:</strong> If Bengali font or low lighting caused an OCR typo, edit the text below and click <strong>Apply Changes & Re-derive</strong>. NoticeLens will synchronously re-derive all dates, deadlines, and summaries.
           </p>
@@ -154,9 +154,9 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
 
         {/* Selected Evidence Highlight Banner */}
         {selectedEvidence && (
-          <div className="mb-3 px-3 py-2 bg-neo-yellow/20 border-2 border-black text-xs font-bold text-ink-900 flex items-center justify-between">
+          <div className="mb-3 px-3.5 py-2.5 neu-inset rounded-xl bg-sky-50 border border-sky-200/60 text-xs font-bold text-slate-800 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 bg-neo-yellow border border-black inline-block"></span>
+              <span className="w-2.5 h-2.5 bg-sky-500 rounded-full inline-block"></span>
               <span>
                 Highlighting citation for:{' '}
                 <strong>{selectedEvidence.matchedKeyword || selectedEvidence.text}</strong>
@@ -175,7 +175,7 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
               value={editableText}
               onChange={(e) => setEditableText(e.target.value)}
               rows={12}
-              className="w-full p-4 text-xs font-mono border-2 border-black bg-white text-ink-900 shadow-brutal-sm focus:outline-none focus:ring-2 focus:ring-black high-contrast:bg-black high-contrast:border-white high-contrast:text-white leading-relaxed"
+              className="w-full p-4 text-xs font-mono rounded-xl border border-slate-300 bg-white/95 text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 high-contrast:!bg-black high-contrast:!border-white high-contrast:!text-white leading-relaxed"
               aria-label="Editable OCR transcript"
               autoFocus
             />
@@ -186,14 +186,14 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
                   setEditableText(ocrText);
                   setIsEditing(false);
                 }}
-                className="brutal-btn px-4 py-2 bg-white text-black text-xs font-bold hover:bg-slate-100 high-contrast:bg-black high-contrast:text-white high-contrast:border-white"
+                className="neu-btn px-4 py-2 bg-[#eef2f8] text-slate-700 text-xs font-bold hover:text-slate-900 border border-white/60 high-contrast:!bg-black high-contrast:!text-white high-contrast:!border-white"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleApplyChanges}
-                className="brutal-btn inline-flex items-center gap-2 px-4 py-2 bg-neo-yellow text-black text-xs font-black hover:bg-yellow-300 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black"
+                className="neu-btn inline-flex items-center gap-2 px-4 py-2 bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 shadow-sm high-contrast:!bg-yellow-400 high-contrast:!text-black"
               >
                 <RefreshCw className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>Apply Changes & Re-derive</span>
@@ -206,19 +206,19 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
               tabIndex={0}
               role="region"
               aria-label="Recognized notice text with highlighted citation"
-              className="w-full p-4 text-xs font-mono bg-slate-50 border-2 border-black max-h-96 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-brutal-sm focus:outline-none focus:ring-2 focus:ring-black high-contrast:bg-black high-contrast:border-white high-contrast:text-white"
+              className="w-full p-4 text-xs font-mono neu-inset rounded-xl max-h-96 overflow-y-auto whitespace-pre-wrap leading-relaxed text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 high-contrast:!bg-black high-contrast:!border-white high-contrast:!text-white"
             >
               {renderHighlightedText()}
             </div>
 
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-[11px] font-bold text-slate-500 high-contrast:text-slate-400">
+              <p className="text-[11px] font-medium text-slate-500 high-contrast:text-slate-400">
                 Found a typo? You can correct any sentence above.
               </p>
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="brutal-btn px-4 py-1.5 bg-white text-black text-xs font-black hover:bg-slate-100 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black"
+                className="neu-btn px-4 py-1.5 bg-[#eef2f8] text-slate-700 text-xs font-bold hover:text-slate-900 border border-white/60 high-contrast:!bg-yellow-400 high-contrast:!text-black"
               >
                 Edit Transcript
               </button>

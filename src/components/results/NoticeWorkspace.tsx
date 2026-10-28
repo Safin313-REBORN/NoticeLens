@@ -45,27 +45,27 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
   return (
     <div className="space-y-6">
       {/* Workspace Subheader Banner */}
-      <div className="brutal-card flex flex-wrap items-center justify-between gap-4 bg-white p-5 high-contrast:bg-black high-contrast:border-white">
+      <div className="neu-card flex flex-wrap items-center justify-between gap-4 p-5 high-contrast:!bg-black high-contrast:!border-white">
         <div>
-          <span className="brutal-badge text-xs px-2.5 py-1 bg-neo-yellow text-black -rotate-1 inline-block shadow-brutal-sm">
+          <span className="neu-badge text-xs px-3 py-1 bg-sky-100 text-sky-800 font-bold inline-block high-contrast:!bg-yellow-400 high-contrast:!text-black">
             {notice.fields.category.value} Notice
           </span>
-          <h1 className="text-xl sm:text-2xl font-black text-ink-900 high-contrast:text-white mt-2 uppercase tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 high-contrast:text-white mt-2 uppercase tracking-tight">
             {notice.title}
           </h1>
-          <p className="text-xs font-bold text-slate-600 high-contrast:text-yellow-300 mt-1 uppercase tracking-wider">
+          <p className="text-xs font-bold text-slate-500 high-contrast:text-yellow-300 mt-1 uppercase tracking-wider">
             Issued by: {notice.fields.institution.value}
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <div className="brutal-badge flex items-center gap-1.5 px-3 py-1.5 bg-neo-mint text-black shadow-brutal-sm">
+          <div className="neu-badge flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-bold high-contrast:!bg-yellow-400 high-contrast:!text-black">
             <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
             <span>{confirmedCount} Confirmed Facts</span>
           </div>
 
           {needsReviewCount > 0 && (
-            <div className="brutal-badge flex items-center gap-1.5 px-3 py-1.5 bg-neo-coral text-white shadow-brutal-sm">
+            <div className="neu-badge flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-200/60 font-bold high-contrast:!bg-yellow-400 high-contrast:!text-black">
               <AlertTriangle className="w-4 h-4 stroke-[2.5]" />
               <span>{needsReviewCount} Needs Review</span>
             </div>
@@ -90,13 +90,13 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
 
           {/* Structured Fields Section */}
           <section
-            className="brutal-card bg-white p-6 high-contrast:bg-black high-contrast:border-white"
+            className="neu-card p-6 high-contrast:!bg-black high-contrast:!border-white"
             aria-labelledby="fields-section-heading"
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b-2 border-black high-contrast:border-white">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200/80 high-contrast:border-white">
               <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
-                <h2 id="fields-section-heading" className="text-base font-black uppercase text-ink-900 high-contrast:text-white">
+                <Layers className="w-5 h-5 text-sky-600 high-contrast:text-yellow-400 stroke-[2.5]" />
+                <h2 id="fields-section-heading" className="text-base font-bold uppercase text-slate-900 high-contrast:text-white">
                   Extracted Notice Details ({filteredFields.length})
                 </h2>
               </div>
@@ -105,30 +105,30 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setFieldFilter('all')}
-                  className={`brutal-btn px-2.5 py-1 text-xs font-bold ${
+                  className={`neu-btn px-3 py-1 text-xs font-bold ${
                     fieldFilter === 'all'
-                      ? 'bg-black text-white high-contrast:bg-yellow-400 high-contrast:text-black'
-                      : 'bg-white text-ink-900 hover:bg-slate-100 high-contrast:text-white'
+                      ? 'bg-sky-600 text-white high-contrast:!bg-yellow-400 high-contrast:!text-black'
+                      : 'text-slate-700 hover:text-slate-900 high-contrast:!text-white'
                   }`}
                 >
                   All ({allFields.length})
                 </button>
                 <button
                   onClick={() => setFieldFilter('needs_review')}
-                  className={`brutal-btn px-2.5 py-1 text-xs font-bold ${
+                  className={`neu-btn px-3 py-1 text-xs font-bold ${
                     fieldFilter === 'needs_review'
-                      ? 'bg-black text-white high-contrast:bg-yellow-400 high-contrast:text-black'
-                      : 'bg-white text-ink-900 hover:bg-slate-100 high-contrast:text-white'
+                      ? 'bg-sky-600 text-white high-contrast:!bg-yellow-400 high-contrast:!text-black'
+                      : 'text-slate-700 hover:text-slate-900 high-contrast:!text-white'
                   }`}
                 >
                   Review ({needsReviewCount})
                 </button>
                 <button
                   onClick={() => setFieldFilter('found')}
-                  className={`brutal-btn px-2.5 py-1 text-xs font-bold ${
+                  className={`neu-btn px-3 py-1 text-xs font-bold ${
                     fieldFilter === 'found'
-                      ? 'bg-black text-white high-contrast:bg-yellow-400 high-contrast:text-black'
-                      : 'bg-white text-ink-900 hover:bg-slate-100 high-contrast:text-white'
+                      ? 'bg-sky-600 text-white high-contrast:!bg-yellow-400 high-contrast:!text-black'
+                      : 'text-slate-700 hover:text-slate-900 high-contrast:!text-white'
                   }`}
                 >
                   Found ({allFields.filter((f) => f.status !== 'not_found').length})
@@ -155,31 +155,31 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
         <div className="lg:col-span-5 space-y-6">
           {/* Document Preview Card if image data exists */}
           {notice.imageDataUrl ? (
-            <div className="brutal-card bg-white overflow-hidden high-contrast:bg-black high-contrast:border-white">
-              <div className="px-5 py-3 border-b-2 border-black flex items-center justify-between high-contrast:border-white">
-                <span className="text-xs font-black uppercase text-ink-900 high-contrast:text-white flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
+            <div className="neu-card overflow-hidden high-contrast:!bg-black high-contrast:!border-white">
+              <div className="px-5 py-3 border-b border-slate-200/80 flex items-center justify-between high-contrast:border-white">
+                <span className="text-xs font-bold uppercase text-slate-800 high-contrast:text-white flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-sky-600 high-contrast:text-yellow-400 stroke-[2.5]" />
                   <span>Original Document Preview</span>
                 </span>
                 <button
                   onClick={() => setShowOriginalImage(!showOriginalImage)}
-                  className="text-xs font-black uppercase text-slate-800 hover:underline high-contrast:text-yellow-300"
+                  className="text-xs font-bold uppercase text-sky-600 hover:underline high-contrast:text-yellow-300"
                 >
                   {showOriginalImage ? 'Collapse' : 'Expand'}
                 </button>
               </div>
               {showOriginalImage && (
-                <div className="p-3 bg-slate-100 flex items-center justify-center max-h-64 overflow-hidden high-contrast:bg-slate-950">
+                <div className="p-3 neu-inset m-3 rounded-xl flex items-center justify-center max-h-64 overflow-hidden high-contrast:bg-slate-950">
                   <img
                     src={notice.imageDataUrl}
                     alt="Original scanned notice"
-                    className="max-h-60 w-auto object-contain border-2 border-black"
+                    className="max-h-60 w-auto object-contain rounded-lg"
                   />
                 </div>
               )}
             </div>
           ) : (
-            <div className="brutal-card bg-white p-4 high-contrast:bg-black high-contrast:border-white text-center">
+            <div className="neu-card p-4 high-contrast:!bg-black high-contrast:!border-white text-center">
               <ImageIcon className="w-5 h-5 mx-auto text-slate-500 mb-1" />
               <p className="text-[11px] font-bold text-slate-600 high-contrast:text-slate-300">
                 Original image was not stored in fallback storage.

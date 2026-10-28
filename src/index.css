@@ -35,60 +35,6 @@
     --teal-primary: #38bdf8;
     --teal-hover: #7dd3fc;
     --amber-warning: #facc15;
-    --border-brutal: #ffffff;
-    --shadow-brutal: #ffffff;
-  }
-
-  /* 1. Neo-Brutalist Theme */
-  .theme-neobrutalist {
-    --bg-primary: #fffdf0;
-    --bg-surface: #ffffff;
-    --border-brutal: #000000;
-    --shadow-brutal: #000000;
-    --accent-pop: #ffe600;
-    --accent-mint: #05ffa1;
-    --accent-coral: #ff5a5f;
-  }
-
-  /* 2. Memphis Design Theme (80s postmodern geometric) */
-  .theme-memphis {
-    --bg-primary: #fff5f8;
-    --bg-surface: #ffffff;
-    --border-brutal: #18181b;
-    --shadow-brutal: #ff5277;
-    --accent-pop: #ff5277;
-    --accent-mint: #00e5d0;
-    --accent-coral: #ffbe0b;
-    background-image: radial-gradient(#ff5277 1px, transparent 1px), radial-gradient(#00e5d0 1px, transparent 1px);
-    background-size: 32px 32px;
-    background-position: 0 0, 16px 16px;
-  }
-
-  /* 3. Art Deco Noir & Gold Theme */
-  .theme-artdeco {
-    --bg-primary: #0d0e12;
-    --bg-surface: #14151a;
-    --text-primary: #f8fafc;
-    --text-secondary: #fde68a;
-    --border-brutal: #d4af37;
-    --shadow-brutal: rgba(212, 175, 55, 0.45);
-    --accent-pop: #d4af37;
-    --accent-mint: #f59e0b;
-    --accent-coral: #e2e8f0;
-  }
-
-  /* 4. Retro Terminal Theme (Phosphor CRT & Monospace) */
-  .theme-retroterminal {
-    --bg-primary: #080c09;
-    --bg-surface: #0f1612;
-    --text-primary: #4ade80;
-    --text-secondary: #fef08a;
-    --border-brutal: #22c55e;
-    --shadow-brutal: #15803d;
-    --accent-pop: #22c55e;
-    --accent-mint: #86efac;
-    --accent-coral: #f59e0b;
-    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
   }
 
   body {
@@ -113,21 +59,15 @@
 
   /* High-visibility accessible focus indicators (WCAG 2.4.7, 2.4.13) */
   :focus-visible {
-    outline: 3px solid #000000 !important;
+    outline: 3px solid #0284c7 !important;
     outline-offset: 3px !important;
-    box-shadow: 0 0 0 2px #ffe600;
+    box-shadow: 0 0 0 2px #ffffff;
   }
 
-  .high-contrast :focus-visible,
-  .theme-artdeco :focus-visible {
+  .high-contrast :focus-visible {
     outline: 4px solid #facc15 !important;
     outline-offset: 3px !important;
     box-shadow: 0 0 0 2px #000000;
-  }
-
-  .theme-retroterminal :focus-visible {
-    outline: 3px solid #22c55e !important;
-    outline-offset: 3px !important;
   }
 
   /* Skip to main content link for keyboard users */
@@ -136,15 +76,16 @@
     top: -9999px;
     left: 50%;
     transform: translateX(-50%);
-    background: #000000;
-    color: #ffe600;
-    border: 3px solid #000000;
+    background: #0284c7;
+    color: #ffffff;
+    border: 2px solid #ffffff;
     padding: 0.75rem 1.5rem;
     z-index: 9999;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    box-shadow: 4px 4px 0px #ffe600;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     text-decoration: none;
   }
 
@@ -157,36 +98,37 @@
     color: #000000;
     border: 3px solid #ffffff;
     box-shadow: 4px 4px 0px #ffffff;
+    border-radius: 0;
   }
 }
 
-/* Neumorphism (Soft UI) Core Styles for Desktop and Modern Mode */
-:where(.neu-card),
-:where(.theme-neomorphism .brutal-card) {
+/* ==========================================================================
+   NEUMORPHISM (SOFT UI) - PRIMARY & ONLY DESIGN SYSTEM
+   ========================================================================== */
+
+/* Extruded Convex Cards */
+:where(.neu-card) {
   background-color: var(--bg-surface, #eef2f8);
 }
 
-.neu-card,
-.theme-neomorphism .brutal-card {
+.neu-card {
   border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 20px;
   box-shadow: 8px 8px 20px var(--neu-shadow-dark, #c5d0e0), -8px -8px 20px var(--neu-shadow-light, #ffffff);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.neu-card-hover:hover,
-.theme-neomorphism .brutal-card-hover:hover {
+.neu-card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 12px 12px 26px #b4c3d6, -12px -12px 26px #ffffff;
 }
 
-:where(.neu-btn),
-:where(.theme-neomorphism .brutal-btn) {
+/* Tactile Extruded Buttons */
+:where(.neu-btn) {
   background-color: var(--bg-surface, #eef2f8);
 }
 
-.neu-btn,
-.theme-neomorphism .brutal-btn {
+.neu-btn {
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 14px;
   box-shadow: 5px 5px 12px var(--neu-shadow-dark, #c5d0e0), -5px -5px 12px var(--neu-shadow-light, #ffffff);
@@ -194,14 +136,12 @@
   transition: all 0.15s ease-in-out;
 }
 
-.neu-btn:hover,
-.theme-neomorphism .brutal-btn:hover {
+.neu-btn:hover {
   transform: translateY(-1px);
   box-shadow: 7px 7px 16px #b4c3d6, -7px -7px 16px #ffffff;
 }
 
-.neu-btn:active,
-.theme-neomorphism .brutal-btn:active {
+.neu-btn:active {
   transform: translateY(1px);
   box-shadow: inset 3px 3px 6px var(--neu-shadow-dark, #c5d0e0), inset -3px -3px 6px var(--neu-shadow-light, #ffffff);
 }
@@ -214,91 +154,16 @@
   box-shadow: inset 4px 4px 8px var(--neu-shadow-dark, #c5d0e0), inset -4px -4px 8px var(--neu-shadow-light, #ffffff);
 }
 
-.neu-badge,
-.theme-neomorphism .brutal-badge {
+/* Soft Badges */
+.neu-badge {
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 9999px;
   box-shadow: 3px 3px 6px var(--neu-shadow-dark, #c5d0e0), -3px -3px 6px var(--neu-shadow-light, #ffffff);
   font-weight: 700;
 }
 
-/* Neo-Brutalist & Memphis Tactile Interactive Elements (Alternative Themes) */
-.theme-neobrutalist .brutal-card,
-.theme-memphis .brutal-card,
-.theme-artdeco .brutal-card,
-.theme-retroterminal .brutal-card {
-  border: 3px solid var(--border-brutal, #000000);
-  box-shadow: 4px 4px 0px var(--shadow-brutal, #000000);
-  border-radius: 0px;
-  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.12s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.theme-neobrutalist .brutal-card-hover:hover,
-.theme-memphis .brutal-card-hover:hover,
-.theme-artdeco .brutal-card-hover:hover,
-.theme-retroterminal .brutal-card-hover:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: 7px 7px 0px var(--shadow-brutal, #000000);
-}
-
-.theme-neobrutalist .brutal-btn,
-.theme-memphis .brutal-btn,
-.theme-artdeco .brutal-btn,
-.theme-retroterminal .brutal-btn {
-  border: 2.5px solid var(--border-brutal, #000000);
-  box-shadow: 3px 3px 0px var(--shadow-brutal, #000000);
-  font-weight: 800;
-  border-radius: 0px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.theme-neobrutalist .brutal-btn:hover,
-.theme-memphis .brutal-btn:hover,
-.theme-artdeco .brutal-btn:hover,
-.theme-retroterminal .brutal-btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0px var(--shadow-brutal, #000000);
-}
-
-.theme-neobrutalist .brutal-btn:active,
-.theme-memphis .brutal-btn:active,
-.theme-artdeco .brutal-btn:active,
-.theme-retroterminal .brutal-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px var(--shadow-brutal, #000000);
-}
-
-.theme-neobrutalist .brutal-badge,
-.theme-memphis .brutal-badge,
-.theme-artdeco .brutal-badge,
-.theme-retroterminal .brutal-badge {
-  border: 2px solid var(--border-brutal, #000000);
-  border-radius: 0px;
-  font-weight: 800;
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-/* Fallback default brutal-card if no theme class */
-body:not([class*="theme-"]) .brutal-card {
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 20px;
-  box-shadow: 8px 8px 20px #c5d0e0, -8px -8px 20px #ffffff;
-}
-
-body:not([class*="theme-"]) .brutal-btn {
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 14px;
-  box-shadow: 5px 5px 12px #c5d0e0, -5px -5px 12px #ffffff;
-}
-
-/* Strict High Contrast Overrides */
-.high-contrast .brutal-card,
+/* Strict High Contrast Overrides (Accessibility Compliance) */
 .high-contrast .neu-card,
-.high-contrast .brutal-btn,
 .high-contrast .neu-btn,
 .high-contrast .neu-inset,
 .high-contrast .neu-badge {
@@ -347,12 +212,6 @@ body:not([class*="theme-"]) .brutal-btn {
   animation: gesturePulse 2s infinite ease-in-out;
 }
 
-/* Geometric Memphis Pattern Utility */
-.memphis-dots {
-  background-image: radial-gradient(#000000 1.2px, transparent 1.2px);
-  background-size: 16px 16px;
-}
-
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -374,27 +233,20 @@ textarea {
   min-height: 44px;
 }
 
-/* Utility classes for evidence highlighting */
+/* Evidence highlighting */
 .evidence-highlight {
-  background-color: #ffe600;
-  color: #000000;
+  background-color: #e0f2fe;
+  color: #0369a1;
   padding: 0.15rem 0.4rem;
-  border: 2px solid #000000;
-  font-weight: 800;
-  box-shadow: 2px 2px 0px #000000;
+  border-radius: 6px;
+  font-weight: 700;
+  box-shadow: 2px 2px 4px #c5d0e0, -2px -2px 4px #ffffff;
 }
 
-.high-contrast .evidence-highlight,
-.theme-artdeco .evidence-highlight {
+.high-contrast .evidence-highlight {
   background-color: #facc15;
   color: #000000;
   border: 2px solid #ffffff;
   box-shadow: 2px 2px 0px #ffffff;
-}
-
-.theme-retroterminal .evidence-highlight {
-  background-color: #22c55e;
-  color: #000000;
-  border: 2px solid #86efac;
-  box-shadow: 2px 2px 0px #15803d;
+  border-radius: 0;
 }

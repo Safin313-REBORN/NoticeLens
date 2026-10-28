@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Type, Volume2, AlertTriangle, Check, Palette } from 'lucide-react';
+import { Eye, Type, Volume2, AlertTriangle, Check } from 'lucide-react';
 import { speechService } from '../../services/speech/webSpeechService';
-import { UITheme } from '../../types/notice';
 
 export type TextScale = 'normal' | 'large' | 'xlarge';
 
 interface AccessibilityToolbarProps {
   onAnnouncement?: (text: string) => void;
-  currentTheme?: UITheme;
-  onThemeChange?: (theme: UITheme) => void;
 }
 
 function safeGetStorage(key: string, fallback: string | null = null): string | null {
@@ -29,8 +26,6 @@ function safeSetStorage(key: string, value: string): void {
 
 export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
   onAnnouncement,
-  currentTheme = 'neobrutalist',
-  onThemeChange,
 }) => {
   const [highContrast, setHighContrast] = useState<boolean>(() => {
     return safeGetStorage('noticelens_high_contrast') === 'true';
@@ -96,23 +91,23 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
 
   return (
     <aside
-      className="bg-black text-white px-4 py-2 text-xs font-bold border-b-2 border-black high-contrast:bg-black high-contrast:border-white"
+      className="bg-slate-900 text-slate-100 px-4 py-2 text-xs font-medium border-b border-slate-800 high-contrast:!bg-black high-contrast:!border-white"
       aria-label="Accessibility & Display Options"
     >
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
         {/* Visual Assist Controls */}
         <div className="flex items-center gap-2">
-          <span className="text-yellow-400 font-black uppercase tracking-wider text-[11px] mr-1">
+          <span className="text-sky-400 font-bold uppercase tracking-wider text-[11px] mr-1 high-contrast:text-yellow-400">
             Display Engine:
           </span>
 
           <button
             onClick={toggleHighContrast}
             aria-pressed={highContrast}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase brutal-btn ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
               highContrast
                 ? 'bg-yellow-400 text-black border-2 border-white'
-                : 'bg-zinc-800 text-white border-2 border-white/50 hover:bg-zinc-700'
+                : 'bg-slate-800 text-white border border-slate-700 hover:bg-slate-700'
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -122,50 +117,31 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
           <button
             onClick={cycleTextScale}
             aria-label={`Adjust reading text size, currently ${textScale}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase brutal-btn bg-zinc-800 text-white border-2 border-white/50 hover:bg-zinc-700"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-800 text-white border border-slate-700 hover:bg-slate-700 transition-all"
           >
             <Type className="w-3.5 h-3.5" />
             <span>
               Scale:{' '}
-              <strong className="text-yellow-400">
+              <strong className="text-sky-400 high-contrast:text-yellow-400">
                 {textScale === 'xlarge' ? '130%' : textScale === 'large' ? '115%' : '100%'}
               </strong>
             </span>
           </button>
-
-          {onThemeChange && (
-            <div className="hidden md:flex items-center gap-1 ml-2 pl-2 border-l border-zinc-700">
-              <Palette className="w-3.5 h-3.5 text-yellow-400 mr-1" />
-              {(['neobrutalist', 'memphis', 'artdeco', 'retroterminal'] as UITheme[]).map((thm) => (
-                <button
-                  key={thm}
-                  onClick={() => onThemeChange(thm)}
-                  className={`px-2 py-0.5 text-[10px] font-black uppercase brutal-badge border ${
-                    currentTheme === thm
-                      ? 'bg-yellow-400 text-black border-white'
-                      : 'bg-zinc-900 text-zinc-300 border-zinc-700 hover:text-white'
-                  }`}
-                >
-                  {thm === 'neobrutalist' ? 'Neo-Brutal' : thm === 'memphis' ? 'Memphis' : thm === 'artdeco' ? 'Art Deco' : 'Terminal'}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* TTS Device Voice Discovery Indicator */}
         <div className="flex items-center gap-2 text-white">
-          <Volume2 className="w-4 h-4 text-yellow-400 shrink-0" />
+          <Volume2 className="w-4 h-4 text-sky-400 high-contrast:text-yellow-400 shrink-0" />
           {hasBnVoice ? (
-            <span className="inline-flex items-center gap-1 text-neo-mint font-bold">
+            <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
               <Check className="w-3.5 h-3.5 stroke-[3]" /> Bengali TTS Ready
             </span>
           ) : (
             <span
-              className="inline-flex items-center gap-1 text-yellow-300 font-bold"
+              className="inline-flex items-center gap-1 text-amber-300 font-bold"
               title="This device does not have an installed Bengali speech engine; english fallback voice will be used."
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Bengali Voice: Hardware Fallback</span>
             </span>
           )}

@@ -117,23 +117,23 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
     <div className="space-y-8">
       {/* Hero Introduction */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 brutal-badge bg-neo-mint border-2 border-black text-black text-xs font-black uppercase tracking-wider -rotate-1 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black high-contrast:border-white">
-          <Sparkles className="w-4 h-4 text-black" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 neu-badge bg-sky-50 border border-sky-200/50 text-sky-900 text-xs font-bold uppercase tracking-wider high-contrast:!bg-yellow-400 high-contrast:!text-black high-contrast:!border-white">
+          <Sparkles className="w-4 h-4 text-sky-600 high-contrast:text-black" />
           <span>Notice Intelligence for Low-Vision & Visually Impaired Students</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-ink-900 high-contrast:text-white uppercase tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 high-contrast:text-white uppercase tracking-tight">
           Transform University Notices into <br className="hidden sm:inline" />
-          <span className="bg-neo-yellow px-2 py-0.5 border-2 border-black text-black inline-block rotate-1 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black">
+          <span className="text-sky-600 bg-sky-100/70 px-2.5 py-0.5 rounded-xl inline-block mt-1 high-contrast:bg-yellow-400 high-contrast:text-black">
             Clear, Actionable Details
           </span>
         </h1>
-        <p className="text-sm font-medium text-slate-700 high-contrast:text-slate-300 leading-relaxed max-w-2xl mx-auto">
+        <p className="text-sm font-medium text-slate-600 high-contrast:text-slate-300 leading-relaxed max-w-2xl mx-auto">
           Scan or upload any Bengali, English, or bilingual university announcement. NoticeLens extracts deadlines, fees, rooms, and action items with verifiable source evidence and audio narration.
         </p>
       </div>
 
       {/* Main Upload Box */}
-      <div className="brutal-card bg-white p-6 sm:p-8 max-w-3xl mx-auto high-contrast:bg-black high-contrast:border-white">
+      <div className="neu-card p-6 sm:p-8 max-w-3xl mx-auto high-contrast:!bg-black high-contrast:!border-white">
         {!previewUrl ? (
           <div>
             {/* Drag & Drop Zone */}
@@ -209,16 +209,16 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
         ) : (
           /* Image Preview & Options State */
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b-3 border-black high-contrast:border-white pb-4">
+            <div className="flex items-center justify-between border-b border-slate-200/80 high-contrast:border-white pb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 border-2 border-black bg-neo-yellow flex items-center justify-center text-black">
+                <div className="w-9 h-9 rounded-xl bg-sky-100 flex items-center justify-center text-sky-700 shadow-sm border border-white/60 high-contrast:!bg-yellow-400 high-contrast:!text-black">
                   <ImageIcon className="w-4 h-4 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black uppercase text-ink-900 high-contrast:text-white">
+                  <h2 className="text-base font-bold text-slate-900 high-contrast:text-white">
                     Selected Notice Document
                   </h2>
-                  <p className="text-xs font-bold text-slate-500 high-contrast:text-slate-300">
+                  <p className="text-xs font-medium text-slate-500 high-contrast:text-slate-300">
                     {selectedFile ? `${selectedFile.name} (${(selectedFile.size / 1024).toFixed(0)} KB)` : 'Demonstration Notice Document'}
                   </p>
                 </div>
@@ -226,7 +226,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
               <button
                 type="button"
                 onClick={clearSelection}
-                className="brutal-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-neo-coral text-white hover:bg-red-600 high-contrast:bg-black high-contrast:border-red-400 high-contrast:text-red-300"
+                className="neu-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 high-contrast:!bg-black high-contrast:!border-red-400 high-contrast:!text-red-300"
               >
                 <X className="w-4 h-4 stroke-[2.5]" />
                 <span>Remove</span>
@@ -234,21 +234,21 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
             </div>
 
             {/* Document Preview Box */}
-            <div className="relative border-3 border-black overflow-hidden max-h-80 flex items-center justify-center bg-slate-100 high-contrast:bg-slate-950 high-contrast:border-white shadow-brutal-sm">
+            <div className="relative neu-inset overflow-hidden max-h-80 flex items-center justify-center p-3 rounded-2xl high-contrast:bg-slate-950 high-contrast:border-white">
               <img
                 src={previewUrl}
                 alt="Selected university notice document"
-                className="max-h-80 w-auto object-contain"
+                className="max-h-72 w-auto object-contain rounded-lg"
               />
             </div>
 
             {/* Recognition Controls */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#FFFDF0] p-4 border-2 border-black high-contrast:bg-slate-900 high-contrast:border-white">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 neu-inset p-4 rounded-xl border border-slate-200/60 high-contrast:!bg-slate-900 high-contrast:!border-white">
               {/* Language Selection */}
               <div>
                 <label
                   htmlFor="ocr-language-select"
-                  className="block text-xs font-bold text-ink-900 high-contrast:text-white mb-1.5"
+                  className="block text-xs font-bold text-slate-700 high-contrast:text-white mb-1.5"
                 >
                   OCR Language Mode:
                 </label>
@@ -256,7 +256,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                   id="ocr-language-select"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as 'ben' | 'eng' | 'ben+eng')}
-                  className="w-full text-xs font-bold px-3 py-2 border-2 border-black bg-white text-ink-900 focus-visible:ring-2 focus-visible:ring-black high-contrast:bg-black high-contrast:text-white high-contrast:border-white shadow-brutal-sm"
+                  className="w-full text-xs font-bold px-3 py-2.5 rounded-xl border border-slate-300 bg-white/95 text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 high-contrast:!bg-black high-contrast:!text-white high-contrast:!border-white"
                 >
                   <option value="ben+eng">Bengali + English (Recommended)</option>
                   <option value="ben">Bengali Only (বাংলা)</option>
@@ -271,11 +271,11 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                   type="checkbox"
                   checked={preprocess}
                   onChange={(e) => setPreprocess(e.target.checked)}
-                  className="w-5 h-5 border-2 border-black rounded-none text-black focus:ring-black accent-black cursor-pointer"
+                  className="w-5 h-5 rounded-md border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
                 />
                 <label
                   htmlFor="preprocess-toggle"
-                  className="text-xs font-bold text-ink-900 high-contrast:text-white cursor-pointer select-none"
+                  className="text-xs font-bold text-slate-700 high-contrast:text-white cursor-pointer select-none"
                 >
                   Enhance contrast for printed notice readability
                 </label>
@@ -288,7 +288,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                 type="button"
                 onClick={handleStartOCR}
                 disabled={isProcessing}
-                className="flex-1 brutal-btn inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-neo-yellow text-black font-black text-base hover:bg-yellow-300 transition-all shadow-brutal disabled:opacity-50 high-contrast:bg-yellow-400 high-contrast:text-black"
+                className="flex-1 neu-btn inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-sky-600 text-white font-bold text-base hover:bg-sky-700 transition-all shadow-md disabled:opacity-50 high-contrast:!bg-yellow-400 high-contrast:!text-black"
               >
                 <RefreshCw className={`w-5 h-5 stroke-[2.5] ${isProcessing ? 'animate-spin' : ''}`} />
                 <span>{isProcessing ? 'Processing Notice...' : 'Start Notice Recognition (OCR)'}</span>
@@ -297,7 +297,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="brutal-btn px-4 py-3 bg-white text-black font-bold text-sm hover:bg-slate-100 high-contrast:border-white high-contrast:text-white"
+                className="neu-btn px-4 py-3 bg-[#eef2f8] text-slate-700 font-bold text-sm hover:text-slate-900 border border-white/60 high-contrast:!border-white high-contrast:!text-white"
               >
                 Replace Image
               </button>
@@ -309,12 +309,12 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
         {errorMessage && (
           <div
             role="alert"
-            className="mt-6 p-4 border-3 border-black bg-neo-coral text-white text-sm flex items-start gap-2.5 shadow-brutal high-contrast:bg-black high-contrast:border-red-400 high-contrast:text-red-200"
+            className="neu-card mt-6 p-4 border-l-4 border-red-500 bg-red-50/80 text-red-900 text-sm flex items-start gap-2.5 high-contrast:!bg-black high-contrast:!border-red-400 high-contrast:!text-red-200"
           >
-            <ShieldAlert className="w-5 h-5 stroke-[2.5] shrink-0 mt-0.5" />
+            <ShieldAlert className="w-5 h-5 stroke-[2.5] shrink-0 mt-0.5 text-red-600" />
             <div>
-              <p className="font-black uppercase tracking-wider">Validation Issue</p>
-              <p className="text-xs font-bold mt-1">{errorMessage}</p>
+              <p className="font-bold uppercase tracking-wider">Validation Issue</p>
+              <p className="text-xs mt-1">{errorMessage}</p>
             </div>
           </div>
         )}
@@ -323,8 +323,8 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
       {/* Fictional Sample Notice Presets for Live Testing */}
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-black uppercase tracking-wider text-ink-900 high-contrast:text-yellow-300 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-black high-contrast:text-yellow-400" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 high-contrast:text-yellow-300 flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-sky-600 high-contrast:text-yellow-400" />
             <span>Try Fictional University Notice Samples</span>
           </h2>
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 high-contrast:text-slate-300">
@@ -336,13 +336,13 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
           {DEMO_NOTICES.map((demo) => (
             <div
               key={demo.id}
-              className="brutal-card text-left p-4 bg-white high-contrast:bg-black high-contrast:border-white flex flex-col justify-between"
+              className="neu-card neu-card-hover text-left p-5 flex flex-col justify-between high-contrast:!bg-black high-contrast:!border-white"
             >
               <div>
-                <span className="brutal-badge inline-block px-2 py-0.5 bg-neo-pink text-black mb-2 shadow-brutal-sm text-[10px] font-black">
+                <span className="neu-badge inline-block px-2.5 py-0.5 bg-sky-100 text-sky-800 mb-2 text-[10px] font-bold high-contrast:!bg-yellow-400 high-contrast:!text-black">
                   {demo.category} • {demo.language.toUpperCase()}
                 </span>
-                <h3 className="text-xs font-black text-ink-900 high-contrast:text-white line-clamp-1">
+                <h3 className="text-xs font-bold text-slate-900 high-contrast:text-white line-clamp-1">
                   {demo.title}
                 </h3>
                 <p className="text-[11px] font-medium text-slate-600 high-contrast:text-slate-300 line-clamp-2 mt-1 leading-snug">
@@ -350,12 +350,12 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                 </p>
               </div>
 
-              <div className="mt-3 pt-3 border-t-2 border-black high-contrast:border-white flex flex-col gap-1.5">
+              <div className="mt-3 pt-3 border-t border-slate-200/80 high-contrast:border-white/40 flex flex-col gap-1.5">
                 <button
                   type="button"
                   onClick={() => handleScanSampleLive(demo)}
                   disabled={isProcessing}
-                  className="brutal-btn py-1.5 px-2 bg-neo-yellow text-black text-[11px] font-black hover:bg-yellow-300 text-center high-contrast:bg-yellow-400 high-contrast:text-black shadow-brutal-sm disabled:opacity-50"
+                  className="neu-btn py-2 px-3 bg-sky-600 text-white text-[11px] font-bold hover:bg-sky-700 text-center shadow-sm disabled:opacity-50 high-contrast:!bg-yellow-400 high-contrast:!text-black"
                   title="Executes actual Tesseract OCR engine on this sample notice image"
                 >
                   ⚡ Run Live OCR on Image
@@ -364,7 +364,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                   type="button"
                   onClick={() => handleSelectDemo(demo)}
                   disabled={isProcessing}
-                  className="brutal-btn py-1 px-2 bg-white text-slate-700 text-[10px] font-bold hover:bg-slate-100 text-center high-contrast:bg-slate-900 high-contrast:text-white disabled:opacity-50"
+                  className="neu-btn py-1.5 px-3 bg-[#eef2f8] text-slate-700 text-[10px] font-semibold hover:bg-white text-center border border-white/60 high-contrast:!bg-slate-900 high-contrast:!text-white disabled:opacity-50"
                   title="Loads pre-parsed text immediately without running OCR recognition"
                 >
                   Instant Sample Data (Preset)

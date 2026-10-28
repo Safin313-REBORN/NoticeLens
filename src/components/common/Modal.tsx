@@ -88,15 +88,15 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, descriptio
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-full max-w-lg bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden focus:outline-none focus:ring-4 focus:ring-teal-500 high-contrast:bg-black high-contrast:border-white high-contrast:text-white"
+        className="w-full max-w-lg neu-card rounded-2xl shadow-[14px_14px_28px_#c5d0e0,-14px_-14px_28px_#ffffff] border border-white/70 overflow-hidden focus:outline-none focus:ring-4 focus:ring-sky-500 high-contrast:bg-black high-contrast:border-white high-contrast:text-white"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 high-contrast:border-white/30">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-300/40 high-contrast:border-white/30">
           <div>
-            <h2 id="modal-title" className="text-xl font-bold text-ink-900 high-contrast:text-white">
+            <h2 id="modal-title" className="text-xl font-bold text-slate-800 high-contrast:text-white">
               {title}
             </h2>
             {description && (
-              <p id="modal-description" className="text-sm text-slate-500 high-contrast:text-yellow-300 mt-1">
+              <p id="modal-description" className="text-sm text-slate-600 high-contrast:text-yellow-300 mt-1">
                 {description}
               </p>
             )}
@@ -104,7 +104,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, descriptio
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-teal-500 high-contrast:text-white high-contrast:hover:bg-slate-800"
+            className="p-2 neu-btn text-slate-600 hover:text-slate-900 rounded-xl focus-visible:ring-2 focus-visible:ring-sky-500 high-contrast:text-white high-contrast:hover:bg-slate-800"
           >
             <X className="w-5 h-5" />
           </button>

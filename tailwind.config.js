@@ -12,14 +12,12 @@ export default {
         '4': '4px',
       },
       boxShadow: {
-        'brutal-sm': '2px 2px 0px #000000',
-        'brutal': '4px 4px 0px #000000',
-        'brutal-lg': '6px 6px 0px #000000',
-        'brutal-xl': '8px 8px 0px #000000',
-        'brutal-pink': '4px 4px 0px #FF5277',
-        'brutal-cyan': '4px 4px 0px #00E5D0',
-        'brutal-gold': '4px 4px 0px #D4AF37',
-        'brutal-green': '4px 4px 0px #22C55E',
+        'neu-sm': '3px 3px 8px #c5d0e0, -3px -3px 8px #ffffff',
+        'neu-md': '6px 6px 14px #c5d0e0, -6px -6px 14px #ffffff',
+        'neu-lg': '10px 10px 22px #c5d0e0, -10px -10px 22px #ffffff',
+        'neu-xl': '14px 14px 28px #c5d0e0, -14px -14px 28px #ffffff',
+        'neu-inset': 'inset 3px 3px 6px #c5d0e0, inset -3px -3px 6px #ffffff',
+        'neu-pressed': 'inset 2px 2px 5px #c5d0e0, inset -2px -2px 5px #ffffff',
       },
       colors: {
         ink: {
