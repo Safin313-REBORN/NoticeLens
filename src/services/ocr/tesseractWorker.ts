@@ -41,6 +41,12 @@ export async function runOcrRecognition(
     }
 
     if (!activeWorker) {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        throw new Error(
+          'Offline Mode Detected: OCR language models require an internet connection for the initial download. Please connect to the internet or test using our bundled Fictional Notice Samples (which work 100% offline).'
+        );
+      }
+
       report('loading_worker', 0.3, `Downloading and loading trained language models (${language})...`);
 
       activeWorker = await createWorker(language, 1, {

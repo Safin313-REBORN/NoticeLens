@@ -10,6 +10,7 @@ interface SavedNoticesListProps {
   onDeleteNotice: (id: string) => void;
   onScanNewNotice: () => void;
   onDownloadIcsSuccess: () => void;
+  onClearAllNotices?: () => void;
 }
 
 export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
@@ -18,10 +19,12 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
   onDeleteNotice,
   onScanNewNotice,
   onDownloadIcsSuccess,
+  onClearAllNotices,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [noticeToDelete, setNoticeToDelete] = useState<SavedNotice | null>(null);
+  const [showPurgeModal, setShowPurgeModal] = useState<boolean>(false);
 
   const categories = ['all', 'Examination', 'Admission', 'Event', 'Scholarship', 'General'];
 
@@ -64,13 +67,26 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onScanNewNotice}
-          className="neu-btn inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white font-bold text-xs hover:bg-sky-700 transition-colors shadow-sm high-contrast:!bg-yellow-400 high-contrast:!text-black"
-        >
-          <Scan className="w-4 h-4 stroke-[2.5]" />
-          <span>Scan Another Notice</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {notices.length > 0 && onClearAllNotices && (
+            <button
+              onClick={() => setShowPurgeModal(true)}
+              className="neu-btn inline-flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-700 hover:bg-red-100 font-bold text-xs transition-colors border border-red-200/60 high-contrast:!bg-black high-contrast:!text-red-400 high-contrast:!border-red-400"
+              title="Purge all saved notices when leaving a public or shared university computer"
+            >
+              <Trash2 className="w-4 h-4 stroke-[2.5]" />
+              <span>Purge Terminal Data</span>
+            </button>
+          )}
+
+          <button
+            onClick={onScanNewNotice}
+            className="neu-btn inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white font-bold text-xs hover:bg-sky-700 transition-colors shadow-sm high-contrast:!bg-yellow-400 high-contrast:!text-black"
+          >
+            <Scan className="w-4 h-4 stroke-[2.5]" />
+            <span>Scan Another Notice</span>
+          </button>
+        </div>
       </div>
 
       {/* Search and Category Filters */}
@@ -238,19 +254,61 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               onClick={() => setNoticeToDelete(null)}
-              className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 high-contrast:border-white high-contrast:text-white"
+              className="neu-btn px-4 py-2 bg-[#eef2f8] text-slate-700 text-xs font-bold hover:text-slate-900 border border-white/60 high-contrast:border-white high-contrast:text-white"
             >
               Cancel
             </button>
             <button
               onClick={confirmDelete}
-              className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors high-contrast:bg-red-700 high-contrast:text-white"
+              className="neu-btn px-4 py-2 bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors high-contrast:bg-red-700 high-contrast:text-white shadow-sm"
             >
               Delete Notice
             </button>
           </div>
         </div>
       </Modal>
+
+      {/* Accessible Confirmation Modal for Purging All Saved Data (Shared Terminal Reset) */}
+      {showPurgeModal && (
+        <Modal
+          isOpen={showPurgeModal}
+          onClose={() => setShowPurgeModal(false)}
+          title="Purge Terminal Data"
+          description="Clear all saved notices when leaving a public or shared university computer"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs high-contrast:bg-black high-contrast:border-red-400 high-contrast:text-red-200">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Permanently erase all {notices.length} saved notice(s)?</p>
+                <p className="mt-1 leading-relaxed">
+                  This will completely clear your browser's private local storage on this computer. Use this option to protect your personal information after using a shared library or cyber-café terminal.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPurgeModal(false)}
+                className="neu-btn px-4 py-2 bg-[#eef2f8] text-slate-700 text-xs font-bold hover:text-slate-900 border border-white/60 high-contrast:border-white high-contrast:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPurgeModal(false);
+                  if (onClearAllNotices) onClearAllNotices();
+                }}
+                className="neu-btn px-4 py-2 bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors shadow-sm high-contrast:bg-red-700 high-contrast:text-white"
+              >
+                Purge All Saved Notices
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

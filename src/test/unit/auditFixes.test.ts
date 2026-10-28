@@ -1,5 +1,10 @@
+// @vitest-environment happy-dom
 import { describe, it, expect } from 'vitest';
-import { sanitizeRecordForLocalStorage } from '../../services/storage/indexedDBService';
+import {
+  sanitizeRecordForLocalStorage,
+  clearAllSavedNotices,
+  getAllSavedNotices,
+} from '../../services/storage/indexedDBService';
 import {
   generateSafeCalendarFilename,
   parseDateTimeToDate,
@@ -7,6 +12,7 @@ import {
 import { extractAllDates } from '../../services/extraction/dateParser';
 import { matchEvidence } from '../../services/extraction/evidenceMatcher';
 import { preprocessNoticeImage } from '../../services/ocr/imagePreprocess';
+import { runOcrRecognition } from '../../services/ocr/tesseractWorker';
 import { SavedNotice, ProcessedNotice } from '../../types/notice';
 
 describe('Production Audit Remediations', () => {
@@ -144,6 +150,36 @@ describe('Production Audit Remediations', () => {
   describe('Finding 6: Image Preprocessing Robustness', () => {
     it('gracefully rejects when given an invalid image source without hanging', async () => {
       await expect(preprocessNoticeImage('data:image/jpeg;base64,invalid-corrupted-data')).rejects.toThrow();
+    });
+  });
+
+  describe('Finding 1 & Enterprise Security: Shared Lab Machine Data Purge', () => {
+    it('successfully clears all saved records on terminal purge', async () => {
+      // Clear all notices
+      await clearAllSavedNotices();
+      const recordsAfterPurge = await getAllSavedNotices();
+      expect(recordsAfterPurge).toHaveLength(0);
+    });
+  });
+
+  describe('Finding 2: Offline Environment Detection', () => {
+    it('provides clear actionable guidance when device is offline instead of unhandled failure', async () => {
+      const originalOnLine = navigator.onLine;
+      try {
+        Object.defineProperty(navigator, 'onLine', {
+          value: false,
+          configurable: true,
+        });
+
+        await expect(runOcrRecognition('sample-data', 'ben')).rejects.toThrowError(
+          /Offline Mode Detected/
+        );
+      } finally {
+        Object.defineProperty(navigator, 'onLine', {
+          value: originalOnLine,
+          configurable: true,
+        });
+      }
     });
   });
 });

@@ -17,7 +17,7 @@ import { runOcrRecognition, terminateOcrWorker } from './services/ocr/tesseractW
 import { preprocessNoticeImage } from './services/ocr/imagePreprocess';
 import { processNoticeDocument } from './services/extraction/noticeEngine';
 import { generateNoticeSummary } from './services/extraction/summaryGenerator';
-import { saveNotice, getAllSavedNotices, deleteSavedNotice } from './services/storage/indexedDBService';
+import { saveNotice, getAllSavedNotices, deleteSavedNotice, clearAllSavedNotices } from './services/storage/indexedDBService';
 import { speechService } from './services/speech/webSpeechService';
 import { DEMO_NOTICES, DemoNoticeItem, generateDemoNoticeSvg } from './data/demoNotices';
 import { AccessibilityStudio } from './components/studio/AccessibilityStudio';
@@ -365,6 +365,18 @@ function AppContent() {
     }
   };
 
+  const handleClearAllSavedNotices = async () => {
+    try {
+      await clearAllSavedNotices();
+      await loadSavedNotices();
+      showToast('All saved notices permanently removed from this device.', 'info');
+      setAnnouncement('All saved notices purged from local device database.');
+    } catch (e) {
+      console.error('Failed to clear notices:', e);
+      showToast('Failed to clear storage.', 'error');
+    }
+  };
+
   const handleOpenSavedNotice = (saved: SavedNotice) => {
     setActiveNotice(saved.notice);
     speechService.stop();
@@ -484,6 +496,7 @@ function AppContent() {
             onDeleteNotice={handleDeleteSavedNotice}
             onScanNewNotice={() => handleTabChange('scan')}
             onDownloadIcsSuccess={() => showToast('Calendar file downloaded.', 'success')}
+            onClearAllNotices={handleClearAllSavedNotices}
           />
         )}
 
@@ -529,18 +542,18 @@ function AppContent() {
           {DEMO_NOTICES.map((demo) => (
             <div
               key={demo.id}
-              className="p-4 rounded-xl border border-slate-200 hover:border-teal-500 bg-white transition-all high-contrast:bg-black high-contrast:border-white"
+              className="neu-card p-4 rounded-xl border border-white/70 bg-[#eef2f8] transition-all high-contrast:!bg-black high-contrast:!border-white"
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-900 high-contrast:bg-yellow-400 high-contrast:text-black uppercase">
+                <span className="neu-badge text-[10px] font-bold px-2.5 py-0.5 bg-sky-100 text-sky-800 high-contrast:!bg-yellow-400 high-contrast:!text-black uppercase">
                   {demo.category} • {demo.language.toUpperCase()}
                 </span>
-                <span className="text-xs text-slate-400 high-contrast:text-slate-300">Fictional Notice</span>
+                <span className="text-xs font-semibold text-slate-500 high-contrast:text-slate-300">Fictional Notice</span>
               </div>
-              <h3 className="text-sm font-bold text-ink-900 high-contrast:text-white">
+              <h3 className="text-sm font-bold text-slate-900 high-contrast:text-white">
                 {demo.title}
               </h3>
-              <p className="text-xs text-slate-500 high-contrast:text-yellow-300 mt-1">
+              <p className="text-xs font-medium text-slate-600 high-contrast:text-yellow-300 mt-1">
                 {demo.description}
               </p>
               <div className="mt-3 flex items-center justify-end gap-2">
@@ -550,7 +563,7 @@ function AppContent() {
                     const svgUri = generateDemoNoticeSvg(demo);
                     handleProcessImage(svgUri, demo.language, false, 'demo');
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-400 text-black text-xs font-black hover:bg-yellow-300 border border-black high-contrast:bg-yellow-400 high-contrast:text-black"
+                  className="neu-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 shadow-sm high-contrast:!bg-yellow-400 high-contrast:!text-black"
                   title="Run actual OCR recognition on sample notice image"
                 >
                   <span>Run Live OCR</span>
@@ -558,7 +571,7 @@ function AppContent() {
                 </button>
                 <button
                   onClick={() => handleLoadDemoDirectly(demo)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-700 text-white text-xs font-bold hover:bg-teal-800 high-contrast:bg-slate-900 high-contrast:text-white"
+                  className="neu-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#eef2f8] text-slate-700 text-xs font-bold hover:text-slate-900 border border-white/60 high-contrast:!bg-slate-900 high-contrast:!text-white"
                   title="Load pre-parsed demo text immediately"
                 >
                   <span>Instant Sample</span>

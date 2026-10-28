@@ -159,8 +159,10 @@ export async function deleteSavedNotice(id: string): Promise<boolean> {
       req.onerror = () => reject(req.error);
     });
   } catch {
-    const all = getFromLocalStorage().filter((n) => n.id !== id);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(all));
+    if (typeof localStorage !== 'undefined') {
+      const all = getFromLocalStorage().filter((n) => n.id !== id);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(all));
+    }
     return true;
   }
 }
@@ -194,7 +196,9 @@ export async function clearAllSavedNotices(): Promise<void> {
       req.onerror = () => reject(req.error);
     });
   } catch {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
   }
 }
 
@@ -213,6 +217,7 @@ export function sanitizeRecordForLocalStorage(record: SavedNotice): SavedNotice 
 
 function getFromLocalStorage(): SavedNotice[] {
   try {
+    if (typeof localStorage === 'undefined') return [];
     const data = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!data) return [];
     return JSON.parse(data) as SavedNotice[];
@@ -222,6 +227,7 @@ function getFromLocalStorage(): SavedNotice[] {
 }
 
 function saveToLocalStorage(record: SavedNotice): void {
+  if (typeof localStorage === 'undefined') return;
   const sanitized = sanitizeRecordForLocalStorage(record);
   const list = getFromLocalStorage().filter((n) => n.id !== sanitized.id);
   list.unshift(sanitized);
