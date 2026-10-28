@@ -42,16 +42,76 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
   const needsReview = field.status === 'needs_review' || field.isAmbiguous;
   const isUserEdited = field.status === 'user_edited';
 
+  const [touchFeedback, setTouchFeedback] = useState<string | null>(null);
+  const touchStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastTapRef = React.useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
+
+    // Double-tap detection (< 300ms between taps)
+    const now = Date.now();
+    if (now - lastTapRef.current < 300 && !isEditing && !isNotFound) {
+      setEditValue(field.value);
+      setIsEditing(true);
+      setTouchFeedback('Edit Mode Activated');
+      setTimeout(() => setTouchFeedback(null), 1500);
+    }
+    lastTapRef.current = now;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const duration = Date.now() - touchStartRef.current.time;
+
+    // Fast horizontal swipe (< 600ms, dx > 50px, horizontal dominates vertical)
+    if (duration < 600 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+      if (dx > 0) {
+        // Swipe Right -> Speak aloud
+        speechService.speak(`${field.label}: ${field.value}`, /[\u0980-\u09FF]/.test(field.value) ? 'bn' : 'en');
+        setTouchFeedback('🔊 Reading Aloud');
+        setTimeout(() => setTouchFeedback(null), 1500);
+      } else {
+        // Swipe Left -> Copy to clipboard
+        try {
+          navigator.clipboard.writeText(field.value);
+          setTouchFeedback('📋 Copied to Clipboard');
+          setTimeout(() => setTouchFeedback(null), 1500);
+        } catch {
+          // fallback
+        }
+      }
+    }
+    touchStartRef.current = null;
+  };
+
   return (
     <div
-      className={`p-4 border-2 border-black transition-all ${
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className={`p-4 transition-all relative select-none rounded-2xl ${
         isSelected
-          ? 'border-3 border-black bg-[#FFF275] shadow-brutal ring-2 ring-black high-contrast:bg-slate-900 high-contrast:border-yellow-400 high-contrast:ring-yellow-400'
+          ? 'border-2 border-sky-500 bg-sky-50 shadow-[6px_6px_14px_#c5d0e0,-6px_-6px_14px_#ffffff] ring-2 ring-sky-500 high-contrast:!bg-slate-900 high-contrast:!border-yellow-400 high-contrast:!ring-yellow-400'
           : isNotFound
-          ? 'bg-slate-100 opacity-80 high-contrast:bg-black high-contrast:border-white/50'
-          : 'bg-white shadow-brutal-sm hover:shadow-brutal high-contrast:bg-black high-contrast:border-white'
+          ? 'bg-slate-100/70 opacity-75 border border-slate-200 high-contrast:!bg-black high-contrast:!border-white/50'
+          : 'bg-[#eef2f8] shadow-[5px_5px_12px_#c5d0e0,-5px_-5px_12px_#ffffff] hover:shadow-[7px_7px_16px_#b8c4d6,-7px_-7px_16px_#ffffff] border border-white/70 high-contrast:!bg-black high-contrast:!border-white'
       }`}
     >
+      {/* Mobile Gesture Action Toast Badge */}
+      {touchFeedback && (
+        <div className="absolute top-2 right-2 z-20 px-2.5 py-1 rounded-full bg-slate-900 text-white text-[10px] font-black shadow-lg animate-bounce high-contrast:bg-yellow-400 high-contrast:text-black">
+          {touchFeedback}
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
           <span className="text-xs font-black uppercase text-ink-900 high-contrast:text-white flex items-center gap-1.5">
@@ -180,6 +240,17 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Mobile Pattern Gesture Legend Hint */}
+      {!isNotFound && (
+        <div className="md:hidden mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400 high-contrast:text-yellow-300 select-none">
+          <span>📱 Swipe 👉 speak</span>
+          <span>•</span>
+          <span>👈 copy</span>
+          <span>•</span>
+          <span>Tap 2x edit</span>
         </div>
       )}
     </div>

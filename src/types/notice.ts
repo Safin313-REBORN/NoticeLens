@@ -84,4 +84,4 @@ export interface VoiceOption {
   isEnglish: boolean;
 }
 
-export type UITheme = 'neobrutalist' | 'memphis' | 'artdeco' | 'retroterminal';
+export type UITheme = 'neomorphism' | 'neobrutalist' | 'memphis' | 'artdeco' | 'retroterminal';

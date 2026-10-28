@@ -22,6 +22,9 @@ import { speechService } from './services/speech/webSpeechService';
 import { DEMO_NOTICES, DemoNoticeItem, generateDemoNoticeSvg } from './data/demoNotices';
 import { AccessibilityStudio } from './components/studio/AccessibilityStudio';
 import { TransparencyView } from './components/transparency/TransparencyView';
+import { useSwipeGesture } from './hooks/useSwipeGesture';
+import { MobileGestureNav } from './components/mobile/MobileGestureNav';
+import { MobileGestureCue } from './components/mobile/MobileGestureCue';
 import { ArrowRight } from 'lucide-react';
 
 function AppContent() {
@@ -42,9 +45,9 @@ function AppContent() {
 
   const [currentTheme, setCurrentTheme] = useState<UITheme>(() => {
     try {
-      return (localStorage.getItem('noticelens_theme') as UITheme) || 'neobrutalist';
+      return (localStorage.getItem('noticelens_theme') as UITheme) || 'neomorphism';
     } catch {
-      return 'neobrutalist';
+      return 'neomorphism';
     }
   });
 
@@ -61,9 +64,47 @@ function AppContent() {
     setActiveTab(tab);
   }, []);
 
+  const handleNextTab = useCallback(() => {
+    const tabSequence: ActiveTab[] = [
+      'scan',
+      ...(activeNotice ? ['workspace' as ActiveTab] : []),
+      'saved',
+      'studio',
+      'transparency',
+    ];
+    const idx = tabSequence.indexOf(activeTab);
+    if (idx < tabSequence.length - 1) {
+      const next = tabSequence[idx + 1];
+      handleTabChange(next);
+      setAnnouncement(`Swiped to ${next} screen.`);
+    }
+  }, [activeNotice, activeTab, handleTabChange]);
+
+  const handlePrevTab = useCallback(() => {
+    const tabSequence: ActiveTab[] = [
+      'scan',
+      ...(activeNotice ? ['workspace' as ActiveTab] : []),
+      'saved',
+      'studio',
+      'transparency',
+    ];
+    const idx = tabSequence.indexOf(activeTab);
+    if (idx > 0) {
+      const prev = tabSequence[idx - 1];
+      handleTabChange(prev);
+      setAnnouncement(`Swiped to ${prev} screen.`);
+    }
+  }, [activeNotice, activeTab, handleTabChange]);
+
+  const [swipeHandlers, gestureState] = useSwipeGesture({
+    onSwipeLeft: handleNextTab,
+    onSwipeRight: handlePrevTab,
+    minDistance: 45,
+  });
+
   // Sync active theme class to document body
   useEffect(() => {
-    document.body.classList.remove('theme-neobrutalist', 'theme-memphis', 'theme-artdeco', 'theme-retroterminal');
+    document.body.classList.remove('theme-neomorphism', 'theme-neobrutalist', 'theme-memphis', 'theme-artdeco', 'theme-retroterminal');
     document.body.classList.add(`theme-${currentTheme}`);
     try {
       localStorage.setItem('noticelens_theme', currentTheme);
@@ -364,7 +405,17 @@ function AppContent() {
   const hasUnsavedChanges = isCurrentNoticeSaved && savedRecord?.notice.updatedAt !== activeNotice?.updatedAt;
 
   return (
-    <div className="min-h-screen flex flex-col bg-ivory-50 high-contrast:bg-black text-ink-900 high-contrast:text-white">
+    <div
+      className="min-h-screen flex flex-col bg-[#eef2f8] high-contrast:!bg-black text-slate-800 high-contrast:!text-white transition-colors relative"
+      {...swipeHandlers}
+    >
+      {/* Real-time Swipe Gesture Cue Indicator on Mobile */}
+      <MobileGestureCue
+        isSwiping={gestureState.isSwiping}
+        direction={gestureState.direction}
+        distanceX={gestureState.distanceX}
+      />
+
       {/* 1. Accessible Skip Link */}
       <SkipLink />
 
@@ -390,7 +441,7 @@ function AppContent() {
       />
 
       {/* 5. Main Content Area */}
-      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
         {/* Processing Loading Overlay/Card */}
         {isProcessing && (
           <div className="py-12">
@@ -474,7 +525,18 @@ function AppContent() {
       {/* 6. Sticky Web Speech Audio Player Bar */}
       <AudioPlayerBar />
 
-      {/* 7. Footer */}
+      {/* 7. Mobile Pattern Gesture Navigation Bar */}
+      <MobileGestureNav
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        hasActiveNotice={activeNotice !== null}
+        activeNotice={activeNotice}
+        savedCount={savedNotices.length}
+        onOpenSampleModal={() => setSampleModalOpen(true)}
+        onShowToast={showToast}
+      />
+
+      {/* 8. Footer */}
       <Footer />
 
       {/* Demonstration Samples Modal */}

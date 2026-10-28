@@ -45,9 +45,18 @@ export const AccessibilityStudio: React.FC<AccessibilityStudioProps> = ({
 
   const themes: { id: UITheme; name: string; tag: string; description: string; previewBg: string; previewBorder: string; badgeColor: string }[] = [
     {
+      id: 'neomorphism',
+      name: 'Neumorphism (Soft UI)',
+      tag: 'Desktop Default • Tactile',
+      description: 'Ultra-clean extruded surfaces, soft dual-light drop shadows, sunken inset wells, and slate typography.',
+      previewBg: 'bg-[#EEF2F8]',
+      previewBorder: 'border-slate-300',
+      badgeColor: 'bg-sky-600 text-white',
+    },
+    {
       id: 'neobrutalist',
       name: 'Neo-Brutalist Pop',
-      tag: 'Default • High Contrast',
+      tag: 'High Contrast Bold',
       description: 'Bold 3px solid black outlines, canary yellow accents, and hard 4px offset drop shadows.',
       previewBg: 'bg-[#FFFDF0]',
       previewBorder: 'border-black',

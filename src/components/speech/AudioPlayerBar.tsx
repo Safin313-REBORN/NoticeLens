@@ -64,27 +64,27 @@ export const AudioPlayerBar: React.FC = () => {
 
   return (
     <div
-      className="bg-white border-t-4 border-black shadow-brutal px-4 py-3 sticky bottom-0 z-30 high-contrast:bg-black high-contrast:border-white"
+      className="bg-[#eef2f8] border-t border-slate-300/80 shadow-[0_-4px_15px_rgba(200,211,226,0.5)] px-4 py-2.5 sticky bottom-16 md:bottom-0 z-30 high-contrast:!bg-black high-contrast:!border-white high-contrast:!border-t-3"
       role="region"
       aria-label="Text to Speech Audio Controls"
     >
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
         {/* Playback Status & Currently Reading snippet */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 border-2 border-black bg-neo-yellow flex items-center justify-center text-black shrink-0 shadow-brutal-sm high-contrast:bg-yellow-400 high-contrast:text-black">
+          <div className="w-10 h-10 rounded-xl bg-[#eef2f8] shadow-[3px_3px_6px_#c5d0e0,-3px_-3px_6px_#ffffff] flex items-center justify-center text-sky-600 shrink-0 border border-white/60 high-contrast:!bg-yellow-400 high-contrast:!text-black">
             <Volume2 className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase text-ink-900 high-contrast:text-white">
+              <span className="text-xs font-black uppercase text-slate-900 high-contrast:text-white">
                 Audio Reader
               </span>
               <span
-                className={`brutal-badge text-[10px] px-2 py-0.5 ${
+                className={`brutal-badge text-[10px] px-2 py-0.5 rounded-full ${
                   speechState.status === 'playing'
-                    ? 'bg-neo-mint text-black animate-pulse high-contrast:bg-yellow-400 high-contrast:text-black'
+                    ? 'bg-emerald-500 text-white animate-pulse high-contrast:bg-yellow-400 high-contrast:text-black'
                     : speechState.status === 'paused'
-                    ? 'bg-neo-coral text-white high-contrast:bg-yellow-400 high-contrast:text-black'
+                    ? 'bg-amber-500 text-white high-contrast:bg-yellow-400 high-contrast:text-black'
                     : 'bg-slate-200 text-slate-800 high-contrast:bg-slate-800 high-contrast:text-white'
                 }`}
               >
@@ -104,7 +104,7 @@ export const AudioPlayerBar: React.FC = () => {
               <button
                 onClick={handlePlayPause}
                 aria-label={speechState.status === 'playing' ? 'Pause speech' : 'Resume speech'}
-                className="brutal-btn p-2.5 bg-black text-white hover:bg-neutral-800 high-contrast:bg-yellow-400 high-contrast:text-black"
+                className="neu-btn p-2.5 rounded-xl bg-sky-600 text-white hover:bg-sky-700 shadow-[3px_3px_6px_#c5d0e0,-3px_-3px_6px_#ffffff] high-contrast:!bg-yellow-400 high-contrast:!text-black"
               >
                 {speechState.status === 'playing' ? <Pause className="w-4 h-4 stroke-[2.5]" /> : <Play className="w-4 h-4 stroke-[2.5]" />}
               </button>
@@ -112,7 +112,7 @@ export const AudioPlayerBar: React.FC = () => {
               <button
                 onClick={handleStop}
                 aria-label="Stop speech playback"
-                className="brutal-btn p-2.5 bg-neo-coral text-white hover:bg-red-600 high-contrast:bg-slate-800 high-contrast:text-white"
+                className="neu-btn p-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 shadow-[3px_3px_6px_#c5d0e0,-3px_-3px_6px_#ffffff] high-contrast:!bg-slate-800 high-contrast:!text-white"
               >
                 <Square className="w-4 h-4 stroke-[2.5]" />
               </button>
@@ -120,15 +120,15 @@ export const AudioPlayerBar: React.FC = () => {
           )}
 
           {/* Speed Buttons */}
-          <div className="hidden sm:flex items-center gap-1 border-2 border-black p-0.5 bg-white high-contrast:border-white shadow-brutal-sm">
+          <div className="hidden sm:flex items-center gap-1 rounded-xl p-1 bg-[#eef2f8] shadow-[inset_2px_2px_4px_#c5d0e0,inset_-2px_-2px_4px_#ffffff] border border-slate-200/50">
             {[0.85, 1.0, 1.25].map((rate) => (
               <button
                 key={rate}
                 onClick={() => handleRateChange(rate)}
-                className={`px-2 py-0.5 text-xs font-black transition-colors ${
+                className={`px-2 py-0.5 text-xs font-bold rounded-lg transition-colors ${
                   speechState.rate === rate
-                    ? 'bg-black text-white high-contrast:bg-yellow-400 high-contrast:text-black'
-                    : 'text-slate-800 hover:bg-slate-100 high-contrast:text-white'
+                    ? 'bg-sky-600 text-white shadow-sm high-contrast:bg-yellow-400 high-contrast:text-black'
+                    : 'text-slate-700 hover:bg-slate-200/60 high-contrast:text-white'
                 }`}
               >
                 {rate}x

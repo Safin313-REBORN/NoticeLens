@@ -144,20 +144,20 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
               }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
-              className={`border-3 border-dashed rounded-xl p-8 sm:p-12 text-center transition-all ${
+              className={`neu-inset border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all ${
                 dragOver
-                  ? 'border-black bg-neo-mint/30 scale-[1.01] shadow-brutal high-contrast:border-yellow-400 high-contrast:bg-slate-900'
-                  : 'border-black bg-[#FFFDF2] hover:bg-yellow-50/60 high-contrast:border-white high-contrast:bg-slate-950'
+                  ? 'border-sky-500 bg-sky-50/70 scale-[1.01] high-contrast:border-yellow-400 high-contrast:bg-slate-900'
+                  : 'border-slate-300 hover:border-sky-400 bg-[#eef2f8] high-contrast:border-white high-contrast:bg-slate-950'
               }`}
             >
-              <div className="w-16 h-16 border-3 border-black bg-neo-yellow shadow-brutal flex items-center justify-center text-black mx-auto mb-4 high-contrast:bg-yellow-400 high-contrast:text-black">
+              <div className="w-16 h-16 rounded-2xl bg-[#eef2f8] shadow-[5px_5px_12px_#c5d0e0,-5px_-5px_12px_#ffffff] flex items-center justify-center text-sky-600 mx-auto mb-4 border border-white/60 high-contrast:bg-yellow-400 high-contrast:text-black">
                 <UploadCloud className="w-8 h-8 stroke-[2.5]" />
               </div>
 
-              <h2 className="text-xl font-black text-ink-900 high-contrast:text-white uppercase mb-1">
+              <h2 className="text-xl font-black text-slate-900 high-contrast:text-white uppercase mb-1">
                 Drop your university notice here
               </h2>
-              <p className="text-xs font-bold text-slate-600 high-contrast:text-slate-400 mb-6 uppercase tracking-wider">
+              <p className="text-xs font-bold text-slate-500 high-contrast:text-slate-400 mb-6 uppercase tracking-wider">
                 Supports JPEG, PNG, and WebP (up to 10 MB)
               </p>
 
@@ -165,7 +165,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="brutal-btn inline-flex items-center gap-2 px-5 py-3 bg-black text-white hover:bg-neutral-800 focus-visible:ring-4 focus-visible:ring-black high-contrast:bg-yellow-400 high-contrast:text-black"
+                  className="neu-btn inline-flex items-center gap-2 px-5 py-3 bg-sky-600 text-white hover:bg-sky-700 rounded-xl shadow-[4px_4px_10px_#c5d0e0,-4px_-4px_10px_#ffffff] focus-visible:ring-4 focus-visible:ring-sky-500 font-bold text-sm high-contrast:!bg-yellow-400 high-contrast:!text-black"
                 >
                   <FileText className="w-4 h-4 stroke-[2.5]" />
                   <span>Choose Notice Image</span>
@@ -174,11 +174,16 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                 <button
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
-                  className="brutal-btn inline-flex items-center gap-2 px-5 py-3 bg-neo-yellow text-black hover:bg-yellow-300 focus-visible:ring-4 focus-visible:ring-black high-contrast:bg-slate-900 high-contrast:text-white high-contrast:border-white"
+                  className="neu-btn inline-flex items-center gap-2 px-5 py-3 bg-[#eef2f8] text-slate-800 hover:bg-white rounded-xl shadow-[4px_4px_10px_#c5d0e0,-4px_-4px_10px_#ffffff] border border-white/70 focus-visible:ring-4 focus-visible:ring-sky-500 font-bold text-sm high-contrast:!bg-slate-900 high-contrast:!text-white high-contrast:!border-white"
                 >
                   <Camera className="w-4 h-4 stroke-[2.5]" />
                   <span>Take Photo with Camera</span>
                 </button>
+              </div>
+
+              {/* Mobile Gesture Navigation Hint */}
+              <div className="md:hidden mt-6 p-2 rounded-xl bg-sky-100/60 text-sky-900 text-[11px] font-bold flex items-center justify-center gap-1.5 high-contrast:!bg-black high-contrast:!border high-contrast:!border-yellow-400 high-contrast:!text-yellow-300">
+                <span>📱 Pattern Gesture UI Active • Swipe screen to navigate</span>
               </div>
 
               {/* Hidden Inputs */}

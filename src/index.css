@@ -3,17 +3,24 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --bg-primary: #faf8f2;
-    --bg-surface: #ffffff;
-    --bg-muted: #f4efe4;
-    --text-primary: #0f172a;
+  :root,
+  .theme-neomorphism {
+    --bg-primary: #eef2f8;
+    --bg-surface: #eef2f8;
+    --bg-muted: #e2e8f0;
+    --text-primary: #1e293b;
     --text-secondary: #334155;
     --text-muted: #64748b;
-    --border-color: #e2e8f0;
-    --teal-primary: #0d9488;
-    --teal-hover: #0f766e;
+    --border-color: #d8e2ee;
+    --teal-primary: #0284c7;
+    --teal-hover: #0369a1;
     --amber-warning: #d97706;
+    --neu-shadow-dark: #c5d0e0;
+    --neu-shadow-light: #ffffff;
+    --neu-accent: #0284c7;
+    --accent-pop: #0284c7;
+    --accent-mint: #05ffa1;
+    --accent-coral: #ef4444;
   }
 
   /* High Contrast Mode for low vision users */
@@ -28,9 +35,11 @@
     --teal-primary: #38bdf8;
     --teal-hover: #7dd3fc;
     --amber-warning: #facc15;
+    --border-brutal: #ffffff;
+    --shadow-brutal: #ffffff;
   }
 
-  /* 1. Neo-Brutalist Theme (Default bold pop) */
+  /* 1. Neo-Brutalist Theme */
   .theme-neobrutalist {
     --bg-primary: #fffdf0;
     --bg-surface: #ffffff;
@@ -151,43 +160,191 @@
   }
 }
 
-/* Neo-Brutalist & Memphis Tactile Interactive Elements */
-.brutal-card {
+/* Neumorphism (Soft UI) Core Styles for Desktop and Modern Mode */
+:where(.neu-card),
+:where(.theme-neomorphism .brutal-card) {
+  background-color: var(--bg-surface, #eef2f8);
+}
+
+.neu-card,
+.theme-neomorphism .brutal-card {
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  box-shadow: 8px 8px 20px var(--neu-shadow-dark, #c5d0e0), -8px -8px 20px var(--neu-shadow-light, #ffffff);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.neu-card-hover:hover,
+.theme-neomorphism .brutal-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 12px 12px 26px #b4c3d6, -12px -12px 26px #ffffff;
+}
+
+:where(.neu-btn),
+:where(.theme-neomorphism .brutal-btn) {
+  background-color: var(--bg-surface, #eef2f8);
+}
+
+.neu-btn,
+.theme-neomorphism .brutal-btn {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 14px;
+  box-shadow: 5px 5px 12px var(--neu-shadow-dark, #c5d0e0), -5px -5px 12px var(--neu-shadow-light, #ffffff);
+  font-weight: 700;
+  transition: all 0.15s ease-in-out;
+}
+
+.neu-btn:hover,
+.theme-neomorphism .brutal-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 7px 7px 16px #b4c3d6, -7px -7px 16px #ffffff;
+}
+
+.neu-btn:active,
+.theme-neomorphism .brutal-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 3px 3px 6px var(--neu-shadow-dark, #c5d0e0), inset -3px -3px 6px var(--neu-shadow-light, #ffffff);
+}
+
+/* Sunken Inset Wells for Dropzones, Search Bars, Inputs */
+.neu-inset {
+  background-color: #eef2f8;
+  border: 1px solid rgba(197, 208, 224, 0.45);
+  border-radius: 16px;
+  box-shadow: inset 4px 4px 8px var(--neu-shadow-dark, #c5d0e0), inset -4px -4px 8px var(--neu-shadow-light, #ffffff);
+}
+
+.neu-badge,
+.theme-neomorphism .brutal-badge {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 9999px;
+  box-shadow: 3px 3px 6px var(--neu-shadow-dark, #c5d0e0), -3px -3px 6px var(--neu-shadow-light, #ffffff);
+  font-weight: 700;
+}
+
+/* Neo-Brutalist & Memphis Tactile Interactive Elements (Alternative Themes) */
+.theme-neobrutalist .brutal-card,
+.theme-memphis .brutal-card,
+.theme-artdeco .brutal-card,
+.theme-retroterminal .brutal-card {
   border: 3px solid var(--border-brutal, #000000);
   box-shadow: 4px 4px 0px var(--shadow-brutal, #000000);
+  border-radius: 0px;
   transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.12s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.brutal-card-hover:hover {
+.theme-neobrutalist .brutal-card-hover:hover,
+.theme-memphis .brutal-card-hover:hover,
+.theme-artdeco .brutal-card-hover:hover,
+.theme-retroterminal .brutal-card-hover:hover {
   transform: translate(-3px, -3px);
   box-shadow: 7px 7px 0px var(--shadow-brutal, #000000);
 }
 
-.brutal-btn {
+.theme-neobrutalist .brutal-btn,
+.theme-memphis .brutal-btn,
+.theme-artdeco .brutal-btn,
+.theme-retroterminal .brutal-btn {
   border: 2.5px solid var(--border-brutal, #000000);
   box-shadow: 3px 3px 0px var(--shadow-brutal, #000000);
   font-weight: 800;
+  border-radius: 0px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-.brutal-btn:hover {
+.theme-neobrutalist .brutal-btn:hover,
+.theme-memphis .brutal-btn:hover,
+.theme-artdeco .brutal-btn:hover,
+.theme-retroterminal .brutal-btn:hover {
   transform: translate(-2px, -2px);
   box-shadow: 5px 5px 0px var(--shadow-brutal, #000000);
 }
 
-.brutal-btn:active {
+.theme-neobrutalist .brutal-btn:active,
+.theme-memphis .brutal-btn:active,
+.theme-artdeco .brutal-btn:active,
+.theme-retroterminal .brutal-btn:active {
   transform: translate(2px, 2px);
   box-shadow: 1px 1px 0px var(--shadow-brutal, #000000);
 }
 
-.brutal-badge {
+.theme-neobrutalist .brutal-badge,
+.theme-memphis .brutal-badge,
+.theme-artdeco .brutal-badge,
+.theme-retroterminal .brutal-badge {
   border: 2px solid var(--border-brutal, #000000);
+  border-radius: 0px;
   font-weight: 800;
   font-size: 0.72rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+/* Fallback default brutal-card if no theme class */
+body:not([class*="theme-"]) .brutal-card {
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  box-shadow: 8px 8px 20px #c5d0e0, -8px -8px 20px #ffffff;
+}
+
+body:not([class*="theme-"]) .brutal-btn {
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 14px;
+  box-shadow: 5px 5px 12px #c5d0e0, -5px -5px 12px #ffffff;
+}
+
+/* Strict High Contrast Overrides */
+.high-contrast .brutal-card,
+.high-contrast .neu-card,
+.high-contrast .brutal-btn,
+.high-contrast .neu-btn,
+.high-contrast .neu-inset,
+.high-contrast .neu-badge {
+  background-color: #000000 !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: 4px 4px 0px #ffffff !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+}
+
+/* Mobile Gesture-Based UI Styles */
+.gesture-pill-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.6);
+  margin: 0 auto;
+}
+
+.gesture-track-line {
+  height: 2px;
+  background: linear-gradient(90deg, #cbd5e1 0%, #0284c7 50%, #cbd5e1 100%);
+}
+
+.gesture-node {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+
+.gesture-node-active {
+  transform: scale(1.35);
+  box-shadow: 0 0 14px rgba(2, 132, 199, 0.7);
+}
+
+@keyframes gesturePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+.animate-gesture-pulse {
+  animation: gesturePulse 2s infinite ease-in-out;
 }
 
 /* Geometric Memphis Pattern Utility */

@@ -3,10 +3,10 @@ import { ShieldCheck, Eye, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-white border-t-4 border-black py-8 mt-auto high-contrast:bg-black high-contrast:border-white shadow-brutal">
+    <footer className="bg-[#eef2f8] border-t border-slate-300/80 py-8 mt-auto high-contrast:!bg-black high-contrast:!border-white high-contrast:!border-t-4 shadow-[0_-4px_20px_rgba(200,211,226,0.5)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-slate-800 high-contrast:text-slate-300">
-          <div className="brutal-card p-4 bg-[#FFFDF0]">
+          <div className="brutal-card p-4 bg-[#eef2f8]">
             <div className="flex items-center gap-2 font-black uppercase tracking-tight text-ink-900 high-contrast:text-white mb-2">
               <Eye className="w-4 h-4 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
               <span>Evidence-Backed Intelligence</span>
@@ -16,7 +16,7 @@ export const Footer: React.FC = () => {
             </p>
           </div>
 
-          <div className="brutal-card p-4 bg-[#FFFDF0]">
+          <div className="brutal-card p-4 bg-[#eef2f8]">
             <div className="flex items-center gap-2 font-black uppercase tracking-tight text-ink-900 high-contrast:text-white mb-2">
               <ShieldCheck className="w-4 h-4 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
               <span>100% Private & Local</span>
@@ -26,7 +26,7 @@ export const Footer: React.FC = () => {
             </p>
           </div>
 
-          <div className="brutal-card p-4 bg-[#FFFDF0]">
+          <div className="brutal-card p-4 bg-[#eef2f8]">
             <div className="flex items-center gap-2 font-black uppercase tracking-tight text-ink-900 high-contrast:text-white mb-2">
               <Sparkles className="w-4 h-4 text-black high-contrast:text-yellow-400 stroke-[2.5]" />
               <span>Academic Integrity Notice</span>
