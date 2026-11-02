@@ -38,7 +38,7 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-slate-300/80 high-contrast:border-white mt-6 pt-4 flex flex-col sm:flex-row items-center justify-between text-xs font-bold text-slate-600 high-contrast:text-yellow-300">
-          <p>© 2024 NoticeLens • Built for university accessibility in Bangladesh</p>
+          <p>© 2024–{new Date().getFullYear()} NoticeLens • Built for university accessibility in Bangladesh</p>
           <div className="flex items-center gap-2 mt-2 sm:mt-0">
             <span className="neu-badge px-3 py-1 bg-emerald-100 text-emerald-800">WCAG 2.2 AA Aligned</span>
             <span className="neu-badge px-3 py-1 bg-sky-100 text-sky-800">100% On-Device</span>

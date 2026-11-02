@@ -266,7 +266,34 @@ export function extractAllDates(text: string): ParsedDateResult[] {
       });
     }
 
-    // 4. Numeric dates (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)
+    // 4. ISO 8601 format (YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD)
+    const isoDatePattern = /\b(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})\b/g;
+    let isoMatch: RegExpExecArray | null;
+    while ((isoMatch = isoDatePattern.exec(normalizedLine)) !== null) {
+      const year = parseInt(isoMatch[1], 10);
+      const month = parseInt(isoMatch[2], 10);
+      const day = parseInt(isoMatch[3], 10);
+
+      if (!isValidCalendarDate(day, month, year)) continue;
+
+      const rawSnippet = rawLine.substring(isoMatch.index, isoMatch.index + isoMatch[0].length);
+      const classification = classifyDateContext(rawLine, lineIndex, lines);
+
+      results.push({
+        rawSnippet,
+        normalizedDate: formatDateDisplay(day, month, year),
+        isoDate: `${year}-${pad2(month)}-${pad2(day)}`,
+        day,
+        month,
+        year,
+        dateType: classification.type,
+        confidence: 'high',
+        contextSnippet: rawLine.trim(),
+        isAmbiguous: false,
+      });
+    }
+
+    // 5. Numeric dates (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)
     const numericDatePattern = /\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})\b/g;
     let numMatch: RegExpExecArray | null;
     while ((numMatch = numericDatePattern.exec(normalizedLine)) !== null) {

@@ -4,7 +4,10 @@ import { AccessibleSummaryCard } from './AccessibleSummaryCard';
 import { EvidenceFieldCard } from './EvidenceFieldCard';
 import { OcrTranscriptEditor } from './OcrTranscriptEditor';
 import { DeadlineActionCard } from './DeadlineActionCard';
-import { Image as ImageIcon, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
+import { ActionChecklistCard } from './ActionChecklistCard';
+import { DeadlineTimelineCard } from './DeadlineTimelineCard';
+import { AccessibleReadingView } from './AccessibleReadingView';
+import { Image as ImageIcon, CheckCircle2, AlertTriangle, Layers, BookOpen } from 'lucide-react';
 
 interface NoticeWorkspaceProps {
   notice: ProcessedNotice;
@@ -15,6 +18,7 @@ interface NoticeWorkspaceProps {
   hasUnsavedChanges?: boolean;
   onCopySuccess: () => void;
   onDownloadIcsSuccess: () => void;
+  onConfirmNoticeField?: (key: string, correctedValue?: string) => Promise<ProcessedNotice | null> | void;
 }
 
 export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
@@ -26,7 +30,9 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
   hasUnsavedChanges = false,
   onCopySuccess,
   onDownloadIcsSuccess,
+  onConfirmNoticeField,
 }) => {
+  const [viewMode, setViewMode] = useState<'workspace' | 'reading'>('workspace');
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceSnippet | null>(null);
   const [showOriginalImage, setShowOriginalImage] = useState<boolean>(true);
   const [fieldFilter, setFieldFilter] = useState<'all' | 'needs_review' | 'found'>('all');
@@ -42,8 +48,36 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
   const needsReviewCount = allFields.filter((f) => f.status === 'needs_review' || f.isAmbiguous).length;
   const confirmedCount = allFields.filter((f) => f.status === 'confirmed').length;
 
+  if (viewMode === 'reading') {
+    return (
+      <AccessibleReadingView
+        notice={notice}
+        onExitReadingMode={() => setViewMode('workspace')}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Prominent Historical Demo Notice Disclaimer */}
+      {notice.sourceType === 'demo' && (
+        <div
+          role="region"
+          aria-label="Demonstration Notice Disclaimer"
+          className="neu-card p-4 bg-amber-50/95 border-2 border-amber-500/80 rounded-2xl flex items-start gap-3.5 high-contrast:!bg-black high-contrast:!border-yellow-400"
+        >
+          <AlertTriangle className="w-5 h-5 text-amber-700 high-contrast:text-yellow-400 shrink-0 mt-0.5 stroke-[2.5]" />
+          <div>
+            <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-950 high-contrast:text-yellow-300">
+              FICTIONAL DEMONSTRATION NOTICE — NOT AN OFFICIAL UNIVERSITY ANNOUNCEMENT
+            </h2>
+            <p className="text-xs text-amber-900/90 high-contrast:text-white mt-0.5 leading-relaxed">
+              This notice contains fictional educational sample data designed strictly for regression verification, accessibility testing, and judging demonstration. Contact details, dates, and circular text are synthetic demonstrations and not authentic institutional announcements.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Workspace Subheader Banner */}
       <div className="neu-card flex flex-wrap items-center justify-between gap-4 p-5 high-contrast:!bg-black high-contrast:!border-white">
         <div>
@@ -58,7 +92,17 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setViewMode('reading')}
+            aria-label="Switch to accessible low-vision reading mode"
+            className="neu-btn flex items-center gap-1.5 px-3.5 py-1.5 bg-sky-600 text-white font-bold text-xs uppercase tracking-wider hover:bg-sky-700 high-contrast:!bg-yellow-400 high-contrast:!text-black shadow-sm"
+          >
+            <BookOpen className="w-4 h-4 stroke-[2.5]" />
+            <span>Low-Vision Reading Mode</span>
+          </button>
+
           <div className="neu-badge flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-bold high-contrast:!bg-yellow-400 high-contrast:!text-black">
             <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
             <span>{confirmedCount} Confirmed Facts</span>
@@ -80,13 +124,23 @@ export const NoticeWorkspace: React.FC<NoticeWorkspaceProps> = ({
         isSaved={isSaved}
         hasUnsavedChanges={hasUnsavedChanges}
         onDownloadIcsSuccess={onDownloadIcsSuccess}
+        onConfirmDate={onConfirmNoticeField}
+      />
+
+      {/* Comprehensive Date Disambiguation Timeline */}
+      <DeadlineTimelineCard
+        notice={notice}
+        onSelectDateSnippet={(snippet) => setSelectedEvidence({ text: snippet, startIndex: 0, endIndex: snippet.length, confidence: 'high' })}
       />
 
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column (7 cols): Plain Summary & Key Structured Fields */}
+        {/* Left Column (7 cols): Plain Summary, Action Checklist & Key Structured Fields */}
         <div className="lg:col-span-7 space-y-6">
           <AccessibleSummaryCard notice={notice} />
+
+          {/* Interactive Notice-to-Action Checklist */}
+          <ActionChecklistCard notice={notice} />
 
           {/* Structured Fields Section */}
           <section

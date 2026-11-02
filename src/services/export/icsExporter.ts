@@ -115,9 +115,15 @@ export function generateIcsContent(event: CalendarEventData): string {
 
     if (event.endTime) {
       const endIso = parseDateTimeToDate(event.startDate, event.endTime);
-      if (endIso) {
-        dtEndLine = `DTEND;TZID=Asia/Dhaka:${formatIcsLocalDateTime(endIso)}`;
+      if (!endIso) {
+        throw new Error(`Invalid or unparseable event end time: "${event.endTime}". Review required.`);
       }
+      if (endIso.getTime() <= startIso.getTime()) {
+        throw new Error(
+          `Event end time (${event.endTime}) cannot be earlier than or equal to start time (${event.startTime}) on the same date.`
+        );
+      }
+      dtEndLine = `DTEND;TZID=Asia/Dhaka:${formatIcsLocalDateTime(endIso)}`;
     }
     // Per RFC 5545 §3.6.1: when endTime is omitted, no duration is manufactured.
   }
@@ -134,7 +140,7 @@ export function generateIcsContent(event: CalendarEventData): string {
         'BEGIN:STANDARD',
         'TZOFFSETFROM:+0600',
         'TZOFFSETTO:+0600',
-        'TZNAME:BST',
+        'TZNAME:BDT',
         'DTSTART:19700101T000000',
         'END:STANDARD',
         'END:VTIMEZONE',
@@ -298,7 +304,8 @@ export function parseDateTimeToDate(dateStr: string, timeStr: string): Date | nu
   if (!isValidCalendarDate(day, month, year)) return null;
 
   const normalizedTime = bengaliToEnglishNumerals(timeStr.trim());
-  const match = normalizedTime.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+  // Strictly anchored 12-hour or 24-hour time format
+  const match = normalizedTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
 
   if (!match) {
     return null;
@@ -313,7 +320,7 @@ export function parseDateTimeToDate(dateStr: string, timeStr: string): Date | nu
   }
 
   if (meridiem) {
-    if (hours > 12) return null;
+    if (hours < 1 || hours > 12) return null;
     if (meridiem === 'PM' && hours < 12) hours += 12;
     if (meridiem === 'AM' && hours === 12) hours = 0;
   }
@@ -331,7 +338,7 @@ export function isExportAllowed(notice: ProcessedNotice): boolean {
   const targetField = deadline && deadline.status !== 'not_found' ? deadline : eventDate;
 
   if (!targetField || targetField.status === 'not_found') return false;
-  if (targetField.status !== 'user_edited' && (targetField.isAmbiguous || targetField.status === 'needs_review')) {
+  if (targetField.status !== 'user_edited' && targetField.status !== 'confirmed' && (targetField.isAmbiguous || targetField.status === 'needs_review')) {
     return false;
   }
 
@@ -346,5 +353,81 @@ export function isExportAllowed(notice: ProcessedNotice): boolean {
   const d = parseInt(dateMatch[3], 10);
   return isValidCalendarDate(d, m, y);
 }
+
+export interface CalendarExportOutcome {
+  success: boolean;
+  requiresReview?: boolean;
+  eventData?: CalendarEventData;
+  reason?: string;
+  filename?: string;
+  icsContent?: string;
+}
+
+/**
+ * Centralized calendar export controller.
+ * Enforces review gates across desktop, mobile, and saved vault pathways.
+ */
+export function exportNoticeCalendar(
+  notice: ProcessedNotice,
+  options?: { confirmedEvent?: CalendarEventData; bypassReview?: boolean }
+): CalendarExportOutcome {
+  const deadlineField = notice.fields.deadline;
+  const eventDateField = notice.fields.eventDate;
+  const targetField = deadlineField && deadlineField.status !== 'not_found' ? deadlineField : eventDateField;
+
+  if (!targetField || targetField.status === 'not_found') {
+    return {
+      success: false,
+      reason: 'No schedule or deadline detected in notice.',
+    };
+  }
+
+  const isConfirmed = targetField.status === 'user_edited' || targetField.status === 'confirmed';
+  const isAmbiguous = targetField.isAmbiguous || targetField.status === 'needs_review';
+
+  if (!isConfirmed && isAmbiguous && !options?.bypassReview) {
+    const eventCandidate = options?.confirmedEvent || buildEventFromNotice(notice);
+    const reason = targetField.explanation || (targetField.isAmbiguous
+      ? 'Extracted date is ambiguous and requires confirmation before calendar export.'
+      : 'Extracted date requires review and confirmation before calendar export.');
+    return {
+      success: false,
+      requiresReview: true,
+      eventData: eventCandidate || undefined,
+      reason,
+    };
+  }
+
+  const eventData = options?.confirmedEvent || buildEventFromNotice(notice);
+  if (!eventData) {
+    return {
+      success: false,
+      requiresReview: false,
+      reason: 'Unable to parse a verified calendar date from notice.',
+    };
+  }
+
+  try {
+    const filename = generateSafeCalendarFilename(notice.title, 'deadline');
+    const icsContent = generateIcsContent(eventData);
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      downloadIcsFile(eventData, filename);
+    }
+    return {
+      success: true,
+      requiresReview: false,
+      eventData,
+      filename,
+      icsContent,
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      requiresReview: false,
+      reason: err instanceof Error ? err.message : 'Failed to export calendar event.',
+    };
+  }
+}
+
 
 

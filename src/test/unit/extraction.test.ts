@@ -202,4 +202,105 @@ Do not click javascript:alert(1) in the browser.`;
     expect(datesDot.length).toBeGreaterThan(0);
     expect(datesDot[0].isoDate).toBe('2024-12-20');
   });
+
+  describe('Re-extraction After Transcript Editing (Deadline, Venue, Fee)', () => {
+    const initialTranscript = `ঢাকা বিশ্ববিদ্যালয়
+কম্পিউটার বিজ্ঞান ও প্রকৌশল বিভাগ
+বিজ্ঞপ্তি
+বিষয়: ৪র্থ বর্ষ ৮ম সেমিস্টার ফাইনাল পরীক্ষা ২০২৪
+পরীক্ষার স্থান: কাজী মোতাহার হোসেন ভবন, কক্ষ নং ৪০২ ও ৪০৩
+পরীক্ষার ফি বাবদ ৫০০/- টাকা আগামী ৫ নভেম্বর ২০২৪ তারিখের মধ্যে জমা দিতে হবে।`;
+
+    it('updates fee value, links fresh evidence, and purges stale evidence after editing fee in transcript', () => {
+      const initialNotice = processNoticeDocument(initialTranscript);
+      expect(initialNotice.fields.fees.value).toContain('৫০০/-');
+      expect(initialNotice.fields.fees.evidence?.text).toContain('৫০০/-');
+
+      // Edit transcript: change fee to ৮৫০/- টাকা
+      const editedTranscript = initialTranscript.replace('৫০০/- টাকা', '৮৫০/- টাকা');
+      const updatedNotice = processNoticeDocument(editedTranscript);
+
+      // Verify fee value changed
+      expect(updatedNotice.fields.fees.value).toContain('৮৫০/-');
+      expect(updatedNotice.fields.fees.value).not.toContain('৫০০/-');
+
+      // Verify fresh source evidence links to new text
+      expect(updatedNotice.fields.fees.evidence?.text).toContain('৮৫০/-');
+
+      // Verify stale evidence is purged
+      expect(updatedNotice.fields.fees.evidence?.text).not.toContain('৫০০/-');
+      expect(updatedNotice.fields.fees.evidence?.startIndex).toBe(
+        editedTranscript.indexOf(updatedNotice.fields.fees.evidence!.text)
+      );
+    });
+
+    it('updates venue value and associates accurate evidence after editing venue in transcript', () => {
+      const initialNotice = processNoticeDocument(initialTranscript);
+      expect(initialNotice.fields.venue.value).toContain('কক্ষ নং ৪০২');
+
+      // Edit transcript: change venue to ড. কুদরত-এ-খুদা ভবন, অডিটোরিয়াম
+      const newVenueLine = 'পরীক্ষার স্থান: ড. কুদরত-এ-খুদা ভবন, কেন্দ্রীয় অডিটোরিয়াম';
+      const editedTranscript = initialTranscript.replace(
+        'পরীক্ষার স্থান: কাজী মোতাহার হোসেন ভবন, কক্ষ নং ৪০২ ও ৪০৩',
+        newVenueLine
+      );
+      const updatedNotice = processNoticeDocument(editedTranscript);
+
+      // Verify venue value changed
+      expect(updatedNotice.fields.venue.value).toContain('ড. কুদরত-এ-খুদা ভবন');
+      expect(updatedNotice.fields.venue.value).not.toContain('কাজী মোতাহার হোসেন');
+
+      // Verify evidence snippet points to the new venue
+      expect(updatedNotice.fields.venue.evidence?.text).toContain('ড. কুদরত-এ-খুদা ভবন');
+      expect(updatedNotice.fields.venue.evidence?.startIndex).toBe(
+        editedTranscript.indexOf(updatedNotice.fields.venue.evidence!.text)
+      );
+    });
+
+    it('updates deadline value and flags missing year when deadline year is omitted in edited transcript', () => {
+      const initialNotice = processNoticeDocument(initialTranscript);
+      expect(initialNotice.fields.deadline.value).toContain('5 November 2024');
+      expect(initialNotice.fields.deadline.isAmbiguous).toBe(false);
+
+      // Edit transcript: change deadline to ২০ নভেম্বর without year
+      const editedTranscript = initialTranscript.replace(
+        '৫ নভেম্বর ২০২৪',
+        '২০ নভেম্বর'
+      );
+      const updatedNotice = processNoticeDocument(editedTranscript);
+
+      // Verify deadline updated to new date (without year)
+      expect(updatedNotice.fields.deadline.value).toMatch(/20 November|২০ নভেম্বর/);
+      expect(updatedNotice.fields.deadline.value).not.toContain('5 November');
+
+      // Verify missing year is flagged as ambiguous
+      expect(updatedNotice.fields.deadline.isAmbiguous).toBe(true);
+      expect(updatedNotice.fields.deadline.evidence?.text).toContain('২০ নভেম্বর');
+      expect(updatedNotice.fields.deadline.evidence?.text).not.toContain('৫ নভেম্বর ২০২৪');
+    });
+
+    it('simultaneously updates fee, venue, and deadline atomically from a single transcript edit', () => {
+      const editedTranscript = `ঢাকা বিশ্ববিদ্যালয়
+কম্পিউটার বিজ্ঞান ও প্রকৌশল বিভাগ
+বিজ্ঞপ্তি
+বিষয়: ৪র্থ বর্ষ ফাইনাল পরীক্ষা
+পরীক্ষার স্থান: কার্জন হল, পরীক্ষার হল ৩
+পরীক্ষার ফি বাবদ ১২০০/- টাকা আগামী ২৫ ডিসেম্বর ২০২৪ তারিখের মধ্যে জমা দিতে হবে।`;
+
+      const updatedNotice = processNoticeDocument(editedTranscript);
+
+      // Fee
+      expect(updatedNotice.fields.fees.value).toContain('১২০০/-');
+      expect(updatedNotice.fields.fees.evidence?.text).toContain('১২০০/-');
+
+      // Venue
+      expect(updatedNotice.fields.venue.value).toContain('কার্জন হল');
+      expect(updatedNotice.fields.venue.evidence?.text).toContain('কার্জন হল');
+
+      // Deadline
+      expect(updatedNotice.fields.deadline.value).toContain('25 December 2024');
+      expect(updatedNotice.fields.deadline.evidence?.text).toContain('২৫ ডিসেম্বর ২০২৪');
+      expect(updatedNotice.fields.deadline.isAmbiguous).toBe(false);
+    });
+  });
 });

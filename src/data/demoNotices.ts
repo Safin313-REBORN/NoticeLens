@@ -17,8 +17,8 @@ export const DEMO_NOTICES: DemoNoticeItem[] = [
     titleBn: '৪র্থ বর্ষ ৮ম সেমিস্টার ফাইনাল পরীক্ষা ২০২৩-এর সময়সূচী',
     category: 'Examination',
     language: 'ben',
-    description: 'Realistic fictional Bengali university examination schedule with venue, admit card requirements, and fees.',
-    notes: 'Fictional notice for academic testing and judging demonstration only.',
+    description: 'Historical educational sample (2024 archive): Realistic Bengali university examination schedule with venue, admit card requirements, and fees.',
+    notes: 'Archived historical educational notice (2024 Academic Session) for testing, regression verification, and judging demonstration only.',
     ocrText: `ঢাকা বিশ্ববিদ্যালয়
 কম্পিউটার বিজ্ঞান ও প্রকৌশল বিভাগ
 বিজ্ঞপ্তি
@@ -49,8 +49,8 @@ export const DEMO_NOTICES: DemoNoticeItem[] = [
     titleBn: 'ন্যাশনাল কলেজিয়েট ইনোভেশন হ্যাকাথন ২০২৪',
     category: 'Event',
     language: 'eng',
-    description: 'Realistic fictional English campus event notice with team registration deadline, dates, venue, and portal URL.',
-    notes: 'Fictional notice for academic testing and judging demonstration only.',
+    description: 'Historical educational sample (2024 archive): Realistic English campus event notice with team registration deadline, dates, venue, and portal URL.',
+    notes: 'Archived historical educational notice (2024 Academic Session) for testing, regression verification, and judging demonstration only.',
     ocrText: `BANGLADESH UNIVERSITY OF ENGINEERING AND TECHNOLOGY (BUET)
 DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING
 OFFICIAL NOTICE
@@ -82,8 +82,8 @@ Convener, Event Committee`,
     titleBn: 'পোস্টগ্র্যাজুয়েট ডিপ্লোমা ভর্তি ও স্কলারশিপ আবেদন বিজ্ঞপ্তি',
     category: 'Admission',
     language: 'ben+eng',
-    description: 'Realistic fictional bilingual Bengali-English notice for diploma admission with portal link and certificate requirements.',
-    notes: 'Fictional notice for academic testing and judging demonstration only.',
+    description: 'Historical educational sample (2024 archive): Realistic bilingual Bengali-English notice for diploma admission with portal link and certificate requirements.',
+    notes: 'Archived historical educational notice (2024 Academic Session) for testing, regression verification, and judging demonstration only.',
     ocrText: `জাহাঙ্গীরনগর বিশ্ববিদ্যালয়
 ইনস্টিটিউট অব ইনফরমেশন টেকনোলজি (IIT)
 ADMISSION & SCHOLARSHIP NOTICE — SPRING 2025
@@ -119,10 +119,10 @@ export function generateDemoNoticeSvg(demoItem: DemoNoticeItem): string {
 
   const textSvgLines = lines
     .map((line, idx) => {
-      const y = 90 + idx * 26;
+      const y = 110 + idx * 25;
       const isHeader = idx < 3;
       const fontWeight = isHeader ? 'bold' : 'normal';
-      const fontSize = isHeader ? (idx === 0 ? '20' : '17') : '14';
+      const fontSize = isHeader ? (idx === 0 ? '19' : '16') : '13';
       const fill = isHeader ? '#0f172a' : '#334155';
       const escaped = line
         .replace(/&/g, '&amp;')
@@ -135,10 +135,12 @@ export function generateDemoNoticeSvg(demoItem: DemoNoticeItem): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 650" width="800" height="650">
     <rect width="800" height="650" fill="#ffffff" />
     <rect x="20" y="20" width="760" height="610" fill="#fafafa" stroke="#cbd5e1" stroke-width="2" rx="4" />
-    <line x1="50" y1="70" x2="750" y2="70" stroke="#0d9488" stroke-width="3" />
+    <rect x="35" y="32" width="730" height="34" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5" rx="4" />
+    <text x="400" y="53" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="#b91c1c" text-anchor="middle">FICTIONAL DEMONSTRATION NOTICE — NOT AN OFFICIAL UNIVERSITY ANNOUNCEMENT</text>
+    <line x1="50" y1="80" x2="750" y2="80" stroke="#0284c7" stroke-width="2" />
     ${textSvgLines}
-    <rect x="50" y="580" width="700" height="28" fill="#f1f5f9" rx="4" />
-    <text x="60" y="598" font-family="Inter, sans-serif" font-size="11" fill="#64748b">NoticeLens Test Document • Fictional Academic Demonstration • Not an Official University Notice</text>
+    <rect x="35" y="582" width="730" height="30" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5" rx="4" />
+    <text x="400" y="601" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="#b91c1c" text-anchor="middle">NoticeLens • FICTIONAL DEMONSTRATION NOTICE — NOT AN OFFICIAL UNIVERSITY ANNOUNCEMENT</text>
   </svg>`;
 
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

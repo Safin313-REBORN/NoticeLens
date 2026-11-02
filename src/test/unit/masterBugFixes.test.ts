@@ -11,6 +11,7 @@ import {
   generateIcsContent,
   foldIcsLine,
   isExportAllowed,
+  exportNoticeCalendar,
 } from '../../services/export/icsExporter';
 import { matchEvidence } from '../../services/extraction/evidenceMatcher';
 import { DEMO_NOTICES } from '../../data/demoNotices';
@@ -307,5 +308,117 @@ Please bring your student ID and admit card.`;
       expect(editedField.originalValue).toBe('15/11/2024');
       expect(editedField.originalEvidence?.text).toBe('15/11/2024');
     });
+
+    it('returns null for repeated occurrences when no disambiguating keyword is provided', () => {
+      const transcript = `Meeting at Auditorium at 10 AM.
+Another meeting at Auditorium at 3 PM.`;
+
+      const target = 'Auditorium';
+      // Without keyword, evidenceMatcher must return null rather than guessing the first occurrence
+      const result = matchEvidence(transcript, target);
+      expect(result).toBeNull();
+
+      // With keyword '10 AM', it unambiguously matches the first occurrence
+      const matchedFirst = matchEvidence(transcript, target, '10 AM');
+      expect(matchedFirst).not.toBeNull();
+      expect(matchedFirst?.startIndex).toBe(transcript.indexOf('Auditorium'));
+
+      // With keyword '3 PM', it unambiguously matches the second occurrence
+      const matchedSecond = matchEvidence(transcript, target, '3 PM');
+      expect(matchedSecond).not.toBeNull();
+      expect(matchedSecond?.startIndex).toBe(transcript.lastIndexOf('Auditorium'));
+    });
+
+    it('rejects keyword match across paragraph boundary when disambiguating repeated tokens', () => {
+      const transcript = `Notice Section 1:
+Venue: Auditorium
+
+Important unrelated header:
+Other section details:
+Venue: Auditorium`;
+
+      // 'Auditorium' appears twice. If someone searches with keyword 'Notice Section 1',
+      // but second occurrence is separated by double newline, only the proximate one within section matches.
+      const match = matchEvidence(transcript, 'Auditorium', 'Notice Section 1');
+      expect(match).not.toBeNull();
+      expect(match?.startIndex).toBe(transcript.indexOf('Auditorium'));
+    });
+
+    it('revalidates evidence offsets accurately when transcript lines are shifted or removed', () => {
+      const originalTranscript = `Header Line\nTarget Date: 2024-11-20\nFooter notes`;
+      const originalMatch = matchEvidence(originalTranscript, '2024-11-20');
+      expect(originalMatch).not.toBeNull();
+      const origStart = originalMatch!.startIndex;
+
+      // User prepends 3 lines to transcript, shifting the position of the target
+      const updatedTranscript = `Extra line 1\nExtra line 2\nExtra line 3\nHeader Line\nTarget Date: 2024-11-20\nFooter notes`;
+      const revalidatedMatch = matchEvidence(updatedTranscript, '2024-11-20', 'Target Date');
+
+      expect(revalidatedMatch).not.toBeNull();
+      // Offsets must reflect new position in updated transcript, not stale old offset
+      expect(revalidatedMatch!.startIndex).toBeGreaterThan(origStart);
+      expect(updatedTranscript.substring(revalidatedMatch!.startIndex, revalidatedMatch!.endIndex)).toBe('2024-11-20');
+
+      // User deletes the line containing the target completely
+      const removedTranscript = `Header Line\nFooter notes without date`;
+      const revalidatedAfterRemoval = matchEvidence(removedTranscript, '2024-11-20');
+      expect(revalidatedAfterRemoval).toBeNull();
+    });
+
+    it('atomically applies manual date correction and confirmed status without state race condition', () => {
+      // Simulating a notice extracted with a yearless date
+      const initialNotice = processNoticeDocument('বিজ্ঞপ্তি: পরীক্ষার ফি জমা দেওয়ার শেষ তারিখ ১৫ নভেম্বর।');
+      expect(initialNotice.fields.deadline.value).toBe('15 November');
+      expect(initialNotice.fields.deadline.isAmbiguous).toBe(true);
+
+      // Attempting export before confirmation fails/requires review
+      const preExport = exportNoticeCalendar(initialNotice);
+      expect(preExport.requiresReview).toBe(true);
+
+      // Atomic confirmation handler logic (as implemented in App.tsx handleConfirmNoticeField)
+      const correctedValue = '2024-11-15';
+      const updatedFields = { ...initialNotice.fields };
+      const currentField = updatedFields.deadline;
+
+      const finalValue = correctedValue.trim();
+      const origValue = currentField.value;
+      const origEvidence = currentField.evidence;
+      const newEvidence = matchEvidence(initialNotice.ocrText, finalValue, currentField.label);
+
+      updatedFields.deadline = {
+        ...currentField,
+        value: finalValue,
+        status: 'confirmed',
+        isAmbiguous: false,
+        explanation: undefined,
+        evidence: newEvidence,
+        originalValue: origValue,
+        originalEvidence: origEvidence,
+        editedAt: new Date().toISOString(),
+        provenance: 'user_confirmed',
+      };
+
+      const updatedNotice = {
+        ...initialNotice,
+        fields: updatedFields,
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Assertions verifying atomic state consistency
+      expect(updatedNotice.fields.deadline.value).toBe('2024-11-15');
+      expect(updatedNotice.fields.deadline.status).toBe('confirmed');
+      expect(updatedNotice.fields.deadline.isAmbiguous).toBe(false);
+      expect(updatedNotice.fields.deadline.provenance).toBe('user_confirmed');
+      expect(updatedNotice.fields.deadline.originalValue).toBe('15 November');
+
+      // Export using the atomically updated notice succeeds directly
+      const postExport = exportNoticeCalendar(updatedNotice, { bypassReview: true });
+      expect(postExport.success).toBe(true);
+      expect(postExport.eventData?.startDate).toBe('2024-11-15');
+      expect(postExport.icsContent).toContain('20241115');
+      expect(postExport.icsContent).toContain('BEGIN:VCALENDAR');
+    });
   });
 });
+
+

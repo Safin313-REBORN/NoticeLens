@@ -16,7 +16,7 @@ import {
 import { ActiveTab } from '../layout/Navbar';
 import { ProcessedNotice } from '../../types/notice';
 import { speechService } from '../../services/speech/webSpeechService';
-import { buildEventFromNotice, downloadIcsFile, generateSafeCalendarFilename } from '../../services/export/icsExporter';
+import { exportNoticeCalendar } from '../../services/export/icsExporter';
 import { ToastType } from '../common/Toast';
 
 interface MobileGestureNavProps {
@@ -81,12 +81,17 @@ export const MobileGestureNav: React.FC<MobileGestureNavProps> = ({
       onShowToast('No active notice deadline to export', 'info');
       return;
     }
-    const eventData = buildEventFromNotice(activeNotice);
-    if (eventData) {
-      downloadIcsFile(eventData, generateSafeCalendarFilename(activeNotice.title, 'deadline'));
+    const outcome = exportNoticeCalendar(activeNotice);
+    if (outcome.requiresReview) {
+      onShowToast('Notice date requires review in Workspace before calendar export', 'info');
+      onTabChange('workspace');
+      setQuickSheetOpen(false);
+      return;
+    }
+    if (outcome.success) {
       onShowToast('Calendar event downloaded (.ics)', 'success');
     } else {
-      onShowToast('No verified date found in notice', 'info');
+      onShowToast(outcome.reason || 'No verified date found in notice', 'info');
     }
     setQuickSheetOpen(false);
   };

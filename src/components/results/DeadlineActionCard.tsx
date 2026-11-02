@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Calendar, Download, Bookmark, Check, AlertCircle, RefreshCw, AlertTriangle } from 'lucide-react';
-import { ProcessedNotice } from '../../types/notice';
-import { buildEventFromNotice, downloadIcsFile, generateSafeCalendarFilename } from '../../services/export/icsExporter';
+import { ProcessedNotice, NoticeFieldKey } from '../../types/notice';
+import { exportNoticeCalendar, buildEventFromNotice } from '../../services/export/icsExporter';
+import { extractAllDates } from '../../services/extraction/dateParser';
 import { Modal } from '../common/Modal';
 
 interface DeadlineActionCardProps {
@@ -10,6 +11,7 @@ interface DeadlineActionCardProps {
   isSaved: boolean;
   hasUnsavedChanges?: boolean;
   onDownloadIcsSuccess: () => void;
+  onConfirmDate?: (key: string, correctedValue?: string) => Promise<ProcessedNotice | null> | void;
 }
 
 export const DeadlineActionCard: React.FC<DeadlineActionCardProps> = ({
@@ -18,34 +20,92 @@ export const DeadlineActionCard: React.FC<DeadlineActionCardProps> = ({
   isSaved,
   hasUnsavedChanges = false,
   onDownloadIcsSuccess,
+  onConfirmDate,
 }) => {
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewReason, setReviewReason] = useState<string>('');
+  const [manualDateInput, setManualDateInput] = useState<string>('');
+  const [dateInputError, setDateInputError] = useState<string>('');
 
   const deadlineField = notice.fields.deadline;
   const eventDateField = notice.fields.eventDate;
 
   const hasDeadline = deadlineField.status !== 'not_found';
   const hasEventDate = eventDateField.status !== 'not_found';
+  const targetKey: NoticeFieldKey = hasDeadline ? 'deadline' : 'eventDate';
 
   const dateValue = hasDeadline ? deadlineField.value : hasEventDate ? eventDateField.value : null;
   const isAmbiguous = hasDeadline ? deadlineField.isAmbiguous : hasEventDate ? eventDateField.isAmbiguous : false;
-  const needsReview = hasDeadline ? deadlineField.status === 'needs_review' : hasEventDate ? eventDateField.status === 'needs_review' : false;
 
-  const doExport = () => {
-    const eventData = buildEventFromNotice(notice);
-    if (eventData) {
-      downloadIcsFile(eventData, generateSafeCalendarFilename(notice.title, 'deadline'));
+  const eventCandidate = buildEventFromNotice(notice);
+  const hasValidIsoDate = Boolean(eventCandidate && eventCandidate.startDate);
+
+  const handleExportIcs = () => {
+    setDateInputError('');
+    const outcome = exportNoticeCalendar(notice);
+    if (outcome.requiresReview || !hasValidIsoDate) {
+      setReviewReason(outcome.reason || (!hasValidIsoDate ? 'Notice lacks a complete calendar year. Please provide the year or date.' : 'Verification required'));
+      setManualDateInput(dateValue || '');
+      setShowReviewModal(true);
+      return;
+    }
+    if (outcome.success) {
       onDownloadIcsSuccess();
     }
   };
 
-  const handleExportIcs = () => {
-    // Calendar review gate: require explicit confirmation if ambiguous or unverified
-    if (isAmbiguous || needsReview) {
-      setShowReviewModal(true);
-      return;
+  const handleConfirmAndExport = async () => {
+    setDateInputError('');
+    let valueToConfirm: string | undefined = undefined;
+
+    if (!hasValidIsoDate) {
+      const inputEl = document.querySelector('input[aria-label="Enter confirmed date with year"]') as HTMLInputElement | null;
+      const rawInput = inputEl && inputEl.value ? inputEl.value : manualDateInput;
+      const trimmed = rawInput.trim();
+      if (!trimmed) {
+        setDateInputError('Please enter a date with year (e.g. 2024-11-15 or 15/11/2024) to export.');
+        return;
+      }
+
+      const parsedDates = extractAllDates(trimmed);
+      if (!parsedDates.length || !parsedDates[0].isoDate) {
+        setDateInputError('Could not parse a valid date and year. Please specify day, month, and year (e.g. 2024-11-15).');
+        return;
+      }
+      valueToConfirm = trimmed;
     }
-    doExport();
+
+    let effectiveNotice = notice;
+    if (onConfirmDate) {
+      const maybeNotice = await onConfirmDate(targetKey, valueToConfirm);
+      if (maybeNotice) {
+        effectiveNotice = maybeNotice;
+      }
+    }
+
+    if (valueToConfirm) {
+      const updatedFields = { ...effectiveNotice.fields };
+      const currentTarget = updatedFields[targetKey];
+      updatedFields[targetKey] = {
+        ...currentTarget,
+        value: valueToConfirm,
+        status: 'confirmed',
+        isAmbiguous: false,
+        provenance: 'user_confirmed',
+      };
+      effectiveNotice = {
+        ...effectiveNotice,
+        fields: updatedFields,
+      };
+    }
+
+    const outcome = exportNoticeCalendar(effectiveNotice, { bypassReview: true });
+    if (outcome.success) {
+      setShowReviewModal(false);
+      onDownloadIcsSuccess();
+    } else {
+      setDateInputError(outcome.reason || 'Could not form calendar event from specified date.');
+    }
   };
 
   return (
@@ -145,14 +205,48 @@ export const DeadlineActionCard: React.FC<DeadlineActionCardProps> = ({
                 </p>
                 <p className="text-xs font-medium text-slate-800 mt-1">
                   The detected schedule is <strong>"{dateValue}"</strong>.
-                  {hasDeadline && deadlineField.explanation ? ` (${deadlineField.explanation})` : ''}
+                  {reviewReason ? ` (${reviewReason})` : hasDeadline && deadlineField.explanation ? ` (${deadlineField.explanation})` : ''}
                 </p>
               </div>
             </div>
 
-            <p className="text-xs font-medium text-slate-600 leading-relaxed">
-              NoticeLens does not silently invent missing years or unverified times. Please verify that this date matches your university's official schedule before creating a calendar event.
-            </p>
+            {!hasValidIsoDate ? (
+              <div className="space-y-2 p-3 neu-inset rounded-xl bg-amber-50/60 border border-amber-200">
+                <p className="text-xs font-bold text-amber-900">
+                  Calendar year or complete date missing
+                </p>
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  NoticeLens never guesses missing years for deadline events. Please provide the confirmed date with year below (e.g. <code>2024-11-15</code> or <code>15/11/2024</code>) before exporting:
+                </p>
+                <input
+                  type="text"
+                  value={manualDateInput}
+                  onInput={(e) => {
+                    setManualDateInput((e.target as HTMLInputElement).value);
+                    setDateInputError('');
+                  }}
+                  onChange={(e) => {
+                    setManualDateInput(e.target.value);
+                    setDateInputError('');
+                  }}
+                  placeholder="e.g. 2024-11-15 or 15 November 2024"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 neu-inset bg-white text-slate-800 font-medium"
+                  aria-label="Enter confirmed date with year"
+                />
+                {dateInputError && (
+                  <p className="text-xs font-bold text-red-600">{dateInputError}</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-600 leading-relaxed">
+                  NoticeLens does not silently invent missing years or unverified times. Please verify that this date matches your university's official schedule before creating a calendar event.
+                </p>
+                {dateInputError && (
+                  <p className="text-xs font-bold text-red-600">{dateInputError}</p>
+                )}
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
@@ -164,13 +258,10 @@ export const DeadlineActionCard: React.FC<DeadlineActionCardProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowReviewModal(false);
-                  doExport();
-                }}
+                onClick={handleConfirmAndExport}
                 className="neu-btn px-4 py-2 bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 shadow-sm"
               >
-                Confirm & Download .ics
+                {!hasValidIsoDate ? 'Save Date & Download .ics' : 'Confirm & Download .ics'}
               </button>
             </div>
           </div>

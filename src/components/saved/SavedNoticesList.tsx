@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { SavedNotice } from '../../types/notice';
 import { Bookmark, Search, Calendar, Trash2, ArrowUpRight, Download, AlertCircle, Scan } from 'lucide-react';
 import { Modal } from '../common/Modal';
-import { buildEventFromNotice, downloadIcsFile, generateSafeCalendarFilename } from '../../services/export/icsExporter';
+import { exportNoticeCalendar } from '../../services/export/icsExporter';
 
 interface SavedNoticesListProps {
   notices: SavedNotice[];
@@ -40,9 +40,12 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
 
   const handleExportIcs = (saved: SavedNotice, e: React.MouseEvent) => {
     e.stopPropagation();
-    const eventData = buildEventFromNotice(saved.notice);
-    if (eventData) {
-      downloadIcsFile(eventData, generateSafeCalendarFilename(saved.title, 'deadline'));
+    const outcome = exportNoticeCalendar(saved.notice);
+    if (outcome.requiresReview) {
+      onOpenNotice(saved);
+      return;
+    }
+    if (outcome.success) {
       onDownloadIcsSuccess();
     }
   };
@@ -145,9 +148,16 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="neu-badge px-2.5 py-0.5 bg-sky-100 text-sky-800 font-bold text-[10px] high-contrast:!bg-yellow-400 high-contrast:!text-black">
-                      {item.category}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="neu-badge px-2.5 py-0.5 bg-sky-100 text-sky-800 font-bold text-[10px] high-contrast:!bg-yellow-400 high-contrast:!text-black">
+                        {item.category}
+                      </span>
+                      {item.notice.sourceType === 'demo' && (
+                        <span className="neu-badge px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[10px] high-contrast:!bg-yellow-400 high-contrast:!text-black">
+                          Fictional Demo
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] font-medium text-slate-500 high-contrast:text-slate-300">
                       Saved {new Date(item.createdAt).toLocaleDateString()}
                     </span>
@@ -156,6 +166,12 @@ export const SavedNoticesList: React.FC<SavedNoticesListProps> = ({
                   <h2 className="text-base font-bold text-slate-900 high-contrast:text-white group-hover:text-sky-600 transition-colors line-clamp-2 uppercase tracking-tight">
                     {item.title}
                   </h2>
+
+                  {item.notice.sourceType === 'demo' && (
+                    <p className="text-[11px] font-bold text-amber-800 high-contrast:text-yellow-300 mt-1">
+                      ⚠️ Fictional Educational Sample — Not an Official Announcement
+                    </p>
+                  )}
 
                   {inst && inst !== 'Not found in notice' && (
                     <p className="text-xs font-medium text-slate-500 high-contrast:text-yellow-300 mt-1 line-clamp-1 uppercase tracking-wider">

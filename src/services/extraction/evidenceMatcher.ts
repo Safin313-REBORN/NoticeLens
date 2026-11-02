@@ -43,9 +43,21 @@ function findAllOccurrences(haystack: string, needle: string): number[] {
 }
 
 /**
+ * Checks whether text between two positions crosses a paragraph or major structural boundary.
+ */
+function crossesParagraphBoundary(text: string, start: number, end: number): boolean {
+  const from = Math.min(start, end);
+  const to = Math.max(start, end);
+  const slice = text.substring(from, to);
+  return /\n\s*\n|\r\n\s*\r\n/.test(slice);
+}
+
+/**
  * Finds the exact or best-effort character range of an evidence snippet in the raw OCR text
  * with accurate character offsets mapped back to the original transcript.
  * Disambiguates repeated dates, tokens, or words by prioritizing proximity to matchedKeyword context.
+ * If ambiguous or multiple occurrences exist without a conclusive contextual match, returns null
+ * to prevent highlighting an arbitrary or misleading text range.
  */
 export function matchEvidence(
   fullText: string,
@@ -74,44 +86,47 @@ export function matchEvidence(
   }
 
   if (exactCandidates.length > 1) {
-    // Multiple occurrences found: disambiguate using matchedKeyword proximity
+    // Multiple occurrences found: disambiguate using matchedKeyword proximity and paragraph boundaries
     if (matchedKeyword && matchedKeyword.trim()) {
       const keywordOccurrences = findAllOccurrences(fullText, matchedKeyword.trim());
       if (keywordOccurrences.length > 0) {
-        let bestIndex = exactCandidates[0];
+        let bestIndex = -1;
         let minDistance = Infinity;
+        let isAmbiguous = false;
 
         for (const candIdx of exactCandidates) {
           for (const kwIdx of keywordOccurrences) {
             const dist = Math.abs(candIdx - kwIdx);
+            // Require candidate and keyword to be within 180 chars and not separated by a blank line / paragraph break
+            if (dist > 180 || crossesParagraphBoundary(fullText, candIdx, kwIdx)) {
+              continue;
+            }
+
             if (dist < minDistance) {
               minDistance = dist;
               bestIndex = candIdx;
+              isAmbiguous = false;
+            } else if (dist === minDistance && candIdx !== bestIndex) {
+              isAmbiguous = true;
             }
           }
         }
 
-        const endIndex = bestIndex + trimmedTarget.length;
-        return {
-          text: fullText.substring(bestIndex, endIndex),
-          startIndex: bestIndex,
-          endIndex,
-          confidence: minDistance <= 250 ? 'high' : 'medium',
-          matchedKeyword,
-        };
+        if (bestIndex !== -1 && !isAmbiguous) {
+          const endIndex = bestIndex + trimmedTarget.length;
+          return {
+            text: fullText.substring(bestIndex, endIndex),
+            startIndex: bestIndex,
+            endIndex,
+            confidence: minDistance <= 80 ? 'high' : 'medium',
+            matchedKeyword,
+          };
+        }
       }
     }
 
-    // No keyword provided or couldn't disambiguate: use first with medium confidence
-    const startIndex = exactCandidates[0];
-    const endIndex = startIndex + trimmedTarget.length;
-    return {
-      text: fullText.substring(startIndex, endIndex),
-      startIndex,
-      endIndex,
-      confidence: 'medium',
-      matchedKeyword,
-    };
+    // No keyword provided or keyword cannot unambiguously resolve: return null to avoid arbitrary highlight
+    return null;
   }
 
   // 2. Index-mapped whitespace-tolerant search (handles tabs, multiple spaces, line wraps)
@@ -122,26 +137,8 @@ export function matchEvidence(
 
   const normCandidates = findAllOccurrences(normFull, normTarget);
 
-  if (normCandidates.length > 0) {
-    let chosenNormIdx = normCandidates[0];
-
-    if (normCandidates.length > 1 && matchedKeyword && matchedKeyword.trim()) {
-      const { normalized: normKw } = buildNormalizedIndexMap(matchedKeyword.trim());
-      const kwNormCandidates = findAllOccurrences(normFull, normKw);
-      if (kwNormCandidates.length > 0) {
-        let minDistance = Infinity;
-        for (const cand of normCandidates) {
-          for (const kw of kwNormCandidates) {
-            const dist = Math.abs(cand - kw);
-            if (dist < minDistance) {
-              minDistance = dist;
-              chosenNormIdx = cand;
-            }
-          }
-        }
-      }
-    }
-
+  if (normCandidates.length === 1) {
+    const chosenNormIdx = normCandidates[0];
     const startOrig = indexMap[chosenNormIdx];
     const endOrig = indexMap[chosenNormIdx + normTarget.length - 1] + 1;
 
@@ -160,25 +157,124 @@ export function matchEvidence(
         matchedKeyword,
       };
     }
+  } else if (normCandidates.length > 1) {
+    if (matchedKeyword && matchedKeyword.trim()) {
+      const { normalized: normKw } = buildNormalizedIndexMap(matchedKeyword.trim());
+      const kwNormCandidates = findAllOccurrences(normFull, normKw);
+      if (kwNormCandidates.length > 0) {
+        let bestNormIdx = -1;
+        let minDistance = Infinity;
+        let isAmbiguous = false;
+
+        for (const cand of normCandidates) {
+          for (const kw of kwNormCandidates) {
+            const dist = Math.abs(cand - kw);
+            const startOrig = indexMap[cand];
+            const kwOrig = indexMap[kw];
+            if (
+              dist > 180 ||
+              (typeof startOrig === 'number' && typeof kwOrig === 'number' && crossesParagraphBoundary(fullText, startOrig, kwOrig))
+            ) {
+              continue;
+            }
+
+            if (dist < minDistance) {
+              minDistance = dist;
+              bestNormIdx = cand;
+              isAmbiguous = false;
+            } else if (dist === minDistance && cand !== bestNormIdx) {
+              isAmbiguous = true;
+            }
+          }
+        }
+
+        if (bestNormIdx !== -1 && !isAmbiguous) {
+          const startOrig = indexMap[bestNormIdx];
+          const endOrig = indexMap[bestNormIdx + normTarget.length - 1] + 1;
+          if (
+            typeof startOrig === 'number' &&
+            typeof endOrig === 'number' &&
+            startOrig >= 0 &&
+            endOrig <= fullText.length &&
+            startOrig < endOrig
+          ) {
+            return {
+              text: fullText.substring(startOrig, endOrig),
+              startIndex: startOrig,
+              endIndex: endOrig,
+              confidence: 'medium',
+              matchedKeyword,
+            };
+          }
+        }
+      }
+    }
+    // Ambiguous normalized occurrences
+    return null;
   }
 
-  // 3. Word-token proximity matching if multiline or OCR noise
+  // 3. Word-token ordered proximity matching if minor OCR noise
   const targetWords = normTarget.split(' ').filter((w) => w.length > 1);
   if (targetWords.length >= 2) {
-    const firstWord = targetWords[0];
-    const lastWord = targetWords[targetWords.length - 1];
+    const firstWord = targetWords[0].toLowerCase();
 
-    const firstIdx = fullText.toLowerCase().indexOf(firstWord.toLowerCase());
-    if (firstIdx !== -1) {
-      const windowSearch = fullText.toLowerCase().substring(firstIdx, firstIdx + trimmedTarget.length + 50);
-      const lastWordRelative = windowSearch.indexOf(lastWord.toLowerCase());
-      if (lastWordRelative !== -1) {
-        const endOrig = firstIdx + lastWordRelative + lastWord.length;
-        if (endOrig <= fullText.length && firstIdx < endOrig) {
+    // Find occurrences of first word
+    const firstWordIndices = findAllOccurrences(fullText, firstWord);
+    const validMatches: Array<{ start: number; end: number }> = [];
+
+    for (const startIdx of firstWordIndices) {
+      const maxWindowLength = Math.min(fullText.length - startIdx, trimmedTarget.length * 2 + 30);
+      const windowSearch = fullText.substring(startIdx, startIdx + maxWindowLength);
+      const lowerWindow = windowSearch.toLowerCase();
+
+      // Verify all targetWords appear in order
+      let currentPos = 0;
+      let allFound = true;
+      for (const word of targetWords) {
+        const found = lowerWindow.indexOf(word.toLowerCase(), currentPos);
+        if (found === -1) {
+          allFound = false;
+          break;
+        }
+        currentPos = found + word.length;
+      }
+
+      if (allFound && currentPos > 0) {
+        validMatches.push({
+          start: startIdx,
+          end: startIdx + currentPos,
+        });
+      }
+    }
+
+    if (validMatches.length === 1) {
+      const match = validMatches[0];
+      return {
+        text: fullText.substring(match.start, match.end),
+        startIndex: match.start,
+        endIndex: match.end,
+        confidence: 'low',
+        matchedKeyword,
+      };
+    } else if (validMatches.length > 1 && matchedKeyword && matchedKeyword.trim()) {
+      const keywordOccurrences = findAllOccurrences(fullText, matchedKeyword.trim());
+      if (keywordOccurrences.length > 0) {
+        let bestMatch: { start: number; end: number } | null = null;
+        let minDistance = Infinity;
+        for (const match of validMatches) {
+          for (const kwIdx of keywordOccurrences) {
+            const dist = Math.abs(match.start - kwIdx);
+            if (dist < minDistance && dist <= 180 && !crossesParagraphBoundary(fullText, match.start, kwIdx)) {
+              minDistance = dist;
+              bestMatch = match;
+            }
+          }
+        }
+        if (bestMatch) {
           return {
-            text: fullText.substring(firstIdx, endOrig),
-            startIndex: firstIdx,
-            endIndex: endOrig,
+            text: fullText.substring(bestMatch.start, bestMatch.end),
+            startIndex: bestMatch.start,
+            endIndex: bestMatch.end,
             confidence: 'low',
             matchedKeyword,
           };
@@ -187,6 +283,6 @@ export function matchEvidence(
     }
   }
 
-  // Target snippet could not be matched anywhere in the full text
+  // Target snippet could not be safely matched
   return null;
 }

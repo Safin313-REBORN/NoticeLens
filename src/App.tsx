@@ -43,8 +43,9 @@ function AppContent() {
     'System initialized. Welcome to NoticeLens accessible reader.',
   ]);
   const [sampleModalOpen, setSampleModalOpen] = useState<boolean>(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
   const isCancelledRef = useRef<boolean>(false);
-  const { showToast } = useToast();
+  const { showToast, clearErrorToasts } = useToast();
 
   const broadcastAnnouncement = (msg: string) => {
     setAnnouncement(msg);
@@ -54,7 +55,10 @@ function AppContent() {
   const handleTabChange = useCallback((tab: ActiveTab) => {
     speechService.stop();
     setActiveTab(tab);
-  }, []);
+    if (tab === 'saved' || tab === 'studio' || tab === 'transparency') {
+      clearErrorToasts();
+    }
+  }, [clearErrorToasts]);
 
   const handleNextTab = useCallback(() => {
     const tabSequence: ActiveTab[] = [
@@ -156,6 +160,8 @@ function AppContent() {
     sourceType: 'upload' | 'camera' | 'demo'
   ) => {
     isCancelledRef.current = false;
+    setOcrError(null);
+    clearErrorToasts();
     setIsProcessing(true);
     setAnnouncement('Starting notice document recognition. Please wait.');
 
@@ -211,6 +217,8 @@ function AppContent() {
         sourceType,
       });
 
+      setOcrError(null);
+      clearErrorToasts();
       setActiveNotice(processed);
       setIsProcessing(false);
       speechService.stop();
@@ -224,18 +232,21 @@ function AppContent() {
       console.error('Notice processing error:', err);
       setIsProcessing(false);
       const errorMessage = err instanceof Error ? err.message : 'Failed to process notice image.';
+      setOcrError(errorMessage);
       setOcrProgress({
         step: 'error',
         progress: 0,
         status: 'Recognition Error',
         errorMessage,
       });
-      showToast('Error recognizing notice. You may retry or inspect text.', 'error');
-      setAnnouncement('Notice processing failed. Please check error details.');
+      showToast(errorMessage, 'error');
+      setAnnouncement(`Notice processing failed: ${errorMessage}`);
     }
   };
 
   const handleLoadDemoDirectly = useCallback((demo: DemoNoticeItem) => {
+    setOcrError(null);
+    clearErrorToasts();
     const svgPreview = generateDemoNoticeSvg(demo);
     const processed = processNoticeDocument(demo.ocrText, {
       ocrLanguage: demo.language,
@@ -250,7 +261,7 @@ function AppContent() {
     setSampleModalOpen(false);
     showToast(`Loaded demonstration sample: "${demo.title}"`, 'info');
     setAnnouncement(`Loaded sample notice: ${demo.title}. Navigated to Notice Workspace.`);
-  }, [showToast]);
+  }, [showToast, clearErrorToasts]);
 
   // Support URL search params for deep-linking samples, tabs, and high-contrast
   useEffect(() => {
@@ -335,15 +346,24 @@ function AppContent() {
       existingId: activeNotice.id,
     });
 
-    // Preserve any user-edited fields
+    // Preserve any user-edited or user-confirmed fields and revalidate evidence against the new transcript!
     for (const [k, v] of Object.entries(activeNotice.fields)) {
-      if (v.status === 'user_edited') {
-        reprocessed.fields[k as keyof typeof reprocessed.fields] = v;
+      if (v.status === 'user_edited' || v.provenance === 'user_confirmed') {
+        let revalidatedEvidence = null;
+        if (v.value && v.value.trim()) {
+          revalidatedEvidence = matchEvidence(trimmed, v.value.trim(), v.label);
+        }
+        reprocessed.fields[k as keyof typeof reprocessed.fields] = {
+          ...v,
+          // Update offsets to new transcript, or null if value no longer appears in transcript.
+          // NEVER retain stale character offsets that point to unrelated text in the new transcript!
+          evidence: revalidatedEvidence,
+        };
       }
     }
 
     // Preserve user-edited title on reprocessed notice object
-    if (reprocessed.fields.title.status === 'user_edited') {
+    if (reprocessed.fields.title.status === 'user_edited' || reprocessed.fields.title.provenance === 'user_confirmed') {
       reprocessed.title = reprocessed.fields.title.value;
     }
 
@@ -352,6 +372,64 @@ function AppContent() {
     setActiveNotice(reprocessed);
     showToast('Notice fields re-derived from edited transcript.', 'success');
     setAnnouncement('Details re-extracted from updated text.');
+  };
+
+  const handleConfirmNoticeField = async (key: string, correctedValue?: string): Promise<ProcessedNotice | null> => {
+    if (!activeNotice) return null;
+    const fieldKey = key as keyof typeof activeNotice.fields;
+    const updatedFields = { ...activeNotice.fields };
+    if (updatedFields[fieldKey]) {
+      const field = updatedFields[fieldKey];
+      const finalValue = correctedValue !== undefined && correctedValue.trim() !== ''
+        ? correctedValue.trim()
+        : field.value;
+
+      let newEvidence = field.evidence;
+      let origValue = field.originalValue;
+      let origEvidence = field.originalEvidence;
+
+      if (correctedValue !== undefined && correctedValue.trim() !== field.value) {
+        origValue = origValue ?? field.value;
+        origEvidence = origEvidence ?? field.evidence;
+        newEvidence = matchEvidence(activeNotice.ocrText, finalValue, field.label);
+      }
+
+      updatedFields[fieldKey] = {
+        ...field,
+        value: finalValue,
+        status: 'confirmed',
+        isAmbiguous: false,
+        explanation: undefined,
+        evidence: newEvidence,
+        originalValue: origValue,
+        originalEvidence: origEvidence,
+        editedAt: new Date().toISOString(),
+        provenance: 'user_confirmed',
+      };
+    }
+    const updatedSummary = generateNoticeSummary(updatedFields, activeNotice.summary.language);
+    const updatedNotice: ProcessedNotice = {
+      ...activeNotice,
+      fields: updatedFields,
+      summary: updatedSummary,
+      updatedAt: new Date().toISOString(),
+    };
+    setActiveNotice(updatedNotice);
+
+    // If this notice is already in the local vault, durably auto-persist confirmed status
+    const isAlreadySaved = savedNotices.some((n) => n.id === activeNotice.id);
+    if (isAlreadySaved) {
+      try {
+        await saveNotice(updatedNotice);
+        await loadSavedNotices();
+        showToast(`Notice ${key} confirmed and updated in your private storage.`, 'success');
+        return updatedNotice;
+      } catch (err) {
+        console.error('Failed to auto-persist confirmed status in storage:', err);
+      }
+    }
+    showToast(`Notice ${key} verified in workspace. Click "Save Notice" to persist locally.`, 'info');
+    return updatedNotice;
   };
 
   const handleSaveActiveNotice = async () => {
@@ -451,7 +529,7 @@ function AppContent() {
       />
 
       {/* 5. Main Content Area */}
-      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
+      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-36 sm:pb-32">
         {/* Processing Loading Overlay/Card */}
         {isProcessing && (
           <div className="py-12">
@@ -465,6 +543,11 @@ function AppContent() {
             onProcessImage={handleProcessImage}
             onLoadDemoDirectly={handleLoadDemoDirectly}
             isProcessing={isProcessing}
+            ocrError={ocrError}
+            onClearOcrError={() => {
+              setOcrError(null);
+              clearErrorToasts();
+            }}
           />
         )}
 
@@ -480,6 +563,7 @@ function AppContent() {
               hasUnsavedChanges={hasUnsavedChanges}
               onCopySuccess={() => showToast('Recognized text copied to clipboard.', 'info')}
               onDownloadIcsSuccess={() => showToast('Calendar ICS file generated and downloaded.', 'success')}
+              onConfirmNoticeField={handleConfirmNoticeField}
             />
           ) : (
             <div className="neu-card p-10 text-center max-w-xl mx-auto my-12">

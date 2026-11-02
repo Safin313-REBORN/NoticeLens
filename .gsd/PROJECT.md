@@ -8,7 +8,7 @@
 
 - **Runtime Environment**: 100% Client-Side Web Application (zero external API keys required, zero server uploads).
 - **Frontend Core**: React 18, TypeScript (Strict Mode), Vite 5.
-- **Styling Architecture**: Custom Neo-Brutalist, Memphis, Retro, and Art Deco design systems via Tailwind CSS v3 and Vanilla CSS tokens.
+- **Styling Architecture**: Pure Neumorphic Soft UI (Desktop) and Pattern Gesture-based UI (Mobile) via Tailwind CSS v3 and Vanilla CSS tokens.
 - **Document Intelligence**:
   - Tesseract.js OCR engine (WASM) supporting bilingual `ben+eng`, `ben`, and `eng`.
   - In-memory HTML5 Canvas contrast enhancement and grayscale stretching.

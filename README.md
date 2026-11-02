@@ -6,188 +6,160 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8.svg)](https://tailwindcss.com/)
-[![WCAG 2.2 AA](https://img.shields.io/badge/Accessibility-WCAG%202.2%20AA%20Aligned-green.svg)](https://www.w3.org/WAI/standards-guidelines/wcag/)
-[![Tests](https://img.shields.io/badge/Tests-74%20Passing-emerald.svg)](https://vitest.dev/)
-[![Design System](https://img.shields.io/badge/Design-Neomorphism%20(Soft%20UI)-sky.svg)](https://tailwindcss.com/)
+[![WCAG 2.2 AA Contrast](https://img.shields.io/badge/WCAG%202.2%20AA-15.93:1%20Contrast-emerald.svg)](docs/ACCESSIBILITY_AUDIT.md)
+[![Tests](https://img.shields.io/badge/Tests-147%20Passing-emerald.svg)](https://vitest.dev/)
+[![Benchmarked F1](https://img.shields.io/badge/Extraction%20F1-80.46%25-blue.svg)](docs/BENCHMARK_METHODOLOGY.md)
+[![Evidence Precision](https://img.shields.io/badge/Evidence%20Precision-100%25-teal.svg)](docs/ARCHITECTURE.md)
 
-**NoticeLens** is an AI-assisted accessibility and document intelligence web application designed for university students with visual impairments or low vision in Bangladesh. It transforms printed and photographed Bengali, English, and mixed-language university notices into an accessible, structured, verifiable, and actionable workspace.
+**NoticeLens** is an evidence-grounded institutional notice intelligence and accessibility web application designed for university students with visual impairments, low vision, and cognitive reading challenges. Instead of simply dumping raw, unstructured OCR text, NoticeLens transforms printed and photographed Bengali, English, and mixed-language university notices into an accessible, structured, verifiable, and actionable workspace.
 
 ---
 
 ## Visual Showcase
 
 ![NoticeLens Scan & Ingest Screen](docs/screenshots/01_home_scan.png)
-*Figure 1: NoticeLens Scan & Ingest interface with accessible upload dropzone, contrast enhancement toggle, and evaluation samples.*
+*Figure 1: NoticeLens Scan & Ingest interface with accessible upload dropzone, contrast enhancement toggle, and evaluation samples with distinct Live OCR vs Instant Sample actions.*
 
 ![NoticeLens Structured Notice Workspace](docs/screenshots/02_workspace_evidence.png)
-*Figure 2: NoticeLens Workspace showing accessible plain-language summary, deadline calendar action, traceable OCR transcript, and extracted facts.*
+*Figure 2: NoticeLens Workspace showing accessible plain-language summary, Student Action Checklist, Date & Timeline Disambiguation card, traceable OCR transcript with active `<mark>` citation highlight, and extracted facts.*
 
-![NoticeLens High-Contrast Mode](docs/screenshots/03_saved_notices.png)
-*Figure 3: Dedicated High-Contrast Mode engineered for low-vision readability with deep-black background and solid high-contrast borders.*
+![NoticeLens Verified Offline OCR](docs/screenshots/10_verified_offline_ocr.png)
+*Figure 3: Verified offline Bengali OCR running in Chrome with network disabled (Zero external traineddata requests during offline OCR recognition), where a newly initialized Tesseract worker restores binary traineddata directly from browser IndexedDB cache.*
+
+![NoticeLens Offline Cache Miss Alert](docs/screenshots/11_offline_cache_miss_alert.png)
+*Figure 4: Actionable offline cache miss guidance preserving document selection and recommending Instant Sample Data presets when models are not yet cached.*
+
+![NoticeLens Solved Limitations Studio Hub](docs/screenshots/12_solved_limitations_studio.png)
+*Figure 5: A11y Studio Solved Limitations Hub featuring Offline Language Cache Pre-downloader, Romanized Phonetic Speech Fallback, and Persistent Storage Protection.*
+
+![NoticeLens High-Contrast Mode](docs/screenshots/09_high_contrast_mode.png)
+*Figure 6: Dedicated High-Contrast Mode engineered for low-vision readability with deep-black background, 15.93:1 contrast ratio, and solid high-contrast borders.*
+
+![NoticeLens Saved Notice Vault](docs/screenshots/03_saved_vault.png)
+*Figure 7: Notice Vault storing extracted notices privately in local IndexedDB with search, category filtering, and review indicators.*
 
 ---
 
 ## The Problem
-University notices in Bangladesh are frequently published as low-resolution photos or physical flyers pinned to departmental notice boards. They feature:
-- Complex Bengali and English typography.
+University notices in Bangladesh and South Asia are frequently published as physical flyers pinned to departmental notice boards or low-resolution smartphone photos shared in social messaging groups. They feature:
+- Complex Bengali and English typography and distinct numeral scripts (`০-৯` vs `0-9`).
 - High-stakes examination dates, room schedules, and seat allocations.
-- Crucial application deadlines, admission portals, and payment receipts.
-- Dense administrative paragraphs where actionable information is difficult to find.
+- Crucial application deadlines, admission portals, and non-refundable fee rules.
+- Dense administrative paragraphs where actionable information is buried under bureaucratic jargon.
 
-Conventional OCR solutions dump unformatted text without explaining what the student needs to do, while cloud AI readers often hallucinate deadlines or compromise privacy by uploading sensitive student documents.
-
----
-
-## Our Solution
-NoticeLens provides **evidence-backed notice intelligence**:
-1. **Bilingual OCR**: Recognizes Bengali, English, and mixed-language text directly in the browser via Tesseract.js using local worker and core assets that comply with strict Content Security Policy (CSP).
-2. **Context-Aware Extraction**: Automatically isolates 14 structured fields (Deadline, Examination Date, Start/End Time, Venue, Required Documents, Fees, Actions, Contacts, Portal URLs) with strict calendar date validation that never invents missing years.
-3. **Traceable Citations**: Every extracted fact retains an exact character pointer to its supporting snippet in the raw notice, highlighted on click via normalized index mapping.
-4. **Accessible Plain-Language Summary**: Breaks circulars down into: *What it's about*, *Critical deadline*, *What you need to do*, *Where and when*, *Required documents*, and *Missing/unverified details*.
-5. **Atomic Human-in-the-Loop Correction**: Edit the raw OCR transcript and NoticeLens synchronously re-derives all fields and summaries without stale-state race conditions. When a user manually corrects a field, the UI transparently marks it as a user override and preserves provenance.
-6. **Honest Web Speech Audio Narration**: Integrated audio controls with voice discovery, adjustable speed, and transparent status when a host OS lacks a native Bengali voice engine.
-7. **Private Local Persistence**: Saves notices privately in browser IndexedDB (`NoticeLensDB`) with durable base64 image persistence and zero cloud data transmission.
-8. **Timezone-Aware Calendar Export**: Generates RFC 5545 `.ics` files with line folding, `Asia/Dhaka` timezone definitions (`VTIMEZONE`), and an explicit review gate for ambiguous dates.
+Conventional OCR tools dump unformatted text without explaining what the student must do, while cloud AI readers often hallucinate deadlines or compromise privacy by transmitting sensitive student circulars to corporate servers.
 
 ---
 
-## Key Differentiators
-- **Verifiable Evidence**: We never output ungrounded assertions. Every date, room, and fee is visually linked to its source line in the document.
-- **Strict Date Validation**: Rejects impossible calendar dates (such as 31 February or 31 April) and strictly validates leap years. Yearless dates require user review and are never silently assigned the current year.
-- **Zero API Keys Required**: 100% of OCR, text processing, audio synthesis, and storage runs locally in your browser.
-- **Accessibility by Architecture**: Built according to WCAG 2.2 AA standards with keyboard navigation, visible focus indicators, screen reader live regions, high-contrast mode, and text scaling.
+## Core Differentiators & Notice-to-Action Capabilities
+
+### 1. Notice-to-Action Executive Breakdown
+Converts administrative circulars into six predictable, accessible answers:
+1. *What is this notice about?*
+2. *Who is affected (Target Students)?*
+3. *What must be done?*
+4. *When is the critical deadline?*
+5. *What documents or fees are required?*
+6. *What information is unverified or uncertain?*
+
+### 2. Deadline vs. Event-Date Disambiguation
+NoticeLens systematically distinguishes between:
+- **Application / Fee Deadlines** (e.g., submit forms before 5 November).
+- **Examination / Event Dates** (e.g., exam starts 15 November).
+- **Notice Publication Dates** (e.g., circular issued 28 October).
+Deadlines are flagged for calendar integration, while exam dates are classified as milestone schedules.
+
+### 3. Interactive Student Action Checklist
+Translates circular requirements into an interactive checklist (e.g., *"Pay 500/- fee"*, *"Attach Student ID"*) with progress tracking and persistence across browser tabs.
+
+### 4. Focused Low-Vision Reading Mode
+Provides a distraction-free, high-legibility reading view with adjustable typography (`Normal`, `Large`, `Extra-Large`), high-contrast rendering, and linear text-to-speech readout.
+
+### 5. Verifiable Source Evidence & Factual Provenance
+Every extracted detail retains a verbatim index pointer into the OCR transcript. Clicking a field highlights the authentic sentence in the transcript using native `<mark>` tags. User corrections are prominently labeled as `✏️ User Override`. NoticeLens maintains 100% evidence span precision and 84.21% overall grounding coverage across all fields.
+
+### 6. Client-Side Privacy & Shared Terminal Purge
+100% of OCR, extraction, summary, and speech processing occurs in-browser. On shared campus computers, students can activate **"Purge Terminal Data"** to clear all IndexedDB records, localStorage keys, and temporary blob memory.
 
 ---
 
-## Architecture & Data Flow
+## Technical Benchmarks (Empirically Measured on Pilot Corpus, N = 6)
 
-```
-[Uploaded Notice Image / Camera]
-               │
-               ▼
-   [In-Memory Canvas Enhancement]  (Grayscale & Contrast Stretching)
-               │
-               ▼
-       [Local Tesseract.js OCR]    (Worker-based bilingual recognition, CSP-safe)
-               │
-               ▼
-    [Raw OCR Text Transcript]  ◄──►  [Atomic Transcript Editor & Synchronous Re-extraction]
-               │
-               ▼
-      [Extraction Engine]
-         ├── Numeral Normalizer     (০-৯ ↔ 0-9)
-         ├── Strict Date Validator  (Leap years, month bounds, no invented years)
-         ├── Contextual Classifier  (Deadlines vs Events vs Publications)
-         ├── Time Window Parser     (Asia/Dhaka local time, 12-Hour AM/PM)
-         └── Normalized Index Matcher (Exact character ranges in original text)
-               │
-               ▼
-    [Structured Notice Model]
-         ├── 14 Typed Fields with Review Status (Confirmed / Needs Review / User Edited)
-         ├── Plain-Language Accessible Summary
-         ├── Web Speech Audio Reader (Synthesis with Voice Discovery)
-         ├── IndexedDB Local Database (Saved Notices & Base64 Data URLs)
-         └── Calendar Review Gate & Exporter (RFC 5545 .ics with Asia/Dhaka TZID)
-```
+Evaluated across our 6-document pilot benchmark corpus (`npm run benchmark`) using genuine Tesseract.js v7.0.0 local recognition on rendered image fixtures:
+- **Character Error Rate (CER):** **2.30%** (Real OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
+- **Word Error Rate (WER):** **9.18%** (Real OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
+- **Pipeline A (Clean Source Text) F1:** **80.46%** (Precision: 83.33%, Recall: 77.78%)
+- **Pipeline B (Real Image → OCR → Extraction) F1:** **77.27%** (Precision: 79.07%, Recall: 75.56%)
+- **Factual Evidence Span Precision:** **100.00%** (100% of attached evidence spans match source text verbatim)
+- **Overall Fact Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category tags)
+- **High-Contrast Ratio:** **15.93:1** (WCAG AAA requires 7.0:1)
+- **Structured Extraction Latency (Parser Only):** **0.56 ms** median per document
+- **Total Pipeline Latency (Image to Structured Notice):** **546.6 ms** median / **912.0 ms** P90
 
 ---
 
-## Technology Stack
-- **Frontend**: React 18, TypeScript (Strict Mode), Vite 5
-- **Styling**: Tailwind CSS v3 with verified `.high-contrast` variant plugin, accessible type scales
-- **OCR Engine**: Tesseract.js v7 (Self-hosted local worker `/tesseract/worker.min.js`, bilingual `ben+eng`, `ben`, `eng`)
-- **Speech & Accessibility**: Web Speech API (`SpeechSynthesis`), ARIA Live Regions, WCAG 2.2 AA Focus Styles
-- **Storage**: IndexedDB (`NoticeLensDB`) with `localStorage` fallback and base64 persistence
-- **Export**: RFC 5545 iCalendar (`.ics`) with line folding and `Asia/Dhaka` timezone support
-- **Icons**: Lucide React
-- **Testing**: Vitest v2, React Testing Library, Happy-DOM (74 automated unit & integration tests)
-
----
-
-## Prerequisites
-- Node.js: `v18.0.0` or higher (tested on Node.js v18.19.1)
-- npm: `v9.0.0` or higher
-- Any modern web browser (Chrome, Edge, Firefox, Safari)
-
----
-
-## Installation & Setup
+## Quick Start & Verification Commands
 
 ```bash
-# 1. Clone repository (or navigate to project directory)
-cd noticelens
+# 1. Install dependencies cleanly
+npm ci
 
-# 2. Install dependencies
-npm install
+# 2. Run all 147 unit and benchmark tests
+npm test -- --run
 
-# 3. Start local development server
+# 3. Run the reproducible technical benchmarking suite
+npm run benchmark
+
+# 4. Check code quality and style
+npm run lint
+
+# 5. Build for production and scan bundle for security
+npm run build
+
+# 6. Run full headless Chrome E2E browser verification
+npm run test:e2e
+
+# 7. Run fresh-worker offline browser cache verification
+npm run test:offline-browser
+
+# 8. Start local development server
 npm run dev
-
-# The app will be available at: http://localhost:5173
 ```
 
----
-
-## Available Commands
+### Full Command Reference
 
 | Command | Description |
 | :--- | :--- |
-| `npm run dev` | Starts Vite local development server with Hot Module Replacement (HMR) |
-| `npm run build` | Compiles TypeScript (`tsc -b`) and builds optimized production bundle via Vite in `dist/` |
-| `npm run test` | Executes all 74 automated Vitest unit and integration test suites |
-| `npm run lint` | Runs ESLint checks across the TypeScript codebase |
+| `npm run dev` | Starts Vite local development server at `http://127.0.0.1:5173/` |
+| `npm run build` | Compiles TypeScript strict mode (`tsc -b`), builds Vite bundle, and scans production chunks for forbidden debug globals |
+| `npm run test` | Executes all 147 automated Vitest unit, component, and benchmark tests across 9 files |
+| `npm run benchmark` | Runs the reproducible technical benchmarking suite measuring CER, WER, Extraction P/R/F1, and Evidence Grounding |
+| `npm run lint` | Runs ESLint checks across the TypeScript codebase (`max-warnings=0`) |
+| `npm run test:e2e` | Runs comprehensive 10-point browser workflow test verifying OCR, evidence highlighting, speech, calendar gates, vault save/reopen, and mobile reflow |
+| `npm run test:offline-browser` | Executes headless Chrome offline OCR verification: terminates in-memory worker, cuts network via CDP, initializes a fresh worker, and asserts offline recognition from IndexedDB cache with Zero external network requests |
+| `npm run verify:release` | Runs full release verification: lint, 147 automated tests, production build, offline browser test, and E2E workflow |
 | `npm run preview` | Serves the production build locally |
 
 ---
 
-## OCR Setup & Language Data Behavior
-NoticeLens uses Tesseract.js with local worker assets (`/tesseract/worker.min.js`, `tesseract-core-lstm.js`, `*.wasm`) placed in `/public/tesseract/` to satisfy strict Content Security Policy directives:
-- When a notice is scanned, the local worker initializes from `'self'` without relying on external CDN worker blobs.
-- On first execution for a language (e.g. `ben+eng`), Tesseract loads trained language data and caches it locally in IndexedDB for subsequent offline use.
-- The OCR processing card streams real progress percentages (e.g. `20%`, `65%`, `95%`) with transparent loading states.
-- If an image has poor lighting, enable **"Enhance contrast for printed notice readability"** to trigger canvas-level luminance normalization.
+## Architectural & Research Documentation
+
+Detailed engineering, accessibility, and research documentation is maintained in the `docs/` directory:
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — System architecture, worker lifecycle, offline isolation, and comprehensive threat model.
+- [docs/BENCHMARK_METHODOLOGY.md](docs/BENCHMARK_METHODOLOGY.md) — Mathematical definitions (CER, WER, F1, Grounding) and evaluation framework.
+- [docs/ACCESSIBILITY_AUDIT.md](docs/ACCESSIBILITY_AUDIT.md) — WCAG 2.2 AA conformance audit, contrast ratios, and inclusive UX innovations.
+- [docs/PRIVACY_AND_DATA_HANDLING.md](docs/PRIVACY_AND_DATA_HANDLING.md) — Data lifecycle, zero-cloud inference guarantee, and Shared Terminal Purge.
+- [docs/TECHNICAL_PITCH.md](docs/TECHNICAL_PITCH.md) — Concise technical justification for judges: *Why NoticeLens over generic OCR?*
+- [docs/FINAL_QA_REPORT.md](docs/FINAL_QA_REPORT.md) — Complete quality assurance report with empirical test results and limitations.
+- [docs/DEVPOST.md](docs/DEVPOST.md) — Complete 13-point Devpost hackathon submission draft.
+- [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) — 2-minute-30-second timed live demonstration script.
+- [docs/USER_RESEARCH_PROTOCOL.md](docs/USER_RESEARCH_PROTOCOL.md) — Ethical user research protocol for testing with visually impaired students.
+- [docs/USER_RESEARCH_RESULTS_TEMPLATE.md](docs/USER_RESEARCH_RESULTS_TEMPLATE.md) — Open findings ledger and field evaluation instrument.
 
 ---
 
-## Browser Speech Voice Behavior
-NoticeLens inspects the host device's available voice catalog using `speechSynthesis.getVoices()`.
-- If a native Bengali voice package (e.g. `bn-BD` or `bn-IN`) is detected, NoticeLens automatically utilizes it for Bengali text reading.
-- If the operating system lacks an installed Bengali voice (common in minimal Linux distributions or default Windows setups), NoticeLens **honestly advises the user** via a dedicated toolbar warning and uses the closest available speech engine without crashing or pretending that native speech succeeded.
+## License & Acknowledgements
 
----
-
-## Privacy & Data Protection
-- **No External Uploads**: Documents and notice images are processed entirely in browser memory.
-- **Local Private Storage**: Saved notices, titles, and extracted deadlines reside strictly in the browser's local IndexedDB (`NoticeLensDB`). Images are stored as durable base64 Data URLs so records survive browser restarts without broken `blob:` references.
-- **Shared Terminal Purge**: On shared lab workstations, students can click "Purge Terminal Data" to wipe all IndexedDB records, cached images, and temporary sessions with a single action.
-- **Data Cleanup**: Clearing browser site data immediately removes all stored notices. An explicit "Delete Notice" dialog with focus trap allows students to erase items anytime.
-
----
-
-## Quality Assurance & Test Verification
-All 74 unit and integration tests across 6 suites run cleanly:
-```bash
-npm run test
-```
-Test coverage across 6 suites includes:
-- **Atomic Transcript Re-extraction**: Editing a date or text in the transcript string re-derives fields from the updated text, replaces old dates, and updates summaries without race conditions.
-- **Strict Calendar Date Validation**: Validates month lengths, leap years (2024 leap vs 2023 non-leap), and rejects impossible dates (e.g. 31 Feb, 30 Feb, 31 Apr).
-- **Date Provenance**: Yearless dates are never silently assigned the current year; ambiguous dates require explicit review.
-- **RFC 5545 iCalendar Compliance**: Validates line folding at 75 octets, `Asia/Dhaka` `VTIMEZONE` blocks, CRLF injection neutralization, and truthful attribution.
-- **Evidence Index Mapping**: Exact character slice offsets in original transcript without index drift or overflow.
-- **Sample Provenance**: Preset demo samples do not possess fabricated OCR confidence scores.
-
-See [docs/TEST_REPORT.md](docs/TEST_REPORT.md) for full audit records.
-
----
-
-## Hackathon Submission Documents
-- [docs/DEVPOST.md](docs/DEVPOST.md) — Comprehensive Devpost submission draft
-- [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) — 2 minute 30 second timed live demo script
-- [docs/TEST_REPORT.md](docs/TEST_REPORT.md) — QA test execution and browser verification report
-- [docs/screenshots/](docs/screenshots/) — Verified UI screenshots
-
----
-
-## License
-MIT License. Created for the Hackathon by the NoticeLens Engineering Team.
+- **License:** MIT License. Built for the Hackathon by the NoticeLens Engineering Team.
+- **Acknowledgements:** Tesseract.js (Tesseract OCR WebAssembly port), Google Fonts, Lucide Icons.

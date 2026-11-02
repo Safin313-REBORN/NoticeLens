@@ -142,7 +142,7 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
               title="This device does not have an installed Bengali speech engine; english fallback voice will be used."
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Bengali Voice: Hardware Fallback</span>
+              <span>Bengali Voice: System Default (No Native Engine)</span>
             </span>
           )}
         </div>

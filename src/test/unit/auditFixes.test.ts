@@ -180,8 +180,9 @@ describe('Production Audit Remediations', () => {
           configurable: true,
         });
 
-        await expect(runOcrRecognition('sample-data', 'ben')).rejects.toThrowError(
-          /Offline Mode Detected/
+        const validImageFixture = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        await expect(runOcrRecognition(validImageFixture, 'ben')).rejects.toThrowError(
+          /Offline Notice/i
         );
       } finally {
         Object.defineProperty(navigator, 'onLine', {

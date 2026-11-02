@@ -41,6 +41,7 @@ export interface ExtractedField {
 
 export interface NoticeSummary {
   overview: string;
+  targetAudience?: string | null;
   criticalDeadline: string | null;
   actionItems: string[];
   venueAndTime: string | null;
@@ -61,6 +62,7 @@ export interface ProcessedNotice {
   summary: NoticeSummary;
   imageDataUrl?: string;
   sourceType: 'upload' | 'camera' | 'demo' | 'manual';
+  completedTasks?: string[];
 }
 
 export interface SavedNotice {

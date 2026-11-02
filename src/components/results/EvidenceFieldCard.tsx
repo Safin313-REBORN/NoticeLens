@@ -96,9 +96,18 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
 
   return (
     <div
+      data-field-key={field.key}
+      data-testid={`evidence-card-${field.key}`}
+      data-field-value={field.value}
+      data-field-evidence={field.evidence?.text || ''}
+      onClick={() => {
+        if (field.evidence && onSelectEvidence && !isEditing) {
+          onSelectEvidence(field.evidence);
+        }
+      }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className={`p-4 transition-all relative select-none rounded-2xl ${
+      className={`p-4 transition-all relative select-none rounded-2xl cursor-pointer ${
         isSelected
           ? 'border-2 border-sky-500 bg-sky-50 shadow-[6px_6px_14px_#c5d0e0,-6px_-6px_14px_#ffffff] ring-2 ring-sky-500 high-contrast:!bg-slate-900 high-contrast:!border-yellow-400 high-contrast:!ring-yellow-400'
           : isNotFound
@@ -199,6 +208,7 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
       ) : (
         <div className="mt-1">
           <p
+            data-field-value={field.key}
             className={`text-sm ${
               isNotFound
                 ? 'text-slate-400 italic high-contrast:text-slate-400'
@@ -236,6 +246,7 @@ export const EvidenceFieldCard: React.FC<EvidenceFieldCardProps> = ({
             <div className="mt-2.5 pt-2 border-t border-slate-200/50 high-contrast:border-white/20">
               <button
                 type="button"
+                data-field-evidence={field.key}
                 onClick={() => onSelectEvidence && onSelectEvidence(field.evidence!)}
                 aria-label={`Highlight evidence in OCR text: ${field.evidence.text}`}
                 className="text-left w-full group/ev flex items-start gap-1.5 text-[11px] text-slate-500 high-contrast:text-slate-300 hover:text-sky-700 transition-colors"

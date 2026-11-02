@@ -39,3 +39,7 @@ coverage/
 # Scratch & Temporary User Uploads
 scratch/
 tmp/
+
+# Downloaded Trained Data & Submission Archives
+*.traineddata
+*.zip

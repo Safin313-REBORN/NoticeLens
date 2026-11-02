@@ -9,8 +9,10 @@ export interface ToastMessage {
   message: string;
 }
 
-interface ToastContextType {
+export interface ToastContextType {
   showToast: (message: string, type?: ToastType) => void;
+  clearToasts: () => void;
+  clearErrorToasts: () => void;
 }
 
 const ToastContext = createContext<ToastContextType | null>(null);
@@ -24,7 +26,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, 4500);
+  }, []);
+
+  const clearToasts = useCallback(() => {
+    setToasts([]);
+  }, []);
+
+  const clearErrorToasts = useCallback(() => {
+    setToasts((prev) => prev.filter((t) => t.type !== 'error'));
   }, []);
 
   const removeToast = (id: string) => {
@@ -32,7 +42,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast, clearToasts, clearErrorToasts }}>
       {children}
       {/* Toast container */}
       <div

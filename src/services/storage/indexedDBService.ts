@@ -186,6 +186,23 @@ export async function updateSavedNoticeTitle(id: string, newTitle: string): Prom
  * Clears all saved notices
  */
 export async function clearAllSavedNotices(): Promise<void> {
+  // Always purge localStorage records and checklist persistence
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('noticelens_checklist_') || key === LOCAL_STORAGE_KEY)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch (e) {
+      console.warn('NoticeLens: LocalStorage purge warning:', e);
+    }
+  }
+
   try {
     const db = await getDB();
     return new Promise((resolve, reject) => {
@@ -195,10 +212,8 @@ export async function clearAllSavedNotices(): Promise<void> {
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
-  } catch {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    }
+  } catch (err) {
+    console.warn('NoticeLens: IndexedDB store.clear() failed, localStorage was purged', err);
   }
 }
 
@@ -246,4 +261,95 @@ function saveToLocalStorage(record: SavedNotice): void {
       `Failed to save notice to browser storage: ${err instanceof Error ? err.message : String(err)}`
     );
   }
+}
+
+export interface StoragePersistenceInfo {
+  isSupported: boolean;
+  isPersisted: boolean;
+  quotaMb?: number;
+  usageMb?: number;
+}
+
+/**
+ * Requests durable persistent storage from the browser to protect IndexedDB
+ * against automatic eviction during low disk space.
+ */
+export async function requestPersistentStorage(): Promise<StoragePersistenceInfo> {
+  if (typeof navigator === 'undefined' || !navigator.storage) {
+    return { isSupported: false, isPersisted: false };
+  }
+
+  let isPersisted = false;
+  try {
+    if (navigator.storage.persist) {
+      isPersisted = await navigator.storage.persist();
+    } else if (navigator.storage.persisted) {
+      isPersisted = await navigator.storage.persisted();
+    }
+  } catch {
+    isPersisted = false;
+  }
+
+  let quotaMb: number | undefined;
+  let usageMb: number | undefined;
+
+  try {
+    if (navigator.storage.estimate) {
+      const estimate = await navigator.storage.estimate();
+      if (estimate.quota) quotaMb = Math.round(estimate.quota / (1024 * 1024));
+      if (estimate.usage) usageMb = Math.round((estimate.usage / (1024 * 1024)) * 10) / 10;
+    }
+  } catch {
+    // Optional metrics
+  }
+
+  return {
+    isSupported: true,
+    isPersisted,
+    quotaMb,
+    usageMb,
+  };
+}
+
+/**
+ * Serializes all saved notices to a JSON backup file string.
+ */
+export async function exportNoticeVaultBackup(): Promise<string> {
+  const notices = await getAllSavedNotices();
+  const payload = {
+    app: 'NoticeLens',
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    count: notices.length,
+    savedNotices: notices,
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+/**
+ * Restores saved notices from a verified JSON backup string into IndexedDB.
+ */
+export async function importNoticeVaultBackup(
+  jsonContent: string
+): Promise<{ importedCount: number }> {
+  const parsed = JSON.parse(jsonContent);
+  const items = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray(parsed?.savedNotices)
+      ? parsed.savedNotices
+      : null;
+
+  if (!items || !Array.isArray(items)) {
+    throw new Error('Invalid backup file format. Expected a NoticeLens saved notices list.');
+  }
+
+  let count = 0;
+  for (const item of items) {
+    if (item && item.notice && item.id) {
+      await saveNotice(item.notice);
+      count++;
+    }
+  }
+
+  return { importedCount: count };
 }

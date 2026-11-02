@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { generateIcsContent, buildEventFromNotice, escapeIcsText, foldIcsLine } from '../../services/export/icsExporter';
+import {
+  generateIcsContent,
+  buildEventFromNotice,
+  escapeIcsText,
+  foldIcsLine,
+  exportNoticeCalendar,
+} from '../../services/export/icsExporter';
 import { processNoticeDocument } from '../../services/extraction/noticeEngine';
 import { DEMO_NOTICES } from '../../data/demoNotices';
 
@@ -151,4 +157,121 @@ describe('ICS Calendar Exporter', () => {
     // Per RFC 5545, when endTime is omitted, no manufactured DTEND is produced
     expect(ics).not.toContain('DTEND;TZID=Asia/Dhaka:20241115T180000');
   });
+
+  it('strictly validates time formats and rejects unanchored or malformed time strings', () => {
+    const malformedStartTimeEvent = {
+      title: 'Malformed Time Event',
+      description: 'Test',
+      startDate: '2024-11-15',
+      startTime: '10:00 AM trailing invalid junk',
+      isAllDay: false,
+    };
+    expect(() => generateIcsContent(malformedStartTimeEvent)).toThrowError(/Invalid or unparseable event start time/);
+
+    const impossibleHourEvent = {
+      title: 'Impossible Hour',
+      description: 'Test',
+      startDate: '2024-11-15',
+      startTime: '25:00',
+      isAllDay: false,
+    };
+    expect(() => generateIcsContent(impossibleHourEvent)).toThrowError(/Invalid or unparseable event start time/);
+  });
+
+  it('rejects malformed endTime instead of silently dropping it', () => {
+    const malformedEndTimeEvent = {
+      title: 'Malformed End Time Event',
+      description: 'Test',
+      startDate: '2024-11-15',
+      startTime: '10:00 AM',
+      endTime: 'not-a-valid-time',
+      isAllDay: false,
+    };
+    expect(() => generateIcsContent(malformedEndTimeEvent)).toThrowError(/Invalid or unparseable event end time/);
+  });
+
+  it('enforces chronological consistency: rejects endTime earlier than or equal to startTime', () => {
+    const backwardTimeEvent = {
+      title: 'Backward Time Event',
+      description: 'Test',
+      startDate: '2024-11-15',
+      startTime: '2:00 PM',
+      endTime: '1:00 PM',
+      isAllDay: false,
+    };
+    expect(() => generateIcsContent(backwardTimeEvent)).toThrowError(
+      /cannot be earlier than or equal to start time/
+    );
+
+    const identicalTimeEvent = {
+      title: 'Identical Time Event',
+      description: 'Test',
+      startDate: '2024-11-15',
+      startTime: '10:00 AM',
+      endTime: '10:00 AM',
+      isAllDay: false,
+    };
+    expect(() => generateIcsContent(identicalTimeEvent)).toThrowError(
+      /cannot be earlier than or equal to start time/
+    );
+  });
+
+  it('uses TZNAME:BDT for Bangladesh Standard Time in VTIMEZONE block', () => {
+    const event = {
+      title: 'BDT Timezone Check',
+      description: 'Check TZNAME',
+      startDate: '2024-11-15',
+      startTime: '10:00 AM',
+      isAllDay: false,
+    };
+    const ics = generateIcsContent(event);
+    expect(ics).toContain('TZNAME:BDT');
+    expect(ics).not.toContain('TZNAME:BST');
+  });
+
+  describe('Centralized Calendar Export Review Gate', () => {
+    it('requires review when deadline date is ambiguous', () => {
+      const notice = processNoticeDocument(DEMO_NOTICES[0].ocrText);
+      // Mark deadline as ambiguous
+      notice.fields.deadline = {
+        ...notice.fields.deadline,
+        isAmbiguous: true,
+        status: 'needs_review',
+      };
+
+      const result = exportNoticeCalendar(notice);
+      expect(result.requiresReview).toBe(true);
+      expect(result.reason).toContain('ambiguous');
+    });
+
+    it('requires review when deadline date status is unreviewed', () => {
+      const notice = processNoticeDocument(DEMO_NOTICES[0].ocrText);
+      notice.fields.deadline = {
+        ...notice.fields.deadline,
+        status: 'needs_review',
+        isAmbiguous: false,
+      };
+
+      const result = exportNoticeCalendar(notice);
+      expect(result.requiresReview).toBe(true);
+      expect(result.reason).toContain('review');
+    });
+
+    it('permits export when date is user-confirmed or bypassReview is true', () => {
+      const notice = processNoticeDocument(DEMO_NOTICES[0].ocrText);
+      notice.fields.deadline = {
+        ...notice.fields.deadline,
+        status: 'confirmed',
+        isAmbiguous: false,
+      };
+
+      const result = exportNoticeCalendar(notice);
+      expect(result.requiresReview).toBe(false);
+      expect(result.success).toBe(true);
+      expect(result.filename).toMatch(/\.ics$/);
+      expect(result.icsContent).toContain('BEGIN:VCALENDAR');
+    });
+  });
 });
+
+

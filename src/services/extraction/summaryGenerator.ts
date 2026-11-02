@@ -38,6 +38,37 @@ export function generateNoticeSummary(
     }
   }
 
+  // 1b. Target Audience (Who is affected)
+  let targetAudience: string | null = null;
+  const combinedContext = `${title} ${fields.eventName.status !== 'not_found' ? fields.eventName.value : ''}`;
+  if (isBengali) {
+    const matchYear = combinedContext.match(/(?:৪র্থ|৩য়|২য়|১ম|\d+)\s*বর্ষ|(?:৮ম|৭ম|৬ষ্ঠ|৫ম|৪র্থ|৩য়|২য়|১ম|\d+)\s*সেমিস্টার|স্নাতক|স্নাতকোত্তর|মাস্টার্স/i);
+    if (matchYear) {
+      targetAudience = `${matchYear[0]}-এর সকল শিক্ষার্থী ও পরীক্ষার্থীবৃন্দ`;
+    } else if (category === 'Admission') {
+      targetAudience = 'সংশ্লিষ্ট সকল ভর্তিচ্ছু শিক্ষার্থী ও আবেদনকারী';
+    } else if (category === 'Scholarship') {
+      targetAudience = 'আবেদনকারী ও বৃত্তি প্রত্যাশী শিক্ষার্থীবৃন্দ';
+    } else if (category === 'Examination') {
+      targetAudience = 'সংশ্লিষ্ট পরীক্ষা সংক্রান্ত সকল শিক্ষার্থীবৃন্দ';
+    } else {
+      targetAudience = 'বিশ্ববিদ্যালয়ের সংশ্লিষ্ট সকল শিক্ষার্থী ও বিভাগীয় সদস্যবৃন্দ';
+    }
+  } else {
+    const matchYear = combinedContext.match(/(?:\d+(?:st|nd|rd|th)|final|first|second|third|fourth)\s*(?:year|semester)|undergraduate|postgraduate|masters|bachelor/i);
+    if (matchYear) {
+      targetAudience = `Students of ${matchYear[0]}`;
+    } else if (category === 'Admission') {
+      targetAudience = 'Prospective applicants & admission candidates';
+    } else if (category === 'Scholarship') {
+      targetAudience = 'Eligible scholarship applicants & students';
+    } else if (category === 'Examination') {
+      targetAudience = 'All participating examination candidates';
+    } else {
+      targetAudience = 'All concerned university students & department stakeholders';
+    }
+  }
+
   // 2. Critical Deadline
   let criticalDeadline: string | null = null;
   if (fields.deadline.status !== 'not_found') {
@@ -148,6 +179,7 @@ export function generateNoticeSummary(
 
   return {
     overview,
+    targetAudience,
     criticalDeadline,
     actionItems,
     venueAndTime,

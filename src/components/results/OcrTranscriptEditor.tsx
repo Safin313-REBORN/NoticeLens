@@ -44,7 +44,9 @@ export const OcrTranscriptEditor: React.FC<OcrTranscriptEditorProps> = ({
   };
 
   const handleApplyChanges = () => {
-    onApplyTranscriptEdit(editableText);
+    const textareaEl = document.querySelector('textarea');
+    const effectiveText = textareaEl && textareaEl.value ? textareaEl.value : editableText;
+    onApplyTranscriptEdit(effectiveText);
     setIsEditing(false);
   };
 

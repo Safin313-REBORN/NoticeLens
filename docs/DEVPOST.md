@@ -1,101 +1,116 @@
 # Devpost Submission — NoticeLens
 
-## 1. Project Title
+### 1. Project Name
 **NoticeLens**
 
-## 2. Short Tagline
+### 2. Tagline
 **Read the notice. Know what to do.**
 
-## 3. Concise Project Summary
-NoticeLens is an AI-assisted accessibility and document intelligence web application purpose-built for university students with visual impairments or low vision in Bangladesh. Instead of merely reciting unformatted optical character recognition (OCR) text, NoticeLens transforms complex Bengali, English, and mixed-language notice photos into an accessible, structured, verifiable, and actionable workspace. Students get instant plain-language summaries, traceable source citations for every extracted deadline, room number, or fee, editable transcripts with atomic real-time recalculation, integrated Web Speech audio reading, private local storage, and timezone-compliant calendar exports (.ics).
+### 3. Short Description
+NoticeLens is an evidence-grounded institutional notice intelligence and accessibility web application designed for university students with visual impairments, low vision, and cognitive reading challenges. Instead of dumping raw, unstructured OCR text, NoticeLens transforms complex visual notices into actionable student workflows: structured 6-question plain-language summaries, deadline versus event-date disambiguation, interactive checklists with persistence, verbatim source-evidence highlighting, dedicated low-vision reading mode, offline speech synthesis, and timezone-compliant `.ics` calendar exports—all operating 100% locally in the browser with zero cloud server reliance.
 
 ---
 
-## 4. The Problem We Are Solving
-University campuses across Bangladesh rely heavily on physical notice boards and scanned PDF/image circulars posted on department walls or social media. These notices feature:
-- Complex Bengali scripts, English phrases, or mixed bilingual terminology.
-- High-stakes examination dates, room schedules, and admit card requirements.
-- Tight application deadlines, admission portals, and non-refundable fees.
-- Densely packed administrative paragraphs where critical facts are buried.
-
-For students who are blind, visually impaired, or have low vision, traditional OCR readers present significant hurdles:
-1. **Unstructured Output**: Raw OCR output is a wall of disorganized text that leaves the student searching for the actual deadline or venue.
-2. **Context Blindness**: Standard screen readers struggle with mixed Bengali-English script ordering and lack contextual task awareness.
-3. **Hallucination Risk**: Conventional cloud AI summarizers often hallucinate plausible dates or consequences without accountable source evidence, risking missed exams or fees.
+### 4. Inspiration
+On university campuses across Bangladesh and South Asia, administrative communication remains overwhelmingly analog: physical circulars pinned to department notice boards, low-resolution phone photos shared across messaging groups, and non-searchable PDF scans. For visually impaired and low-vision students, these circulars are an exhausting, stressful obstacle. A missed fee payment, an overlooked prerequisite document, or confusing an examination start date with an application deadline can derail a student's entire semester. Generic OCR readers read words aloud, but they fail to understand institutional structure. We were inspired to build a system that doesn't just read the notice, but tells the student exactly what to do, when to do it, and proves every fact with verifiable source evidence.
 
 ---
 
-## 5. Our Solution
-NoticeLens provides **evidence-backed notice intelligence**:
-1. **Local Bilingual OCR**: Recognizes printed notices in Bengali, English, or mixed language mode using client-side Tesseract.js with local assets and strict CSP compliance.
-2. **Deterministic Extraction Engine**: Uses typed, context-aware rule sets and normalization algorithms to extract 14 key fields (Title, Category, Issuing Institution, Event Name, Event Date, Times, Venue, Deadline, Required Documents, Fees, Action Items, Contact, and URL).
-3. **Strict Calendar Validation**: Rejects impossible calendar dates (such as 31 February or 31 April) and validates leap years. If a notice omits a year, NoticeLens flags it for user review rather than inventing the current year.
-4. **Traceable Citations**: Every extracted fact retains an exact character pointer to its supporting snippet in the recognized text, highlighted visually and accessible to screen readers via normalized index mapping.
-5. **Accessible Plain-Language Summary**: Generates concise, understandable summaries structured into *What it's about*, *Critical Deadline*, *What you need to do*, *Location & Time*, *Documents*, and *Missing/unverified details*.
-6. **Atomic Human-in-the-Loop Correction**: Students can edit the raw OCR transcript and NoticeLens synchronously re-derives all downstream summaries and dates without state race conditions. User overrides are prominently marked to prevent misleading evidence claims.
-7. **Honest Web Speech Audio Player**: Built-in audio controls with voice discovery, adjustable speed (0.85x–1.25x), and transparent status feedback if the host device lacks an installed Bengali speech engine.
-8. **Privacy & Offline Persistence**: Saved notices, metadata, and durable base64 image data URLs reside in the browser's private local IndexedDB (`NoticeLensDB`).
-9. **Timezone-Compliant Calendar Export**: Generates RFC 5545 `.ics` files with line folding, `Asia/Dhaka` `VTIMEZONE` blocks, and an automatic review gate for ambiguous dates.
+### 5. Problem
+1. **Raw OCR is Cognitive Overload:** Generic OCR produces an unformatted stream of 500+ characters littered with letterhead addresses, memo numbers, and table fragments. Screen-reader users must parse this entire stream to find a single deadline.
+2. **Deadline vs Event-Date Confusion:** University circulars frequently contain multiple conflicting dates (e.g., publication date, registration deadline, admit card collection, and final exam date). Generic parsers blindly grab the first date, causing students to enter exam dates into their calendars instead of registration deadlines.
+3. **AI Hallucinations in High-Stakes Contexts:** Cloud LLMs often invent plausible-sounding deadlines or obligations when presented with noisy text. In university administration, hallucinated dates mean missed deadlines.
+4. **Data Privacy on Shared Campus PCs:** Many students use shared computers in university library labs or cyber-cafés. Traditional web apps leave confidential notices, fee records, or roll numbers stored indefinitely in browser caches.
+5. **Offline Reality:** Campus Wi-Fi and mobile data in student dormitories are frequently intermittent or expensive. Applications requiring continuous cloud vision APIs fail when connectivity drops.
 
 ---
 
-## 6. Key Features & Accessibility Standards
-- **WCAG 2.2 AA Aligned**: Skip-to-content links, visible focus indicators, dynamic ARIA live regions for screen readers, high-contrast mode, and text size scaling (Normal, Large 115%, Extra Large 130%).
-- **Mobile Camera & File Upload**: Camera capture (`capture="environment"`), drag-and-drop, and file validation up to 10 MB.
-- **Safe Preprocessing**: In-memory canvas grayscale and contrast enhancement to improve OCR recognition on low-light smartphone captures.
-- **Traceable Evidence Highlighter**: Clicking any fact snippet highlights its exact occurrence in the raw transcript.
-- **Zero-Secret Default**: Operates 100% locally in the browser with no external paid API keys required.
-- **Preloaded Fictional Test Samples**: Bundled with three representative fictional notices (Bengali DU Final Exam, English BUET Hackathon, and Mixed JU Admission) with separate Live OCR and Instant Sample load actions.
+### 6. What We Built
+NoticeLens is a local-first notice intelligence application featuring:
+- **Notice-to-Action Executive Summary:** Answers the six critical student questions: *What happened? Who is affected? What must be done? When is the deadline? What documents are needed? What information is unverified?*
+- **Date & Timeline Disambiguation Engine:** Categorizes circular dates into Critical Application Deadlines, Examination Schedules, and Publication Notices with visual verification badges.
+- **Interactive Student Action Checklist:** Translates notice requirements into actionable tasks (fee submission, document attachments) with completion tracking and localStorage persistence.
+- **Traceable Source Evidence Grounding:** Clicking any extracted detail highlights the authentic sentence in the original OCR transcript using `<mark>` elements. No ungrounded facts.
+- **Dedicated Low-Vision Reading Mode:** A high-contrast, distraction-free reading experience with 3-tier font size scaling (`Normal`, `Large`, `Extra-Large`) and linear speech readout.
+- **Deterministic RFC 5545 Calendar Integration:** Generates `.ics` calendar events with automated 24-hour reminder alarms, `Asia/Dhaka` timezone definitions, and a mandatory review gate for missing years.
+- **Private Notice Vault & Shared Terminal Purge:** Complete client-side IndexedDB document vault with a one-click security purge that wipes all stored notices, task states, and worker memory upon leaving a public computer.
 
 ---
 
-## 7. What Makes NoticeLens Distinctive
-| Traditional OCR & AI Readers | NoticeLens |
-| :--- | :--- |
-| Dumps raw, unformatted text blocks | Delivers structured, field-by-field actionable cards |
-| Hallucinates missing dates or consequences | Strictly rejects invalid dates and never invents missing years |
-| Black-box outputs without references | Traceable source evidence citations for every extracted detail |
-| Fabricates confidence scores | Transparently reports genuine engine confidence or labels preset samples |
-| Sends private student documents to cloud servers | Processes and stores documents 100% locally and privately |
-| Silently mispronounces Bengali using English voices | Discovers native Bengali voices and reports hardware fallbacks honestly |
-| Shifts Bangladesh local times by 6 hours | Compliant RFC 5545 `.ics` export with `Asia/Dhaka` timezone definition |
+### 7. How It Works
+1. **Ingest & Preprocessing:** The student uploads an image, captures a notice photo, or selects a sample preset. An in-memory canvas applies contrast normalization and layout leveling.
+2. **Client-Side Tesseract OCR:** A local Web Worker pool runs Tesseract.js with Bengali and English trained LSTM models cached in IndexedDB and Service Worker CacheStorage.
+3. **Normalization & Context Extraction:** The recognized text is normalized to Unicode NFC. Contextual regex and structural state machines extract key fields: Title, Institution, Category, Deadlines, Event Dates, Venue, Fees, and Required Documents.
+4. **Evidence Grounding:** Every extracted field maps to an exact substring in the transcript. If the user edits the transcript, the engine synchronously re-derives fields and purges stale evidence.
+5. **Multimodal Action:** The student can read through the Low-Vision Reading View, listen via Web Speech API (with automatic Bengali phonetic transliteration fallback), check off completed tasks, export deadlines to calendar, or save to the private Notice Vault.
 
 ---
 
-## 8. Engineering Challenges & Solutions
-
-1. **Content Security Policy vs Tesseract Worker Assets**:  
-   Default Tesseract.js configurations rely on CDN blobs and `importScripts`, which conflicted with strict CSP directives in `index.html`. We resolved this by downloading local worker scripts, WASM files, and core LSTM scripts into `/public/tesseract/`, setting `workerBlobURL: false`, and updating CSP directives to safely permit self-hosted worker execution.
-
-2. **React State Race Condition in Transcript Re-Extraction**:  
-   The initial transcript editor called a text update followed by a re-extraction handler that read `activeNotice.ocrText`. Because React state updates are asynchronous, the extractor read stale text. We re-engineered the pipeline to take the edited string as an atomic argument `handleApplyTranscriptEdit(newText)`, re-extracting fields directly and committing state in a single synchronous transition.
-
-3. **Calendar Date Integrity & Leap Year Rules**:  
-   Generic regex parsers accept invalid dates like 31 February or 31 April because JavaScript's `Date` normalizes them into subsequent months. We implemented strict boundary checks (`isValidCalendarDate`), leap year algorithms, and blocked automatic year invention for circulars lacking an explicit year.
-
-4. **Timezone Accuracy in Calendar Exports**:  
-   Notice times were initially formatted as UTC timestamps, shifting Bangladesh standard time (+06:00) by 6 hours. We implemented compliant `VTIMEZONE` blocks for `Asia/Dhaka` and local date-time formatting (`DTSTART;TZID=Asia/Dhaka:...`).
-
-5. **Durable Image Storage vs Broken Blob URLs**:  
-   Storing temporary `blob:` URLs in IndexedDB resulted in broken image references upon browser restarts. We integrated `FileReader` base64 data URL conversion so notices survive page reloads and browser restarts without dead URLs.
+### 8. What Makes NoticeLens Different
+| Capability | Generic OCR (Google Lens / Apple Live Text) | NoticeLens |
+| :--- | :--- | :--- |
+| **Output Format** | Unstructured raw text stream | Structured 6-question executive summary + action cards |
+| **Deadline Detection** | Extracts arbitrary numbers/dates | Disambiguates submission deadlines from exam and notice dates |
+| **Actionable Workflow** | Static text display | Interactive Student Action Checklist with completion tracking |
+| **Evidence Traceability** | Bounding box on pixels | Semantic source-span highlight in an editable transcript |
+| **Hallucination Risk** | High (if paired with LLMs) | **Zero fabricated quotes** — 100% evidence span precision with 84.21% overall grounding coverage |
+| **Privacy Architecture** | Images uploaded to corporate cloud | **100% Client-Side** — Zero server uploads |
+| **Offline Operation** | Requires active cloud internet connection | Fully operational offline via IndexedDB & CacheStorage |
+| **Speech Adaptability** | Fails or mutes on unsupported OS languages | Native speech with deterministic Bengali phonetic fallback |
+| **Public PC Protection** | Data remains in browser cache | One-click "Purge Terminal Data" clears all storage & memory |
 
 ---
 
-## 9. Technologies Used
-- **Frontend Framework**: React 18, TypeScript (Strict Mode), Vite 5
-- **Styling & Design System**: Tailwind CSS v3 with custom `.high-contrast` variant plugin, Neumorphic Soft UI on desktop, and Pattern Gesture UI on mobile
-- **OCR Engine**: Tesseract.js v7 (Self-hosted local worker assets, bilingual `ben+eng` / `ben` / `eng`)
-- **Audio & Accessibility**: Web Speech API (`SpeechSynthesis`), ARIA Live Regions, WCAG 2.2 AA Focus Management
-- **Persistence**: IndexedDB API (`NoticeLensDB`) with `localStorage` fallback and Shared Terminal Purge
-- **Calendar Standard**: RFC 5545 iCalendar specification with UTF-8 octet line folding and `Asia/Dhaka` timezone
-- **Test Automation**: Vitest v2, React Testing Library, Happy-DOM (74 passing automated tests across 6 suites)
+### 8.1 Empirical Benchmarks (Six-Document Pilot Corpus, Real Tesseract OCR)
+- **Character Error Rate (CER):** **2.30%** (Real OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
+- **Word Error Rate (WER):** **9.18%** (Real OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
+- **Dual-Mode Extraction Quality:** Clean Text F1: **80.46%** (P: 83.33%, R: 77.78%) vs Real OCR-driven F1: **77.27%** (P: 79.07%, R: 75.56%)
+- **Evidence Span Precision:** **100.00%** (Zero fabricated source snippets)
+- **Overall Fact Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields supported by authentic text spans)
+- **Disaggregated Latency:** Parser-only extraction: **0.56 ms** median; End-to-end pipeline (Image → OCR → Notice Engine): **546.6 ms** median / **912.0 ms** P90
+- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals
 
 ---
 
-## 10. Honest Limitations & Future Work
-- **Client-Side OCR Hardware Limitations**: Client-side OCR requires legible image resolution and adequate device memory. For severely degraded or blurry notices, student manual transcript editing remains an essential human-in-the-loop fallback.
-- **Speech Engine Availability**: Web Speech API depends on the host operating system's installed TTS engines. If the user's OS lacks a Bengali voice pack, NoticeLens falls back to hardware defaults while advising the user.
-- **Future Directions**:
-  - Offline fine-tuned quantized on-device small language model (SLM) for multi-column layout table extraction.
-  - Direct integration with university open portal RSS feeds.
-  - Audio recording upload for verbal notice announcements in university halls.
+### 9. Technology Stack
+- **Frontend Framework:** React 18, TypeScript (Strict Mode), Vite
+- **Styling Architecture:** Tailwind CSS, Soft-UI Neumorphic Design Tokens, Custom High-Contrast Theme (15.93:1 contrast)
+- **OCR Engine:** Tesseract.js v7 with client-side Web Workers and WebAssembly (relaxed-SIMD LSTM)
+- **Language Models:** Bengali (`ben.traineddata`) and English (`eng.traineddata`)
+- **Cryptography & Security:** Web Crypto API (SHA-256 binary provenance verification)
+- **Offline Storage:** IndexedDB (`keyval-store`, `noticelens_db`), Service Worker `CacheStorage`, `localStorage` fallback
+- **Audio & Accessibility:** Web Speech API (`window.speechSynthesis`), Bengali Phonetic Transliteration Engine, WAI-ARIA 1.2
+- **Calendar Standard:** RFC 5545 iCalendar specification with `Asia/Dhaka` `VTIMEZONE` blocks
+- **Testing & Verification:** Vitest v2.1.9, Happy-DOM, Headless Chrome with Chrome DevTools Protocol (CDP)
+
+---
+
+### 10. Engineering Challenges
+1. **Eliminating False Offline Verification States:** Early worker implementations verified offline status simply by checking `navigator.onLine === false`. If offline recognition occurred using an online-spawned worker, it created a false-positive verification. We completely re-architected the verifier to inspect the physical binary in IndexedDB, validate its 16-byte header, verify $\ge 10$ directory entries, calculate a real SHA-256 hash via Web Crypto, and test fresh worker initialization in an offline sandbox.
+2. **Preventing React State Race Conditions on Transcript Edits:** When users edited the OCR transcript, early state updates triggered asynchronous re-extractions that read stale notice state. We re-engineered the pipeline to pass the edited string atomically to the extraction engine, synchronously updating structured fields, summaries, and evidence pointers in a single atomic commit.
+3. **Calendar Date Integrity & Leap Year Rules:** Regex date extractors frequently accept invalid dates like 31 February or 31 April. We built a strict calendar date validator that checks month lengths and leap years, and blocks calendar export with an accessible Review Gate whenever a year is omitted.
+4. **Bengali Numeral & Language Support Without Native TTS:** Many operating systems (particularly Linux distributions and older Windows versions) lack a native Bengali speech voice. Rather than leaving students without audio feedback, we designed a phonetic transliteration engine that converts Bengali script into phonetically approximate Latin strings, allowing universal speech engines to speak intelligible Bengali circulars.
+
+---
+
+### 11. Accessibility Impact
+NoticeLens was evaluated against WCAG 2.2 Level AA guidelines:
+- **15.93:1 Heading Contrast Ratio** in dedicated High-Contrast Mode (far exceeding the 7.0:1 AAA standard).
+- **0 px Mobile Overflow:** Tested on 375x812 viewport with 100% reflow compliance.
+- **3.0 px Solid Focus Indicators** on all interactive controls.
+- **Full Keyboard Navigation:** Tab-accessible checklist items, modal gates, and audio triggers.
+- **Low-Vision Typography:** 3-tier font size scaling (`Normal`, `Large`, `Extra-Large`) engineered for low-vision reading.
+
+---
+
+### 12. What We Learned
+- **Deterministic AI Beats Generative AI for Bureaucracy:** In high-stakes institutional notices, students prefer 100% grounded, traceable facts over articulate probabilistic summaries that might hallucinate a critical date.
+- **Offline First is an Accessibility Feature:** In developing countries, digital accessibility cannot assume reliable fiber internet. Engineering client-side WebAssembly OCR makes the app truly usable for low-income and rural university students.
+- **Accessibility Requires Holistic UX:** Building for screen readers is not just about adding `aria-label`. It requires rethinking information architecture—turning a 500-word block into an action checklist, a disambiguated timeline, and an executive Q&A.
+
+---
+
+### 13. Future Plans
+- **Mobile Camera Perspective Correction:** Integrate client-side OpenCV.js document contour detection and quad-warping to automatically rectify skewed mobile captures.
+- **Multi-Department Notice Feeds:** Partner with university student unions in Bangladesh to establish RSS/JSON notice syndication feeds that pull circulars directly into student Notice Vaults.
+- **Community Ground-Truth Expansion:** Open-source an expanded benchmarking dataset of 100+ annotated Bangladeshi university notices to establish an open benchmark for low-resource script OCR intelligence.

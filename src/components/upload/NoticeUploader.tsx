@@ -11,12 +11,16 @@ interface NoticeUploaderProps {
   ) => void;
   onLoadDemoDirectly: (demo: DemoNoticeItem) => void;
   isProcessing: boolean;
+  ocrError?: string | null;
+  onClearOcrError?: () => void;
 }
 
 export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
   onProcessImage,
   onLoadDemoDirectly,
   isProcessing,
+  ocrError,
+  onClearOcrError,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -90,26 +94,34 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
+  const lastAttemptedSourceRef = useRef<string | File | null>(null);
+
   const handleStartOCR = () => {
-    if (!selectedFile && !previewUrl) {
+    const src = selectedFile || previewUrl || lastAttemptedSourceRef.current;
+    if (!src) {
       setErrorMessage('Please select or capture a notice image first.');
       return;
     }
-    onProcessImage(selectedFile || previewUrl!, language, preprocess, 'upload');
+    onProcessImage(src, language, preprocess, selectedFile ? 'upload' : 'demo');
   };
 
   const handleSelectDemo = (demo: DemoNoticeItem) => {
     clearSelection();
     // Generate clean SVG visual for preview
     const svgUri = generateDemoNoticeSvg(demo);
+    lastAttemptedSourceRef.current = svgUri;
     setPreviewUrl(svgUri);
     setLanguage(demo.language);
     onLoadDemoDirectly(demo);
   };
 
   const handleScanSampleLive = (demo: DemoNoticeItem) => {
-    clearSelection();
+    setErrorMessage(null);
+    onClearOcrError?.();
     const svgUri = generateDemoNoticeSvg(demo);
+    lastAttemptedSourceRef.current = svgUri;
+    setPreviewUrl(svgUri);
+    setLanguage(demo.language);
     onProcessImage(svgUri, demo.language, false, 'demo');
   };
 
@@ -305,7 +317,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
           </div>
         )}
 
-        {/* Error Alert */}
+        {/* Validation Error Alert */}
         {errorMessage && (
           <div
             role="alert"
@@ -318,18 +330,67 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
             </div>
           </div>
         )}
+
+        {/* OCR Recognition Error Alert with Direct Retry */}
+        {ocrError && (
+          <div
+            role="alert"
+            className="neu-card mt-6 p-4 border-l-4 border-red-500 bg-red-50/90 text-red-900 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 high-contrast:!bg-black high-contrast:!border-red-400 high-contrast:!text-red-200"
+          >
+            <div className="flex items-start gap-2.5">
+              <ShieldAlert className="w-5 h-5 stroke-[2.5] shrink-0 mt-0.5 text-red-600" />
+              <div>
+                <p className="font-bold uppercase tracking-wider">Recognition Error</p>
+                <p className="text-xs mt-1 font-medium">{ocrError}</p>
+                <p className="text-[11px] mt-1 text-slate-600 high-contrast:text-slate-400">
+                  Your document selection has been preserved. You can change language, adjust contrast, or retry.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <button
+                type="button"
+                onClick={handleStartOCR}
+                disabled={isProcessing}
+                className="neu-btn px-3 py-1.5 text-xs font-bold bg-sky-600 text-white hover:bg-sky-700 shadow-sm disabled:opacity-50 high-contrast:!bg-yellow-400 high-contrast:!text-black"
+              >
+                Retry OCR
+              </button>
+              {onClearOcrError && (
+                <button
+                  type="button"
+                  onClick={onClearOcrError}
+                  className="p-1 rounded text-slate-400 hover:text-slate-600 focus-visible:outline-none"
+                  aria-label="Dismiss recognition error"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Fictional Sample Notice Presets for Live Testing */}
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 high-contrast:text-yellow-300 flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-sky-600 high-contrast:text-yellow-400" />
             <span>Try Fictional University Notice Samples</span>
           </h2>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 high-contrast:text-slate-300">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-500 high-contrast:text-slate-300">
             Pre-bundled for evaluation
           </span>
+        </div>
+
+        {/* Clear Explanation of Modes */}
+        <div className="mb-4 p-3 rounded-xl bg-slate-100/80 border border-slate-200/80 text-xs text-slate-600 high-contrast:!bg-black high-contrast:!border-white high-contrast:!text-white flex flex-col gap-1.5">
+          <p>
+            <strong className="text-slate-800 high-contrast:text-yellow-300">⚡ Run Live OCR:</strong> Processes the actual sample notice image through the in-browser Tesseract engine. Requires internet for initial trained language download (~4 MB), after which models remain cached for offline use.
+          </p>
+          <p>
+            <strong className="text-slate-800 high-contrast:text-yellow-300">📋 Instant Sample Data (Preset):</strong> Loads pre-parsed sample notice text immediately into the workspace without running OCR or downloading trained models (works 100% offline).
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -339,23 +400,28 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
               className="neu-card neu-card-hover text-left p-5 flex flex-col justify-between high-contrast:!bg-black high-contrast:!border-white"
             >
               <div>
-                <span className="neu-badge inline-block px-2.5 py-0.5 bg-sky-100 text-sky-800 mb-2 text-[10px] font-bold high-contrast:!bg-yellow-400 high-contrast:!text-black">
-                  {demo.category} • {demo.language.toUpperCase()}
-                </span>
-                <h3 className="text-xs font-bold text-slate-900 high-contrast:text-white line-clamp-1">
+                <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                  <span className="neu-badge inline-block px-2.5 py-0.5 bg-sky-100 text-sky-800 text-xs font-bold high-contrast:!bg-yellow-400 high-contrast:!text-black">
+                    {demo.category} • {demo.language.toUpperCase()}
+                  </span>
+                  <span className="neu-badge inline-block px-2 py-0.5 bg-slate-200/80 text-slate-700 text-[10px] font-bold high-contrast:!bg-white high-contrast:!text-black">
+                    Educational Archive
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 high-contrast:text-white line-clamp-1">
                   {demo.title}
                 </h3>
-                <p className="text-[11px] font-medium text-slate-600 high-contrast:text-slate-300 line-clamp-2 mt-1 leading-snug">
+                <p className="text-xs font-medium text-slate-700 high-contrast:text-slate-300 line-clamp-2 mt-1.5 leading-relaxed">
                   {demo.description}
                 </p>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-200/80 high-contrast:border-white/40 flex flex-col gap-1.5">
+              <div className="mt-4 pt-3 border-t border-slate-200/80 high-contrast:border-white/40 flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={() => handleScanSampleLive(demo)}
                   disabled={isProcessing}
-                  className="neu-btn py-2 px-3 bg-sky-600 text-white text-[11px] font-bold hover:bg-sky-700 text-center shadow-sm disabled:opacity-50 high-contrast:!bg-yellow-400 high-contrast:!text-black"
+                  className="neu-btn py-2 px-3 bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 text-center shadow-sm disabled:opacity-50 high-contrast:!bg-yellow-400 high-contrast:!text-black"
                   title="Executes actual Tesseract OCR engine on this sample notice image"
                 >
                   ⚡ Run Live OCR on Image
@@ -364,7 +430,7 @@ export const NoticeUploader: React.FC<NoticeUploaderProps> = ({
                   type="button"
                   onClick={() => handleSelectDemo(demo)}
                   disabled={isProcessing}
-                  className="neu-btn py-1.5 px-3 bg-[#eef2f8] text-slate-700 text-[10px] font-semibold hover:bg-white text-center border border-white/60 high-contrast:!bg-slate-900 high-contrast:!text-white disabled:opacity-50"
+                  className="neu-btn py-2 px-3 bg-[#eef2f8] text-slate-700 text-xs font-semibold hover:bg-white text-center border border-white/60 high-contrast:!bg-slate-900 high-contrast:!text-white disabled:opacity-50"
                   title="Loads pre-parsed text immediately without running OCR recognition"
                 >
                   Instant Sample Data (Preset)

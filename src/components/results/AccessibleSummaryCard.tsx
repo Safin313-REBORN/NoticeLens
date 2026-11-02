@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, Calendar, MapPin, CheckSquare, FileText, AlertTriangle, Sparkles } from 'lucide-react';
+import { Volume2, Calendar, MapPin, CheckSquare, FileText, AlertTriangle, Sparkles, Users } from 'lucide-react';
 import { ProcessedNotice } from '../../types/notice';
 import { speechService } from '../../services/speech/webSpeechService';
 
@@ -12,8 +12,10 @@ export const AccessibleSummaryCard: React.FC<AccessibleSummaryCardProps> = ({ no
 
   const handleReadSummary = () => {
     const textToRead = [
+      notice.sourceType === 'demo' ? 'Fictional demonstration notice for educational and testing purposes only. Not an official announcement.' : '',
       `Notice Summary.`,
       summary.overview,
+      summary.targetAudience ? `Target students: ${summary.targetAudience}` : '',
       summary.criticalDeadline ? `Critical Deadline: ${summary.criticalDeadline}` : '',
       summary.venueAndTime ? `Event schedule and location: ${summary.venueAndTime}` : '',
       summary.actionItems.length > 0 ? `Action items: ${summary.actionItems.join('. ')}` : '',
@@ -59,6 +61,19 @@ export const AccessibleSummaryCard: React.FC<AccessibleSummaryCardProps> = ({ no
             {summary.overview}
           </p>
         </div>
+
+        {/* 2. Who is affected */}
+        {summary.targetAudience && (
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 high-contrast:text-yellow-300 mb-1.5 flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-sky-600 high-contrast:text-yellow-400 stroke-[2.5]" />
+              <span>Who is affected (Target Students)</span>
+            </h3>
+            <p className="text-sm font-semibold text-slate-800 high-contrast:text-white neu-inset px-3.5 py-2.5 rounded-xl">
+              {summary.targetAudience}
+            </p>
+          </div>
+        )}
 
         {/* 2. Most important deadline / date */}
         {summary.criticalDeadline && (

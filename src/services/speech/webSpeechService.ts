@@ -1,4 +1,5 @@
 import { VoiceOption } from '../../types/notice';
+import { transliterateBengaliToPhonetic } from './bengaliPhonetics';
 
 export type SpeechPlaybackStatus = 'idle' | 'playing' | 'paused' | 'error';
 
@@ -9,6 +10,8 @@ export interface SpeechStatusState {
   rate: number;
   errorMessage?: string;
   hasBengaliVoice: boolean;
+  isPhoneticFallbackActive?: boolean;
+  phoneticModeEnabled: boolean;
 }
 
 class WebSpeechService {
@@ -17,6 +20,7 @@ class WebSpeechService {
   private voices: SpeechSynthesisVoice[] = [];
   private selectedVoice: SpeechSynthesisVoice | null = null;
   private speechRate: number = 1.0;
+  private phoneticModeEnabled: boolean = true;
   private statusListeners: Set<(state: SpeechStatusState) => void> = new Set();
 
   private currentState: SpeechStatusState = {
@@ -25,6 +29,8 @@ class WebSpeechService {
     voiceName: '',
     rate: 1.0,
     hasBengaliVoice: false,
+    isPhoneticFallbackActive: false,
+    phoneticModeEnabled: true,
   };
 
   constructor() {
@@ -95,6 +101,16 @@ class WebSpeechService {
     this.notifyState();
   }
 
+  public setPhoneticMode(enabled: boolean): void {
+    this.phoneticModeEnabled = enabled;
+    this.currentState.phoneticModeEnabled = enabled;
+    this.notifyState();
+  }
+
+  public getPhoneticText(text: string): string {
+    return transliterateBengaliToPhonetic(text);
+  }
+
   public speak(
     text: string,
     preferLanguage?: 'bn' | 'en',
@@ -120,19 +136,29 @@ class WebSpeechService {
     const hasBn = this.hasBengaliVoice();
 
     let targetVoice = this.selectedVoice;
+    let textToSynthesize = cleanText;
+    let isPhonetic = false;
 
     if (isBengaliText) {
       if (hasBn) {
         // Find best Bengali voice
         const bnVoice = this.voices.find((v) => v.lang.startsWith('bn'));
         if (bnVoice) targetVoice = bnVoice;
+      } else if (this.phoneticModeEnabled) {
+        // High-clarity Romanized phonetic speech fallback for devices without Bengali TTS
+        textToSynthesize = transliterateBengaliToPhonetic(cleanText);
+        isPhonetic = true;
+        warning =
+          'Notice: No native Bengali voice engine installed. NoticeLens activated Phonetic Romanized Narration so your default system voice can pronounce Bengali terms clearly.';
       } else {
         warning =
           'Notice: This device does not have an installed Bengali speech voice. Playing using fallback voice, which may sound unnatural for Bengali words.';
       }
     }
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
+    this.currentState.isPhoneticFallbackActive = isPhonetic;
+
+    const utterance = new SpeechSynthesisUtterance(textToSynthesize);
     if (targetVoice) {
       utterance.voice = targetVoice;
       utterance.lang = targetVoice.lang;
@@ -142,8 +168,9 @@ class WebSpeechService {
       utterance.lang = 'en-US';
     }
 
-    utterance.rate = this.speechRate;
-    utterance.pitch = 1.0;
+    // Calibrate speed slightly slower for phonetic transliteration clarity
+    utterance.rate = isPhonetic ? Math.max(0.65, this.speechRate * 0.88) : this.speechRate;
+    utterance.pitch = isPhonetic ? 1.05 : 1.0;
 
     utterance.onstart = () => {
       this.updateStatus('playing', cleanText);
