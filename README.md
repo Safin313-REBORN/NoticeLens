@@ -85,16 +85,22 @@ Every extracted detail retains a verbatim index pointer into the OCR transcript.
 
 ## Technical Benchmarks (Empirically Measured on Pilot Corpus, N = 6)
 
-Evaluated across our 6-document pilot benchmark corpus (`npm run benchmark`) using genuine Tesseract.js v7.0.0 local recognition on rendered image fixtures:
+Evaluated across our 6-document pilot benchmark corpus (`npm run benchmark`) using genuine Tesseract.js v7.0.0 local recognition on rendered image fixtures (persisted in [`docs/benchmark-results.json`](docs/benchmark-results.json)):
 - **Character Error Rate (CER):** **2.30%** (Real OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
 - **Word Error Rate (WER):** **9.18%** (Real OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
-- **Pipeline A (Clean Source Text) F1:** **80.46%** (Precision: 83.33%, Recall: 77.78%)
-- **Pipeline B (Real Image → OCR → Extraction) F1:** **77.27%** (Precision: 79.07%, Recall: 75.56%)
+- **Three-Mode Extraction Evaluation:**
+  - **Mode A (Clean Text Baseline):** **F1: 80.46%** (Precision: 83.33%, Recall: 77.78% | TP: 35, FP: 7, FN: 10) — Ground-truth transcript directly to extraction engine.
+  - **Mode B (Snapshot OCR Baseline):** **F1: 77.27%** (Precision: 79.07%, Recall: 75.56% | TP: 34, FP: 9, FN: 11) — Frozen OCR transcript snapshot for regression testing.
+  - **Mode C (Live OCR Recognition):** **F1: 77.27%** (Precision: 79.07%, Recall: 75.56% | TP: 34, FP: 9, FN: 11) — Actual PNG fixture → live Tesseract worker recognition → extraction engine.
 - **Factual Evidence Span Precision:** **100.00%** (100% of attached evidence spans match source text verbatim)
 - **Overall Fact Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category tags)
 - **High-Contrast Ratio:** **15.93:1** (WCAG AAA requires 7.0:1)
-- **Structured Extraction Latency (Parser Only):** **0.56 ms** median per document
-- **Total Pipeline Latency (Image to Structured Notice):** **546.6 ms** median / **912.0 ms** P90
+- **Dynamically Measured Latencies (`performance.now()`, N = 6 samples):**
+  - Image Loading: **0.44 ms** median / **0.50 ms** P90
+  - Worker Initialization: **~297.6 ms** cold / **~232.5 ms** warm
+  - OCR Recognition: **966.3 ms** median / **1558.2 ms** P90
+  - Structured Extraction (Parser Only): **2.42 ms** median / **12.98 ms** P90
+  - Total End-to-End Pipeline: **979.5 ms** median / **1561.1 ms** P90
 
 ---
 

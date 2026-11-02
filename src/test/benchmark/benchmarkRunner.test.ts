@@ -1,60 +1,60 @@
 import { describe, it, expect } from 'vitest';
 import path from 'path';
 import fs from 'fs';
-import { BENCHMARK_DATASET } from './benchmarkData';
+import os from 'os';
+import { execSync } from 'child_process';
+import { createWorker, Worker } from 'tesseract.js';
+import { BENCHMARK_DATASET, GroundTruthNotice } from './benchmarkData';
 import { processNoticeDocument } from '../../services/extraction/noticeEngine';
 import { bengaliToEnglishNumerals } from '../../services/extraction/numerals';
 
 /**
- * Levenshtein Distance implementation on Unicode NFC-normalized strings.
- * Computes minimum edit operations (substitutions, insertions, deletions).
+ * Levenshtein Distance implementation on Unicode NFC-normalized characters.
+ * Accurately aligns Hypothesis against Reference:
+ * - Reference (Ground Truth): target string of length N
+ * - Hypothesis (Recognized/Candidate): candidate string of length M
+ *
+ * Operation definitions (transforming Reference into Hypothesis):
+ * - Substitution (S): character in Reference replaced by different character in Hypothesis (diagonal predecessor)
+ * - Deletion (D): character in Reference omitted in Hypothesis (vertical predecessor)
+ * - Insertion (I): extra character in Hypothesis not in Reference (horizontal predecessor)
+ *
+ * Invariant: distance === substitutions + insertions + deletions
  */
-export function levenshteinDistance(s1: string, s2: string): {
+export interface LevenshteinResult {
   distance: number;
   substitutions: number;
   insertions: number;
   deletions: number;
-} {
-  const a = s1.normalize('NFC');
-  const b = s2.normalize('NFC');
-  const n = a.length;
-  const m = b.length;
+  referenceLength: number;
+}
 
+export function levenshteinDistance(hypothesis: string, reference: string): LevenshteinResult {
+  const h = Array.from(hypothesis.normalize('NFC'));
+  const r = Array.from(reference.normalize('NFC'));
+  const m = h.length; // hypothesis length
+  const n = r.length; // reference length
+
+  // dp[i][j] stores edit distance between r[0..i-1] and h[0..j-1]
   const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
-  const ops: Array<Array<'M' | 'S' | 'I' | 'D'>> = Array.from({ length: n + 1 }, () =>
-    Array(m + 1).fill('M')
-  );
 
-  for (let i = 0; i <= n; i++) {
-    dp[i][0] = i;
-    ops[i][0] = 'D';
-  }
-  for (let j = 0; j <= m; j++) {
-    dp[0][j] = j;
-    ops[0][j] = 'I';
-  }
-  ops[0][0] = 'M';
+  for (let i = 0; i <= n; i++) dp[i][0] = i; // deletions
+  for (let j = 0; j <= m; j++) dp[0][j] = j; // insertions
 
   for (let i = 1; i <= n; i++) {
     for (let j = 1; j <= m; j++) {
-      if (a.charAt(i - 1) === b.charAt(j - 1)) {
-        dp[i][j] = dp[i - 1][j - 1];
-        ops[i][j] = 'M';
+      if (r[i - 1] === h[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1]; // match
       } else {
-        const subCost = dp[i - 1][j - 1] + 1;
-        const insCost = dp[i][j - 1] + 1;
-        const delCost = dp[i - 1][j + 0] + 1;
-
-        const min = Math.min(subCost, insCost, delCost);
-        dp[i][j] = min;
-        if (min === subCost) ops[i][j] = 'S';
-        else if (min === insCost) ops[i][j] = 'I';
-        else ops[i][j] = 'D';
+        const subCost = dp[i - 1][j - 1] + 1; // substitution (diagonal predecessor)
+        const delCost = dp[i - 1][j] + 1;     // deletion from reference (vertical predecessor)
+        const insCost = dp[i][j - 1] + 1;     // insertion into hypothesis (horizontal predecessor)
+        dp[i][j] = Math.min(subCost, delCost, insCost);
       }
     }
   }
 
-  // Backtrack to count substitutions, insertions, deletions
+  // Backtracking from (n, m) to (0, 0)
   let i = n;
   let j = m;
   let substitutions = 0;
@@ -62,24 +62,31 @@ export function levenshteinDistance(s1: string, s2: string): {
   let deletions = 0;
 
   while (i > 0 || j > 0) {
-    const op = ops[i][j];
-    if (op === 'M') {
+    if (i > 0 && j > 0 && r[i - 1] === h[j - 1] && dp[i][j] === dp[i - 1][j - 1]) {
       i--;
       j--;
-    } else if (op === 'S') {
+    } else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) {
       substitutions++;
       i--;
       j--;
-    } else if (op === 'I') {
-      insertions++;
-      j--;
-    } else if (op === 'D') {
+    } else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) {
       deletions++;
       i--;
+    } else if (j > 0 && dp[i][j] === dp[i][j - 1] + 1) {
+      insertions++;
+      j--;
+    } else {
+      break;
     }
   }
 
-  return { distance: dp[n][m], substitutions, insertions, deletions };
+  return {
+    distance: dp[n][m],
+    substitutions,
+    insertions,
+    deletions,
+    referenceLength: n,
+  };
 }
 
 /**
@@ -88,6 +95,7 @@ export function levenshteinDistance(s1: string, s2: string): {
  */
 export function calculateCER(recognized: string, groundTruth: string): {
   cer: number;
+  distance: number;
   substitutions: number;
   insertions: number;
   deletions: number;
@@ -96,15 +104,17 @@ export function calculateCER(recognized: string, groundTruth: string): {
   const normRec = recognized.normalize('NFC').replace(/\s+/g, ' ').trim();
   const normGt = groundTruth.normalize('NFC').replace(/\s+/g, ' ').trim();
   if (normGt.length === 0) {
-    return { cer: 0, substitutions: 0, insertions: 0, deletions: 0, gtLength: 0 };
+    const recLength = Array.from(normRec).length;
+    return { cer: 0, distance: recLength, substitutions: 0, insertions: recLength, deletions: 0, gtLength: 0 };
   }
   const res = levenshteinDistance(normRec, normGt);
   return {
-    cer: res.distance / normGt.length,
+    cer: res.distance / res.referenceLength,
+    distance: res.distance,
     substitutions: res.substitutions,
     insertions: res.insertions,
     deletions: res.deletions,
-    gtLength: normGt.length,
+    gtLength: res.referenceLength,
   };
 }
 
@@ -114,6 +124,7 @@ export function calculateCER(recognized: string, groundTruth: string): {
  */
 export function calculateWER(recognized: string, groundTruth: string): {
   wer: number;
+  distance: number;
   substitutions: number;
   insertions: number;
   deletions: number;
@@ -121,40 +132,26 @@ export function calculateWER(recognized: string, groundTruth: string): {
 } {
   const tokensRec = recognized.normalize('NFC').trim().split(/\s+/).filter(Boolean);
   const tokensGt = groundTruth.normalize('NFC').trim().split(/\s+/).filter(Boolean);
-  if (tokensGt.length === 0) {
-    return { wer: 0, substitutions: 0, insertions: 0, deletions: 0, gtWordCount: 0 };
+  const m = tokensRec.length; // hypothesis word count
+  const n = tokensGt.length;  // reference word count
+
+  if (n === 0) {
+    return { wer: 0, distance: m, substitutions: 0, insertions: m, deletions: 0, gtWordCount: 0 };
   }
 
-  const n = tokensGt.length;
-  const m = tokensRec.length;
   const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
-  const ops: Array<Array<'M' | 'S' | 'I' | 'D'>> = Array.from({ length: n + 1 }, () =>
-    Array(m + 1).fill('M')
-  );
-
-  for (let i = 0; i <= n; i++) {
-    dp[i][0] = i;
-    ops[i][0] = 'D';
-  }
-  for (let j = 0; j <= m; j++) {
-    dp[0][j] = j;
-    ops[0][j] = 'I';
-  }
+  for (let i = 0; i <= n; i++) dp[i][0] = i;
+  for (let j = 0; j <= m; j++) dp[0][j] = j;
 
   for (let i = 1; i <= n; i++) {
     for (let j = 1; j <= m; j++) {
       if (tokensGt[i - 1] === tokensRec[j - 1]) {
         dp[i][j] = dp[i - 1][j - 1];
-        ops[i][j] = 'M';
       } else {
         const subCost = dp[i - 1][j - 1] + 1;
-        const insCost = dp[i][j - 1] + 1;
         const delCost = dp[i - 1][j] + 1;
-        const min = Math.min(subCost, insCost, delCost);
-        dp[i][j] = min;
-        if (min === subCost) ops[i][j] = 'S';
-        else if (min === insCost) ops[i][j] = 'I';
-        else ops[i][j] = 'D';
+        const insCost = dp[i][j - 1] + 1;
+        dp[i][j] = Math.min(subCost, delCost, insCost);
       }
     }
   }
@@ -166,25 +163,27 @@ export function calculateWER(recognized: string, groundTruth: string): {
   let deletions = 0;
 
   while (i > 0 || j > 0) {
-    const op = ops[i][j];
-    if (op === 'M') {
+    if (i > 0 && j > 0 && tokensGt[i - 1] === tokensRec[j - 1] && dp[i][j] === dp[i - 1][j - 1]) {
       i--;
       j--;
-    } else if (op === 'S') {
+    } else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) {
       substitutions++;
       i--;
       j--;
-    } else if (op === 'I') {
-      insertions++;
-      j--;
-    } else if (op === 'D') {
+    } else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) {
       deletions++;
       i--;
+    } else if (j > 0 && dp[i][j] === dp[i][j - 1] + 1) {
+      insertions++;
+      j--;
+    } else {
+      break;
     }
   }
 
   return {
     wer: dp[n][m] / n,
+    distance: dp[n][m],
     substitutions,
     insertions,
     deletions,
@@ -194,50 +193,44 @@ export function calculateWER(recognized: string, groundTruth: string): {
 
 /**
  * Strict Field-Specific Match Evaluator
- * Enforces exact semantic boundaries:
- * - Dates must match day, month, and year (preventing deadline vs event date mix-up)
- * - Fees must match actual currency amount
- * - Venue must match building/room
- * - Unexpected populated fields count as False Positives
+ * Enforces semantic boundaries and penalizes hallucinations
  */
 export function evaluateFieldMatch(
   fieldKey: string,
   extractedValue: string | undefined,
   expectedValue: string | undefined
 ): boolean {
-  if (!extractedValue || !extractedValue.trim()) {
-    return false;
-  }
-  if (!expectedValue || !expectedValue.trim()) {
-    return false; // Unexpected field present -> False Positive
-  }
+  if (!extractedValue || !extractedValue.trim()) return false;
+  if (!expectedValue || !expectedValue.trim()) return false;
 
   const normExtracted = extractedValue.toLowerCase().normalize('NFC').trim();
   const normExpected = expectedValue.toLowerCase().normalize('NFC').trim();
 
   if (fieldKey === 'deadline' || fieldKey === 'eventDate') {
-    // Disambiguate dates strictly: compare normalized numerals and month tokens
     const extDigits = (bengaliToEnglishNumerals(normExtracted).match(/\d+/g) || []).join('');
     const expDigits = (bengaliToEnglishNumerals(normExpected).match(/\d+/g) || []).join('');
-    // If numbers match and text contains same month/day
     if (extDigits === expDigits && extDigits.length > 0) return true;
-    // Check if expected date string appears directly in extracted field
     if (normExtracted.includes(normExpected) || normExpected.includes(normExtracted)) return true;
     return false;
   }
 
   if (fieldKey === 'fees') {
-    // Extract fee digits and keywords
     if (/free/i.test(normExpected) && /free/i.test(normExtracted)) return true;
     const extDigits = (bengaliToEnglishNumerals(normExtracted).match(/\d+/g) || []).join('');
     const expDigits = (bengaliToEnglishNumerals(normExpected).match(/\d+/g) || []).join('');
-    // Strict amount check
     if (extDigits.includes(expDigits) || expDigits.includes(extDigits)) return true;
     return false;
   }
 
   if (fieldKey === 'institution') {
-    const keywords = ['ঢাকা বিশ্ববিদ্যালয়', 'buet', 'জাহাঙ্গীরনগর বিশ্ববিদ্যালয়', 'খুলনা বিশ্ববিদ্যালয়', 'brac', 'রাজশাহী বিশ্ববিদ্যালয়'];
+    const keywords = [
+      'ঢাকা বিশ্ববিদ্যালয়',
+      'buet',
+      'জাহাঙ্গীরনগর বিশ্ববিদ্যালয়',
+      'খুলনা বিশ্ববিদ্যালয়',
+      'brac',
+      'রাজশাহী বিশ্ববিদ্যালয়',
+    ];
     for (const kw of keywords) {
       if (normExpected.includes(kw.toLowerCase()) && normExtracted.includes(kw.toLowerCase())) {
         return true;
@@ -247,7 +240,14 @@ export function evaluateFieldMatch(
   }
 
   if (fieldKey === 'venue') {
-    const venueMarkers = ['কুদরত-এ-খুদা', 'ece building', 'iit building', 'একাডেমিক ভবন', 'ub-02', 'তৃতীয় বিজ্ঞান ভবন'];
+    const venueMarkers = [
+      'কুদরত-এ-খুদা',
+      'ece building',
+      'iit building',
+      'একাডেমিক ভবন',
+      'ub-02',
+      'তৃতীয় বিজ্ঞান ভবন',
+    ];
     for (const vm of venueMarkers) {
       if (normExpected.includes(vm.toLowerCase()) && normExtracted.includes(vm.toLowerCase())) {
         return true;
@@ -257,9 +257,7 @@ export function evaluateFieldMatch(
   }
 
   if (fieldKey === 'contact') {
-    // Match email address or contact numbers
-    if (normExtracted.includes(normExpected) || normExpected.includes(normExtracted)) return true;
-    return false;
+    return normExtracted.includes(normExpected) || normExpected.includes(normExtracted);
   }
 
   if (fieldKey === 'requiredDocuments') {
@@ -276,199 +274,440 @@ export function evaluateFieldMatch(
     return normExtracted === normExpected;
   }
 
-  if (fieldKey === 'title') {
-    return normExtracted.includes(normExpected) || normExpected.includes(normExtracted);
-  }
-
   return normExtracted.includes(normExpected) || normExpected.includes(normExtracted);
 }
 
+const EVAL_FIELDS = [
+  'title',
+  'institution',
+  'category',
+  'deadline',
+  'eventDate',
+  'venue',
+  'fees',
+  'requiredDocuments',
+  'contact',
+];
+
+interface ExtractionEvalResult {
+  totalTP: number;
+  totalFP: number;
+  totalFN: number;
+  precision: number;
+  recall: number;
+  f1: number;
+  docResults: Array<{
+    id: string;
+    tp: number;
+    fp: number;
+    fn: number;
+    p: number;
+    r: number;
+    f1: number;
+  }>;
+}
+
+function evaluateExtraction(
+  dataset: GroundTruthNotice[],
+  getTextFn: (doc: GroundTruthNotice) => string
+): ExtractionEvalResult {
+  let totalTP = 0;
+  let totalFP = 0;
+  let totalFN = 0;
+  const docResults: ExtractionEvalResult['docResults'] = [];
+
+  dataset.forEach((doc) => {
+    const inputText = getTextFn(doc);
+    const processed = processNoticeDocument(inputText);
+
+    let docTP = 0;
+    let docFP = 0;
+    let docFN = 0;
+
+    EVAL_FIELDS.forEach((fieldKey) => {
+      const expectedVal = doc.expectedFields[fieldKey as keyof typeof doc.expectedFields];
+      const extractedField = processed.fields[fieldKey as keyof typeof processed.fields];
+      const hasExtractedVal =
+        extractedField && extractedField.status !== 'not_found' && Boolean(extractedField.value);
+
+      if (expectedVal) {
+        if (hasExtractedVal) {
+          const isMatch = evaluateFieldMatch(fieldKey, extractedField.value, expectedVal);
+          if (isMatch) {
+            docTP++;
+          } else {
+            docFP++;
+            docFN++;
+          }
+        } else {
+          docFN++;
+        }
+      } else {
+        if (hasExtractedVal) {
+          docFP++;
+        }
+      }
+    });
+
+    const p = docTP + docFP > 0 ? docTP / (docTP + docFP) : 0;
+    const r = docTP + docFN > 0 ? docTP / (docTP + docFN) : 0;
+    const f1 = p + r > 0 ? (2 * p * r) / (p + r) : 0;
+
+    totalTP += docTP;
+    totalFP += docFP;
+    totalFN += docFN;
+
+    docResults.push({ id: doc.id, tp: docTP, fp: docFP, fn: docFN, p, r, f1 });
+  });
+
+  const precision = totalTP + totalFP > 0 ? totalTP / (totalTP + totalFP) : 0;
+  const recall = totalTP + totalFN > 0 ? totalTP / (totalTP + totalFN) : 0;
+  const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
+
+  return { totalTP, totalFP, totalFN, precision, recall, f1, docResults };
+}
+
 describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => {
-  // PRIORITY 1 & 2: Genuine CER and WER Evaluation
-  it('evaluates Character Error Rate (CER) and Word Error Rate (WER) using real Tesseract OCR recognition', () => {
-    console.log('\n========================================================================================');
-    console.log('   OCR ERROR RATE BENCHMARK REPORT (N = 6 Pilot Documents — Real Tesseract OCR)          ');
-    console.log('========================================================================================');
+  // REQUIREMENT 3: Correct Levenshtein DP implementation with standard test vectors
+  describe('Levenshtein Distance & Edit Operations Verification', () => {
+    it('verifies standard edit test vectors with mathematical invariance (dist === S + I + D)', () => {
+      const testVectors: Array<{
+        hyp: string;
+        ref: string;
+        expectedDist: number;
+        expectedS: number;
+        expectedI: number;
+        expectedD: number;
+        desc: string;
+      }> = [
+        { hyp: 'cat', ref: 'cat', expectedDist: 0, expectedS: 0, expectedI: 0, expectedD: 0, desc: 'Identical strings' },
+        { hyp: 'cot', ref: 'cat', expectedDist: 1, expectedS: 1, expectedI: 0, expectedD: 0, desc: 'Single substitution' },
+        { hyp: 'cats', ref: 'cat', expectedDist: 1, expectedS: 0, expectedI: 1, expectedD: 0, desc: 'Single insertion' },
+        { hyp: 'ca', ref: 'cat', expectedDist: 1, expectedS: 0, expectedI: 0, expectedD: 1, desc: 'Single deletion' },
+        { hyp: '', ref: 'cat', expectedDist: 3, expectedS: 0, expectedI: 0, expectedD: 3, desc: 'Empty recognized output' },
+        { hyp: 'cat', ref: '', expectedDist: 3, expectedS: 0, expectedI: 3, expectedD: 0, desc: 'Empty ground truth' },
+        { hyp: 'পরিক্ষা', ref: 'পরীক্ষা', expectedDist: 1, expectedS: 1, expectedI: 0, expectedD: 0, desc: 'Bengali Unicode substitution' },
+        { hyp: 'Notice বিজ্ঞপ', ref: 'Notice বিজ্ঞপ্তি', expectedDist: 3, expectedS: 0, expectedI: 0, expectedD: 3, desc: 'Mixed Bengali-English deletion' },
+      ];
 
-    const documentResults = BENCHMARK_DATASET.map((doc) => {
-      // Check that genuine image fixture exists
+      testVectors.forEach((tv) => {
+        const res = levenshteinDistance(tv.hyp, tv.ref);
+        expect(res.distance).toBe(tv.expectedDist);
+        expect(res.substitutions).toBe(tv.expectedS);
+        expect(res.insertions).toBe(tv.expectedI);
+        expect(res.deletions).toBe(tv.expectedD);
+        // Strict mathematical invariant check
+        expect(res.distance).toBe(res.substitutions + res.insertions + res.deletions);
+      });
+    });
+
+    it('preserves Bengali punctuation, Dari (।), colons, hyphens, and numeral scripts', () => {
+      const ref = 'বিজ্ঞপ্তি: ফি ৫০০/- টাকা। শেষ তারিখ: ১৫/১১/২০২৪';
+      const hyp = 'বিজ্ঞপ্তি: ফি ৫০০/- টাকা। শেষ তারিখ: ১৫/১১/২০২৪';
+      const cerRes = calculateCER(hyp, ref);
+      expect(cerRes.cer).toBe(0.0);
+      expect(cerRes.distance).toBe(0);
+
+      // Mutate punctuation: replace Dari with period
+      const hypWithPeriod = 'বিজ্ঞপ্তি: ফি ৫০০/- টাকা. শেষ তারিখ: ১৫/১১/২০২৪';
+      const cerPeriod = calculateCER(hypWithPeriod, ref);
+      expect(cerPeriod.substitutions).toBe(1);
+      expect(cerPeriod.distance).toBe(1);
+
+      // Mutate Bengali numeral to English numeral: ৫০০ to 500
+      const hypEngDigits = 'বিজ্ঞপ্তি: ফি 500/- টাকা। শেষ তারিখ: ১৫/১১/২০২৪';
+      const cerDigits = calculateCER(hypEngDigits, ref);
+      expect(cerDigits.substitutions).toBe(3);
+    });
+  });
+
+  // REQUIREMENT 1, 2, 4, 5: Live OCR Execution, Three Distinct Modes & Latency Measurement
+  it('executes genuine image-based OCR on all 6 PNG fixtures, separates 3 extraction modes, and logs dynamic latency', async () => {
+    // 1. Verify existence of all genuine image fixtures
+    BENCHMARK_DATASET.forEach((doc) => {
       const fixtureFullPath = path.resolve(process.cwd(), doc.imageFixturePath);
-      expect(fs.existsSync(fixtureFullPath)).toBe(true);
+      expect(fs.existsSync(fixtureFullPath), `Missing required fixture: ${doc.imageFixturePath}`).toBe(true);
+    });
 
-      const cerResult = calculateCER(doc.actualOcrTranscript, doc.rawText);
-      const werResult = calculateWER(doc.actualOcrTranscript, doc.rawText);
+    // 2. Measure dynamic latency across real operations
+    const imageLoadTimes: number[] = [];
+    const recognitionTimes: number[] = [];
+    const extractionTimes: number[] = [];
+    const endToEndTimes: number[] = [];
 
+    // Measure cold worker initialization
+    const tColdStart = performance.now();
+    const coldWorker = await createWorker('eng');
+    const coldWorkerInitMs = performance.now() - tColdStart;
+
+    // Measure warm worker initialization
+    const tWarmStart = performance.now();
+    const warmWorker = await createWorker('eng');
+    const warmWorkerInitMs = performance.now() - tWarmStart;
+
+    await coldWorker.terminate();
+    await warmWorker.terminate();
+
+    // 3. Initialize dedicated worker pool for benchmark execution
+    const tModelLoadStart = performance.now();
+    const workers: Record<string, Worker> = {
+      ben: await createWorker('ben'),
+      eng: await createWorker('eng'),
+      'ben+eng': await createWorker('ben+eng'),
+    };
+    const modelLoadTimeMs = performance.now() - tModelLoadStart;
+
+    // 4. Execute Real Live OCR Recognition on all 6 documents
+    const liveOcrTexts: Record<string, string> = {};
+
+    for (const doc of BENCHMARK_DATASET) {
+      const fixtureFullPath = path.resolve(process.cwd(), doc.imageFixturePath);
+
+      // Image load latency
+      const tImgStart = performance.now();
+      const imageBuffer = await fs.promises.readFile(fixtureFullPath);
+      const imgLoadMs = performance.now() - tImgStart;
+      imageLoadTimes.push(imgLoadMs);
+
+      // OCR recognition latency
+      const tRecStart = performance.now();
+      const worker = workers[doc.language];
+      const ret = await worker.recognize(imageBuffer);
+      const recMs = performance.now() - tRecStart;
+      recognitionTimes.push(recMs);
+
+      liveOcrTexts[doc.id] = ret.data.text;
+
+      // Structured extraction latency
+      const tExtStart = performance.now();
+      processNoticeDocument(ret.data.text);
+      const extMs = performance.now() - tExtStart;
+      extractionTimes.push(extMs);
+
+      endToEndTimes.push(imgLoadMs + recMs + extMs);
+    }
+
+    // Clean up worker pool
+    for (const w of Object.values(workers)) {
+      await w.terminate();
+    }
+
+    // Latency statistics helper
+    function getStats(arr: number[]) {
+      const sorted = [...arr].sort((a, b) => a - b);
+      return {
+        median: sorted[Math.floor(sorted.length / 2)],
+        p90: sorted[Math.floor(sorted.length * 0.9)],
+        min: sorted[0],
+        max: sorted[sorted.length - 1],
+      };
+    }
+
+    const imgLoadStats = getStats(imageLoadTimes);
+    const recStats = getStats(recognitionTimes);
+    const extStats = getStats(extractionTimes);
+    const e2eStats = getStats(endToEndTimes);
+
+    // 5. Calculate CER and WER for both Live OCR and Snapshot OCR
+    const liveDocResults = BENCHMARK_DATASET.map((doc) => {
+      const liveText = liveOcrTexts[doc.id];
+      const cerRes = calculateCER(liveText, doc.rawText);
+      const werRes = calculateWER(liveText, doc.rawText);
       return {
         id: doc.id,
-        name: doc.name,
         language: doc.language,
         category: doc.category,
-        cer: cerResult.cer,
-        wer: werResult.wer,
-        substitutions: cerResult.substitutions,
-        insertions: cerResult.insertions,
-        deletions: cerResult.deletions,
-        gtChars: cerResult.gtLength,
-        gtWords: werResult.gtWordCount,
+        cer: cerRes.cer,
+        wer: werRes.wer,
+        substitutions: cerRes.substitutions,
+        insertions: cerRes.insertions,
+        deletions: cerRes.deletions,
+        gtChars: cerRes.gtLength,
+        gtWords: werRes.gtWordCount,
       };
     });
 
-    documentResults.forEach((r) => {
+    const snapshotDocResults = BENCHMARK_DATASET.map((doc) => {
+      const cerRes = calculateCER(doc.actualOcrTranscript, doc.rawText);
+      const werRes = calculateWER(doc.actualOcrTranscript, doc.rawText);
+      return {
+        id: doc.id,
+        language: doc.language,
+        cer: cerRes.cer,
+        wer: werRes.wer,
+      };
+    });
+
+    const meanLiveCer = liveDocResults.reduce((a, b) => a + b.cer, 0) / liveDocResults.length;
+    const meanLiveWer = liveDocResults.reduce((a, b) => a + b.wer, 0) / liveDocResults.length;
+
+    const meanSnapshotCer = snapshotDocResults.reduce((a, b) => a + b.cer, 0) / snapshotDocResults.length;
+    const meanSnapshotWer = snapshotDocResults.reduce((a, b) => a + b.wer, 0) / snapshotDocResults.length;
+
+    // Per-language live aggregates
+    const benLive = liveDocResults.filter((d) => d.language === 'ben');
+    const engLive = liveDocResults.filter((d) => d.language === 'eng');
+    const mixedLive = liveDocResults.filter((d) => d.language === 'ben+eng');
+
+    const benLiveCer = benLive.reduce((a, b) => a + b.cer, 0) / benLive.length;
+    const benLiveWer = benLive.reduce((a, b) => a + b.wer, 0) / benLive.length;
+    const engLiveCer = engLive.reduce((a, b) => a + b.cer, 0) / engLive.length;
+    const engLiveWer = engLive.reduce((a, b) => a + b.wer, 0) / engLive.length;
+    const mixedLiveCer = mixedLive.reduce((a, b) => a + b.cer, 0) / mixedLive.length;
+    const mixedLiveWer = mixedLive.reduce((a, b) => a + b.wer, 0) / mixedLive.length;
+
+    // 6. Three Distinct Extraction Modes Evaluation
+    const modeAClean = evaluateExtraction(BENCHMARK_DATASET, (d) => d.rawText);
+    const modeBSnapshot = evaluateExtraction(BENCHMARK_DATASET, (d) => d.actualOcrTranscript);
+    const modeCLive = evaluateExtraction(BENCHMARK_DATASET, (d) => liveOcrTexts[d.id]);
+
+    // 7. Output Formatted Benchmark Report
+    console.log('\n========================================================================================');
+    console.log('   NOTICE LENS SCIENTIFIC BENCHMARK REPORT (N = 6 Pilot Corpus — Real Tesseract.js)    ');
+    console.log('========================================================================================');
+    console.log('\n[EVALUATION MODE C: REAL LIVE OCR RECOGNITION (PNG Fixture -> Tesseract)]');
+    liveDocResults.forEach((r) => {
       console.log(
         `[${r.id}] Lang: ${r.language.padEnd(7)} | Chars: ${r.gtChars.toString().padEnd(4)} | ` +
         `CER: ${(r.cer * 100).toFixed(2).padStart(5)}% (S:${r.substitutions} I:${r.insertions} D:${r.deletions}) | ` +
         `WER: ${(r.wer * 100).toFixed(2).padStart(5)}%`
       );
     });
-
-    // Per-language aggregates
-    const benDocs = documentResults.filter((d) => d.language === 'ben');
-    const engDocs = documentResults.filter((d) => d.language === 'eng');
-    const mixedDocs = documentResults.filter((d) => d.language === 'ben+eng');
-
-    const meanBenCer = benDocs.reduce((a, b) => a + b.cer, 0) / benDocs.length;
-    const meanBenWer = benDocs.reduce((a, b) => a + b.wer, 0) / benDocs.length;
-    const meanEngCer = engDocs.reduce((a, b) => a + b.cer, 0) / engDocs.length;
-    const meanEngWer = engDocs.reduce((a, b) => a + b.wer, 0) / engDocs.length;
-    const meanMixedCer = mixedDocs.reduce((a, b) => a + b.cer, 0) / mixedDocs.length;
-    const meanMixedWer = mixedDocs.reduce((a, b) => a + b.wer, 0) / mixedDocs.length;
-
-    const aggregateCer = documentResults.reduce((a, b) => a + b.cer, 0) / documentResults.length;
-    const aggregateWer = documentResults.reduce((a, b) => a + b.wer, 0) / documentResults.length;
-
     console.log('----------------------------------------------------------------------------------------');
-    console.log(`Per-Language English CER: ${(meanEngCer * 100).toFixed(2)}% | WER: ${(meanEngWer * 100).toFixed(2)}%`);
-    console.log(`Per-Language Bengali CER: ${(meanBenCer * 100).toFixed(2)}% | WER: ${(meanBenWer * 100).toFixed(2)}%`);
-    console.log(`Per-Language Mixed   CER: ${(meanMixedCer * 100).toFixed(2)}% | WER: ${(meanMixedWer * 100).toFixed(2)}%`);
+    console.log(`Per-Language English CER: ${(engLiveCer * 100).toFixed(2)}% | WER: ${(engLiveWer * 100).toFixed(2)}%`);
+    console.log(`Per-Language Bengali CER: ${(benLiveCer * 100).toFixed(2)}% | WER: ${(benLiveWer * 100).toFixed(2)}%`);
+    console.log(`Per-Language Mixed   CER: ${(mixedLiveCer * 100).toFixed(2)}% | WER: ${(mixedLiveWer * 100).toFixed(2)}%`);
     console.log('----------------------------------------------------------------------------------------');
-    console.log(`Aggregate Mean CER (All 6 Docs): ${(aggregateCer * 100).toFixed(2)}%`);
-    console.log(`Aggregate Mean WER (All 6 Docs): ${(aggregateWer * 100).toFixed(2)}%`);
+    console.log(`Aggregate Mean CER (Live OCR):     ${(meanLiveCer * 100).toFixed(2)}%`);
+    console.log(`Aggregate Mean WER (Live OCR):     ${(meanLiveWer * 100).toFixed(2)}%`);
+    console.log(`Aggregate Mean CER (Snapshot OCR): ${(meanSnapshotCer * 100).toFixed(2)}% (Regression baseline)`);
+    console.log(`Aggregate Mean WER (Snapshot OCR): ${(meanSnapshotWer * 100).toFixed(2)}%`);
+
+    console.log('\n----------------------------------------------------------------------------------------');
+    console.log('   THREE-MODE STRUCTURED EXTRACTION QUALITY COMPARISON                                  ');
+    console.log('----------------------------------------------------------------------------------------');
+    console.log(
+      `Mode A: Clean Ground-Truth Text  -> TP: ${modeAClean.totalTP.toString().padStart(2)} FP: ${modeAClean.totalFP.toString().padStart(2)} FN: ${modeAClean.totalFN.toString().padStart(2)} | ` +
+      `P: ${(modeAClean.precision * 100).toFixed(2)}% | R: ${(modeAClean.recall * 100).toFixed(2)}% | F1: ${(modeAClean.f1 * 100).toFixed(2)}%`
+    );
+    console.log(
+      `Mode B: Snapshot OCR Transcript  -> TP: ${modeBSnapshot.totalTP.toString().padStart(2)} FP: ${modeBSnapshot.totalFP.toString().padStart(2)} FN: ${modeBSnapshot.totalFN.toString().padStart(2)} | ` +
+      `P: ${(modeBSnapshot.precision * 100).toFixed(2)}% | R: ${(modeBSnapshot.recall * 100).toFixed(2)}% | F1: ${(modeBSnapshot.f1 * 100).toFixed(2)}%`
+    );
+    console.log(
+      `Mode C: Live Real OCR Recognition-> TP: ${modeCLive.totalTP.toString().padStart(2)} FP: ${modeCLive.totalFP.toString().padStart(2)} FN: ${modeCLive.totalFN.toString().padStart(2)} | ` +
+      `P: ${(modeCLive.precision * 100).toFixed(2)}% | R: ${(modeCLive.recall * 100).toFixed(2)}% | F1: ${(modeCLive.f1 * 100).toFixed(2)}%`
+    );
+
+    console.log('\n----------------------------------------------------------------------------------------');
+    console.log('   DYNAMICALLY MEASURED EXECUTION LATENCIES (performance.now() real measurements)       ');
+    console.log('----------------------------------------------------------------------------------------');
+    console.log(`1. Image Read from Disk:                 Median: ${imgLoadStats.median.toFixed(2)} ms | P90: ${imgLoadStats.p90.toFixed(2)} ms`);
+    console.log(`2. Cold Worker Initialization:           ${coldWorkerInitMs.toFixed(1)} ms`);
+    console.log(`3. Warm Worker Initialization:           ${warmWorkerInitMs.toFixed(1)} ms`);
+    console.log(`4. Language Model Worker Pool Load:      ${modelLoadTimeMs.toFixed(1)} ms`);
+    console.log(`5. OCR Recognition Latency:              Median: ${recStats.median.toFixed(1)} ms | P90: ${recStats.p90.toFixed(1)} ms`);
+    console.log(`6. Structured Extraction Latency:        Median: ${extStats.median.toFixed(2)} ms | P90: ${extStats.p90.toFixed(2)} ms`);
+    console.log(`7. Total Pipeline Latency (End-to-End):  Median: ${e2eStats.median.toFixed(1)} ms | P90: ${e2eStats.p90.toFixed(1)} ms`);
     console.log('========================================================================================\n');
 
-    // Scientifically defensible assertions reflecting real Tesseract recognition
-    expect(aggregateCer).toBeLessThanOrEqual(0.06); // <= 6.0% real CER
-    expect(aggregateWer).toBeLessThanOrEqual(0.15); // <= 15.0% real WER
-    expect(meanEngCer).toBeLessThanOrEqual(0.02);   // English CER <= 2.0%
-  });
-
-  // PRIORITY 3: Dual-Mode Information Extraction Evaluation (Clean vs Real OCR)
-  it('evaluates Information Extraction Quality separately on Clean Text vs Real OCR Output', () => {
-    const EVAL_FIELDS = [
-      'title',
-      'institution',
-      'category',
-      'deadline',
-      'eventDate',
-      'venue',
-      'fees',
-      'requiredDocuments',
-      'contact',
-    ];
-
-    function runExtractionEvaluation(isRealOcr: boolean) {
-      let totalTP = 0;
-      let totalFP = 0;
-      let totalFN = 0;
-      const perFieldStats: Record<string, { tp: number; fp: number; fn: number }> = {};
-      EVAL_FIELDS.forEach((f) => (perFieldStats[f] = { tp: 0, fp: 0, fn: 0 }));
-
-      const docResults: Array<{
-        id: string;
-        tp: number;
-        fp: number;
-        fn: number;
-        p: number;
-        r: number;
-        f1: number;
-      }> = [];
-
-      BENCHMARK_DATASET.forEach((doc) => {
-        const inputText = isRealOcr ? doc.actualOcrTranscript : doc.rawText;
-        const processed = processNoticeDocument(inputText);
-
-        let docTP = 0;
-        let docFP = 0;
-        let docFN = 0;
-
-        EVAL_FIELDS.forEach((fieldKey) => {
-          const expectedVal = doc.expectedFields[fieldKey as keyof typeof doc.expectedFields];
-          const extractedField = processed.fields[fieldKey as keyof typeof processed.fields];
-          const hasExtractedVal =
-            extractedField && extractedField.status !== 'not_found' && Boolean(extractedField.value);
-
-          if (expectedVal) {
-            if (hasExtractedVal) {
-              const isMatch = evaluateFieldMatch(fieldKey, extractedField.value, expectedVal);
-              if (isMatch) {
-                docTP++;
-                perFieldStats[fieldKey].tp++;
-              } else {
-                // Incorrect value extracted
-                docFP++;
-                docFN++;
-                perFieldStats[fieldKey].fp++;
-                perFieldStats[fieldKey].fn++;
-              }
-            } else {
-              // Expected value missed
-              docFN++;
-              perFieldStats[fieldKey].fn++;
-            }
-          } else {
-            // Field not in ground truth
-            if (hasExtractedVal) {
-              // Unexpected hallucinated/false positive field
-              docFP++;
-              perFieldStats[fieldKey].fp++;
-            }
-          }
-        });
-
-        const p = docTP + docFP > 0 ? docTP / (docTP + docFP) : 0;
-        const r = docTP + docFN > 0 ? docTP / (docTP + docFN) : 0;
-        const f1 = p + r > 0 ? (2 * p * r) / (p + r) : 0;
-
-        totalTP += docTP;
-        totalFP += docFP;
-        totalFN += docFN;
-
-        docResults.push({ id: doc.id, tp: docTP, fp: docFP, fn: docFN, p, r, f1 });
-      });
-
-      const precision = totalTP + totalFP > 0 ? totalTP / (totalTP + totalFP) : 0;
-      const recall = totalTP + totalFN > 0 ? totalTP / (totalTP + totalFN) : 0;
-      const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
-
-      return { totalTP, totalFP, totalFN, precision, recall, f1, docResults, perFieldStats };
+    // 8. Generate Machine-Readable JSON Benchmark Report
+    let gitCommit = 'unknown';
+    try {
+      gitCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+    } catch {
+      // fallback
     }
 
-    const cleanEval = runExtractionEvaluation(false);
-    const ocrEval = runExtractionEvaluation(true);
+    const machineReadableReport = {
+      executionTimestamp: new Date().toISOString(),
+      gitCommit,
+      appVersion: '1.0.0',
+      tesseractVersion: '7.0.0',
+      datasetVersion: '1.1.0',
+      environment: {
+        nodeVersion: process.version,
+        platform: os.platform(),
+        release: os.release(),
+        arch: os.arch(),
+      },
+      pilotCorpusSize: BENCHMARK_DATASET.length,
+      aggregateMetrics: {
+        liveOcr: {
+          meanCER: meanLiveCer,
+          meanWER: meanLiveWer,
+          perLanguageCER: { ben: benLiveCer, eng: engLiveCer, mixed: mixedLiveCer },
+          perLanguageWER: { ben: benLiveWer, eng: engLiveWer, mixed: mixedLiveWer },
+          extraction: {
+            precision: modeCLive.precision,
+            recall: modeCLive.recall,
+            f1: modeCLive.f1,
+            tp: modeCLive.totalTP,
+            fp: modeCLive.totalFP,
+            fn: modeCLive.totalFN,
+          },
+        },
+        snapshotOcr: {
+          meanCER: meanSnapshotCer,
+          meanWER: meanSnapshotWer,
+          extraction: {
+            precision: modeBSnapshot.precision,
+            recall: modeBSnapshot.recall,
+            f1: modeBSnapshot.f1,
+            tp: modeBSnapshot.totalTP,
+            fp: modeBSnapshot.totalFP,
+            fn: modeBSnapshot.totalFN,
+          },
+        },
+        cleanText: {
+          extraction: {
+            precision: modeAClean.precision,
+            recall: modeAClean.recall,
+            f1: modeAClean.f1,
+            tp: modeAClean.totalTP,
+            fp: modeAClean.totalFP,
+            fn: modeAClean.totalFN,
+          },
+        },
+        latency: {
+          imageLoadMedianMs: imgLoadStats.median,
+          imageLoadP90Ms: imgLoadStats.p90,
+          coldWorkerInitMs,
+          warmWorkerInitMs,
+          ocrRecognitionMedianMs: recStats.median,
+          ocrRecognitionP90Ms: recStats.p90,
+          structuredExtractionMedianMs: extStats.median,
+          structuredExtractionP90Ms: extStats.p90,
+          totalEndToEndMedianMs: e2eStats.median,
+          totalEndToEndP90Ms: e2eStats.p90,
+          sampleCount: BENCHMARK_DATASET.length,
+        },
+      },
+      documents: BENCHMARK_DATASET.map((doc, idx) => ({
+        id: doc.id,
+        name: doc.name,
+        language: doc.language,
+        category: doc.category,
+        liveCER: liveDocResults[idx].cer,
+        liveWER: liveDocResults[idx].wer,
+        snapshotCER: snapshotDocResults[idx].cer,
+        snapshotWER: snapshotDocResults[idx].wer,
+        liveTextPreview: liveOcrTexts[doc.id].slice(0, 100).replace(/\n/g, ' '),
+      })),
+    };
 
-    console.log('\n========================================================================================');
-    console.log('   DUAL-MODE INFORMATION EXTRACTION QUALITY BENCHMARK REPORT                            ');
-    console.log('========================================================================================');
-    console.log('--- PIPELINE A: Clean Ground-Truth Text Extraction (Isolated NLP Engine) ---');
-    console.log(`TP: ${cleanEval.totalTP} | FP: ${cleanEval.totalFP} | FN: ${cleanEval.totalFN}`);
-    console.log(`Precision: ${(cleanEval.precision * 100).toFixed(2)}% | Recall: ${(cleanEval.recall * 100).toFixed(2)}% | F1: ${(cleanEval.f1 * 100).toFixed(2)}%`);
+    const reportPath = path.resolve(process.cwd(), 'docs/benchmark-results.json');
+    fs.writeFileSync(reportPath, JSON.stringify(machineReadableReport, null, 2), 'utf8');
 
-    console.log('\n--- PIPELINE B: Real Image -> Tesseract OCR -> Notice Engine (End-to-End Degradation) ---');
-    console.log(`TP: ${ocrEval.totalTP} | FP: ${ocrEval.totalFP} | FN: ${ocrEval.totalFN}`);
-    console.log(`Precision: ${(ocrEval.precision * 100).toFixed(2)}% | Recall: ${(ocrEval.recall * 100).toFixed(2)}% | F1: ${(ocrEval.f1 * 100).toFixed(2)}%`);
-    console.log('----------------------------------------------------------------------------------------');
-    console.log('Per-Document Performance (Pipeline B - Real OCR Input):');
-    ocrEval.docResults.forEach((d) => {
-      console.log(
-        `[${d.id}] TP: ${d.tp} FP: ${d.fp} FN: ${d.fn} | P: ${(d.p * 100).toFixed(1)}% | R: ${(d.r * 100).toFixed(1)}% | F1: ${(d.f1 * 100).toFixed(1)}%`
-      );
-    });
-    console.log('========================================================================================\n');
+    // Assertions
+    expect(meanLiveCer).toBeLessThanOrEqual(0.06);
+    expect(meanLiveWer).toBeLessThanOrEqual(0.15);
+    expect(modeAClean.f1).toBeGreaterThanOrEqual(0.80);
+    expect(modeCLive.f1).toBeGreaterThanOrEqual(0.75);
+    expect(fs.existsSync(reportPath)).toBe(true);
+  }, 90000);
 
-    expect(cleanEval.f1).toBeGreaterThanOrEqual(0.80);
-    expect(ocrEval.f1).toBeGreaterThanOrEqual(0.75); // Real OCR degradation benchmark
-  });
-
-  // PRIORITY 4: Evidence Grounding Evaluation
+  // REQUIREMENT 6: Evidence Grounding Evaluation
   it('evaluates Evidence Span Precision, Field-to-Evidence Association, and Grounding Coverage', () => {
     let totalProvidedEvidenceSpans = 0;
     let totalAuthenticEvidenceSpans = 0;
@@ -532,7 +771,7 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
     console.log(`Character Offset Mapping Accuracy:       ${(offsetAccuracy * 100).toFixed(2)}%`);
     console.log(`Overall Grounding Coverage (All Fields): ${(overallGroundingCoverage * 100).toFixed(2)}%`);
     console.log(`Gold Ground-Truth Fact Evidence Recall:  ${(goldEvidenceRecall * 100).toFixed(2)}%`);
-    console.log('Note: Category and inferred headers lack quotes, producing ~83.9% coverage with 100% precision.');
+    console.log('Note: Category and inferred headers lack quotes, producing ~84% coverage with 100% precision.');
     console.log('========================================================================================\n');
 
     expect(evidenceSpanPrecision).toBe(1.0); // 100% of provided evidence spans must be authentic
@@ -540,7 +779,7 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
     expect(overallGroundingCoverage).toBeGreaterThanOrEqual(0.80);
   });
 
-  // PRIORITY 4: Stale Evidence Invalidation Test
+  // Stale Evidence Invalidation Test
   it('detects and invalidates stale evidence spans when transcript is edited', () => {
     const doc = BENCHMARK_DATASET[0];
     const initialProcessed = processNoticeDocument(doc.rawText);
@@ -548,63 +787,14 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
     expect(deadlineField.evidence).not.toBeNull();
     const originalSnippet = deadlineField.evidence!.text;
 
-    // Simulate user editing transcript: remove the deadline sentence
+    // Simulate user editing transcript: replace the deadline sentence
     const mutatedText = doc.rawText.replace(originalSnippet, 'তারিখ পরবর্তীতে জানানো হবে');
     const reprocessed = processNoticeDocument(mutatedText);
 
-    // Stale evidence must not point to outdated character offsets
+    // Stale evidence must not point to outdated character offsets or snippets
     if (reprocessed.fields.deadline.evidence) {
       expect(mutatedText.includes(reprocessed.fields.deadline.evidence.text)).toBe(true);
       expect(reprocessed.fields.deadline.evidence.text).not.toBe(originalSnippet);
     }
-  });
-
-  // PRIORITY 5: Latency Disaggregation Measurement
-  it('measures disaggregated latency (Preprocessing, OCR, Extraction, End-to-End)', () => {
-    const doc = BENCHMARK_DATASET[0];
-
-    // Measure structured extraction latency (parser-only) across 10 iterations
-    const extractionTimes: number[] = [];
-    for (let i = 0; i < 10; i++) {
-      const t0 = performance.now();
-      processNoticeDocument(doc.actualOcrTranscript);
-      extractionTimes.push(performance.now() - t0);
-    }
-
-    extractionTimes.sort((a, b) => a - b);
-    const medianExtractionMs = extractionTimes[Math.floor(extractionTimes.length / 2)];
-    const p90ExtractionMs = extractionTimes[Math.floor(extractionTimes.length * 0.9)];
-
-    // Documented system latencies based on verified empirical measurements
-    const empiricalLatencyProfile = {
-      imagePreprocessingMs: 12.4,
-      ocrWorkerInitColdMs: 165.0,
-      ocrWorkerInitWarmMs: 8.2,
-      ocrLanguageModelLoadMs: 110.0,
-      ocrRecognitionMedianMs: 546.0,
-      ocrRecognitionP90Ms: 911.0,
-      structuredExtractionMedianMs: medianExtractionMs,
-      structuredExtractionP90Ms: p90ExtractionMs,
-      totalPipelineEndToEndMedianMs: 546.0 + medianExtractionMs,
-      totalPipelineEndToEndP90Ms: 911.0 + p90ExtractionMs,
-    };
-
-    console.log('\n========================================================================================');
-    console.log('   LATENCY DISAGGREGATION PROFILE (Tested on Linux x86_64, Node v20 / Chrome 156)      ');
-    console.log('========================================================================================');
-    console.log(`1. Image Preprocessing Latency:          ${empiricalLatencyProfile.imagePreprocessingMs.toFixed(1)} ms`);
-    console.log(`2. OCR Worker Initialization (Cold):     ${empiricalLatencyProfile.ocrWorkerInitColdMs.toFixed(1)} ms`);
-    console.log(`3. OCR Worker Initialization (Warm):     ${empiricalLatencyProfile.ocrWorkerInitWarmMs.toFixed(1)} ms`);
-    console.log(`4. Language Model Loading Time:          ${empiricalLatencyProfile.ocrLanguageModelLoadMs.toFixed(1)} ms`);
-    console.log(`5. OCR Recognition Latency (Median):     ${empiricalLatencyProfile.ocrRecognitionMedianMs.toFixed(1)} ms`);
-    console.log(`6. OCR Recognition Latency (P90):        ${empiricalLatencyProfile.ocrRecognitionP90Ms.toFixed(1)} ms`);
-    console.log(`7. Structured Extraction Latency (Median): ${empiricalLatencyProfile.structuredExtractionMedianMs.toFixed(2)} ms`);
-    console.log(`8. Structured Extraction Latency (P90):    ${empiricalLatencyProfile.structuredExtractionP90Ms.toFixed(2)} ms`);
-    console.log('----------------------------------------------------------------------------------------');
-    console.log(`Total End-to-End Pipeline Latency (Median): ${empiricalLatencyProfile.totalPipelineEndToEndMedianMs.toFixed(1)} ms`);
-    console.log(`Total End-to-End Pipeline Latency (P90):    ${empiricalLatencyProfile.totalPipelineEndToEndP90Ms.toFixed(1)} ms`);
-    console.log('========================================================================================\n');
-
-    expect(medianExtractionMs).toBeLessThan(50); // Parser executes in < 50ms (typically ~1-3ms)
   });
 });

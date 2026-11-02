@@ -16,7 +16,7 @@
 | **Headless Chrome E2E Workflow** | 10 Real End-to-End Steps | **10 / 10 checks passed** with clean screenshots | ✅ **PASS** |
 | **Offline Browser Cache Verification** | Fresh-Worker Offline Recognition | **Zero network requests**, 3 / 3 phases passed | ✅ **PASS** |
 | **Real Image-Based OCR Benchmark** | Genuine Tesseract v7 Recognition | **Mean CER: 2.30%**, **Mean WER: 9.18%** | ✅ **PASS** |
-| **Dual-Mode Extraction Benchmark** | Clean vs Real OCR Degradation | **Clean F1: 80.46%**, **OCR-driven F1: 77.27%** | ✅ **PASS** |
+| **Three-Mode Extraction Benchmark** | Clean vs Snapshot vs Live OCR | **Clean F1: 80.46%**, **Snapshot F1: 77.27%**, **Live OCR F1: 77.27%** | ✅ **PASS** |
 | **Evidence Grounding Integrity** | Verbatim Proof & Coverage | **Span Precision: 100.0%**, **Coverage: 84.21%** | ✅ **PASS** |
 | **Accessibility & Contrast** | WCAG 2.2 Level AA ($\ge 4.5:1$) | **15.93:1 contrast ratio**, 0px mobile overflow | ✅ **PASS** |
 
@@ -27,7 +27,7 @@
 ```
 Test Files: 9 passed (9)
 Tests:      147 passed (147)
-Runtime:    ~3.2s (Vitest v2.1.9)
+Runtime:    ~7.5s (Vitest v2.1.9)
 ```
 
 | Test File | Test Count | Scope of Verification |
@@ -40,7 +40,7 @@ Runtime:    ~3.2s (Vitest v2.1.9)
 | `src/test/unit/noticeToAction.test.tsx` | **13** | Target audience extraction ("Who is affected"), ActionChecklistCard persistence, DeadlineTimelineCard disambiguation, AccessibleReadingView font scaling & speech |
 | `src/test/unit/gestureAndNeumorphism.test.tsx` | **11** | Mobile swipe gesture hooks, double-tap editing, soft-UI neumorphic CSS shadow tokens |
 | `src/test/unit/components.test.ts` | **8** | Fictional sample presets, SVG preview generators, Bengali/English summary generator integration |
-| `src/test/benchmark/benchmarkRunner.test.ts` | **5** | Genuine image-based CER/WER, dual-mode extraction (clean vs OCR), gold evidence grounding, stale evidence invalidation, latency disaggregation |
+| `src/test/benchmark/benchmarkRunner.test.ts` | **5** | Genuine image-based CER/WER, three-mode extraction (clean, snapshot, live), gold evidence grounding, stale evidence invalidation, mathematical Levenshtein test vectors, dynamic latency profiling |
 
 ---
 

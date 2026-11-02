@@ -1,0 +1,141 @@
+{
+  "executionTimestamp": "2026-11-02T10:04:08.898Z",
+  "gitCommit": "a490467d5dd3949be7b2f6cbed7f2fa20efd1bfa",
+  "appVersion": "1.0.0",
+  "tesseractVersion": "7.0.0",
+  "datasetVersion": "1.1.0",
+  "environment": {
+    "nodeVersion": "v18.19.1",
+    "platform": "linux",
+    "release": "7.0.0-42-generic",
+    "arch": "x64"
+  },
+  "pilotCorpusSize": 6,
+  "aggregateMetrics": {
+    "liveOcr": {
+      "meanCER": 0.022961641509584362,
+      "meanWER": 0.09182299182299182,
+      "perLanguageCER": {
+        "ben": 0.038408714184229226,
+        "eng": 0.009261412074711307,
+        "mixed": 0.02121479826981256
+      },
+      "perLanguageWER": {
+        "ben": 0.11183261183261184,
+        "eng": 0.03852813852813853,
+        "mixed": 0.1251082251082251
+      },
+      "extraction": {
+        "precision": 0.7906976744186046,
+        "recall": 0.7555555555555555,
+        "f1": 0.7727272727272727,
+        "tp": 34,
+        "fp": 9,
+        "fn": 11
+      }
+    },
+    "snapshotOcr": {
+      "meanCER": 0.022961641509584362,
+      "meanWER": 0.09182299182299182,
+      "extraction": {
+        "precision": 0.7906976744186046,
+        "recall": 0.7555555555555555,
+        "f1": 0.7727272727272727,
+        "tp": 34,
+        "fp": 9,
+        "fn": 11
+      }
+    },
+    "cleanText": {
+      "extraction": {
+        "precision": 0.8333333333333334,
+        "recall": 0.7777777777777778,
+        "f1": 0.8045977011494253,
+        "tp": 35,
+        "fp": 7,
+        "fn": 10
+      }
+    },
+    "latency": {
+      "imageLoadMedianMs": 0.40540000004693866,
+      "imageLoadP90Ms": 0.6156870000995696,
+      "coldWorkerInitMs": 297.74544599978253,
+      "warmWorkerInitMs": 230.04315999988467,
+      "ocrRecognitionMedianMs": 982.5993090001866,
+      "ocrRecognitionP90Ms": 1561.2947440003045,
+      "structuredExtractionMedianMs": 2.1707720002159476,
+      "structuredExtractionP90Ms": 9.497487999964505,
+      "totalEndToEndMedianMs": 992.5703220004216,
+      "totalEndToEndP90Ms": 1563.7985900002532,
+      "sampleCount": 6
+    }
+  },
+  "documents": [
+    {
+      "id": "DOC-01",
+      "name": "DU CSE 8th Semester Exam Circular (Bengali)",
+      "language": "ben",
+      "category": "Examination",
+      "liveCER": 0.024390243902439025,
+      "liveWER": 0.08080808080808081,
+      "snapshotCER": 0.024390243902439025,
+      "snapshotWER": 0.08080808080808081,
+      "liveTextPreview": "1 ঢাকা বিশ্ববিদ্যালয় কম্পিউটার বিজ্ঞান ও প্রকৌশল বিভাগ [দম | বিষয়: ৪র্থ বর্ষ ৮ম সেমিস্টার ফাইনাল প"
+    },
+    {
+      "id": "DOC-02",
+      "name": "BUET CSE Hackathon 2024 Announcement (English)",
+      "language": "eng",
+      "category": "Event",
+      "liveCER": 0.013175230566534914,
+      "liveWER": 0.0380952380952381,
+      "snapshotCER": 0.013175230566534914,
+      "snapshotWER": 0.0380952380952381,
+      "liveTextPreview": "BANGLADESH UNIVERSITY OF ENGINEERING AND TECHNOLOGY (BUET) DEPARTMENT OF COMPUTER SCIENCE AND ENGINE"
+    },
+    {
+      "id": "DOC-03",
+      "name": "JU IIT Postgraduate Admission Circular (Mixed)",
+      "language": "ben+eng",
+      "category": "Admission",
+      "liveCER": 0.021352313167259787,
+      "liveWER": 0.11688311688311688,
+      "snapshotCER": 0.021352313167259787,
+      "snapshotWER": 0.11688311688311688,
+      "liveTextPreview": "জাহাঙ্গীরনগর বিশ্ববিদ্যালয় ইনস্টিটিউট অব ইনফরমেশন টেকনোলজি (IT) | ADMISSION & SCHOLARSHIP NOTICE — "
+    },
+    {
+      "id": "DOC-04",
+      "name": "Khulna University Course Enrollment Notice (Bengali)",
+      "language": "ben",
+      "category": "General",
+      "liveCER": 0.05242718446601942,
+      "liveWER": 0.14285714285714285,
+      "snapshotCER": 0.05242718446601942,
+      "snapshotWER": 0.14285714285714285,
+      "liveTextPreview": "খুলনা বিশ্ববিদ্যালয় কম্পিউটার সায়েন্স আযান্ড ইঞ্জিনিয়ারিং ডিসিপ্লিন চা  শিক্ষাবর্ষ ২০২৪-২০২৫ এর স"
+    },
+    {
+      "id": "DOC-05",
+      "name": "BRAC University Merit Scholarship Circular (English)",
+      "language": "eng",
+      "category": "Admission",
+      "liveCER": 0.0053475935828877,
+      "liveWER": 0.03896103896103896,
+      "snapshotCER": 0.0053475935828877,
+      "snapshotWER": 0.03896103896103896,
+      "liveTextPreview": "BRAC UNIVERSITY OFFICE OF STUDENT AFFAIRS & FINANCIAL AID SCHOLARSHIP CIRCULAR — SPRING 2025 Applica"
+    },
+    {
+      "id": "DOC-06",
+      "name": "Rajshahi University Academic Schedule (Mixed Table)",
+      "language": "ben+eng",
+      "category": "Examination",
+      "liveCER": 0.02107728337236534,
+      "liveWER": 0.13333333333333333,
+      "snapshotCER": 0.02107728337236534,
+      "snapshotWER": 0.13333333333333333,
+      "liveTextPreview": "রাজশাহী বিশ্ববিদ্যালয় ফলিত পদার্থবিজ্ঞান ও ইলেকট্রনিক ইঞ্জিনিয়ারিং বিভাগ [ পরীক্ষা ওক্লাস নোটিশ | "
+    }
+  ]
+}

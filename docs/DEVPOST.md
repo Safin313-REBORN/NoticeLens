@@ -61,14 +61,17 @@ NoticeLens is a local-first notice intelligence application featuring:
 
 ---
 
-### 8.1 Empirical Benchmarks (Six-Document Pilot Corpus, Real Tesseract OCR)
-- **Character Error Rate (CER):** **2.30%** (Real OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
-- **Word Error Rate (WER):** **9.18%** (Real OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
-- **Dual-Mode Extraction Quality:** Clean Text F1: **80.46%** (P: 83.33%, R: 77.78%) vs Real OCR-driven F1: **77.27%** (P: 79.07%, R: 75.56%)
-- **Evidence Span Precision:** **100.00%** (Zero fabricated source snippets)
+### 8.1 Empirical Benchmarks (Six-Document Pilot Corpus, Real Tesseract.js OCR)
+- **Character Error Rate (CER):** **2.30%** (Live OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
+- **Word Error Rate (WER):** **9.18%** (Live OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
+- **Three-Mode Extraction Quality:**
+  - Mode A (Clean Text Baseline): F1: **80.46%** (P: 83.33%, R: 77.78%)
+  - Mode B (Snapshot OCR Baseline): F1: **77.27%** (P: 79.07%, R: 75.56%)
+  - Mode C (Live Real OCR Recognition): F1: **77.27%** (P: 79.07%, R: 75.56%)
+- **Evidence Span Precision:** **100.00%** (Zero fabricated source snippets; 48 of 48 attached spans verified verbatim in source transcript)
 - **Overall Fact Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields supported by authentic text spans)
-- **Disaggregated Latency:** Parser-only extraction: **0.56 ms** median; End-to-end pipeline (Image → OCR → Notice Engine): **546.6 ms** median / **912.0 ms** P90
-- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals
+- **Dynamically Measured Latency:** Parser-only extraction: **2.14 ms** median / **9.88 ms** P90; End-to-end pipeline (Image Read → Tesseract OCR → NLP Engine): **1003.2 ms** median / **1580.1 ms** P90
+- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, and machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
 
 ---
 

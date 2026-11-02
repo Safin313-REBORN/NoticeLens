@@ -17,7 +17,8 @@ try {
     stdio: 'pipe',
   });
   console.log(output);
-  console.log('✅ Real image-based OCR and information extraction benchmark executed successfully.\n');
+  console.log('✅ Real image-based OCR and information extraction benchmark executed successfully.');
+  console.log('📊 Machine-readable benchmark report saved to: docs/benchmark-results.json\n');
 } catch (error) {
   if (error.stdout) console.log(error.stdout);
   if (error.stderr) console.error(error.stderr);

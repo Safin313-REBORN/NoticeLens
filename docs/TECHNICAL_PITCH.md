@@ -66,13 +66,16 @@ Unlike Large Language Models that invent missing facts:
 Evaluated across our 6-document pilot benchmark corpus using real Tesseract.js v7.0.0 OCR on authentic rendered institutional notice fixtures:
 - **Character Error Rate (CER):** **2.30%** (Real OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
 - **Word Error Rate (WER):** **9.18%** (Real OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
-- **Dual-Mode Extraction F1:** Clean Source Text F1: **80.46%** (Precision: 83.33%, Recall: 77.78%) vs Real OCR-driven F1: **77.27%** (Precision: 79.07%, Recall: 75.56%)
+- **Three-Mode Extraction Quality:**
+  - Mode A (Clean Source Text Baseline): F1: **80.46%** (Precision: 83.33%, Recall: 77.78%)
+  - Mode B (Snapshot OCR Baseline): F1: **77.27%** (Precision: 79.07%, Recall: 75.56%)
+  - Mode C (Live Real OCR Recognition): F1: **77.27%** (Precision: 79.07%, Recall: 75.56%)
 - **Factual Evidence Span Precision:** **100.00%** (Zero fabricated source snippets)
 - **Overall Fact Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category tags)
 - **High-Contrast Ratio:** **15.93:1** (WCAG AAA requires 7.0:1)
-- **Structured Extraction Latency (Parser Only):** **0.56 ms** median per document
-- **Total Pipeline Latency (Image to Structured Notice):** **546.6 ms** median / **912.0 ms** P90
-- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals
+- **Structured Extraction Latency (Parser Only):** **2.14 ms** median per document
+- **Total Pipeline Latency (Image Read → Tesseract OCR → NLP Engine):** **1003.2 ms** median / **1580.1 ms** P90
+- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
 
 ---
 
