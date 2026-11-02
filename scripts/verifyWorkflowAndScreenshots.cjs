@@ -229,6 +229,15 @@ async function run() {
       throw new Error(`Expected title to include "NoticeLens", got "${homeTitle}"`);
     }
 
+    // Wait for React application to mount components
+    for (let i = 0; i < 30; i++) {
+      try {
+        const mounted = await evaluate(`!!document.querySelector('#root > *') && !!document.querySelector('[role="region"]')`);
+        if (mounted) break;
+      } catch {}
+      await delay(500);
+    }
+
     // Real geometric intersection assertions for sticky audio bar vs essential actions at desktop and mobile viewports
     async function assertAudioBarGeometry(viewportName) {
       return await evaluate(`

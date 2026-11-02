@@ -625,18 +625,18 @@ async function run() {
   const session2 = await launchChrome(p2Dir, port2);
 
   try {
-    // Explicitly navigate and wait for application shell to load before cutting network
+    // Explicitly navigate and wait for application shell and scripts to load before cutting network
     await session2.send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
-    let p3Title = '';
+    let ready = false;
     for (let i = 0; i < 30; i++) {
       try {
-        p3Title = (await session2.evaluate('document.title')) || '';
-        if (p3Title.includes('NoticeLens')) break;
+        ready = await session2.evaluate(`typeof window.__noticelens_is_worker_active__ === 'function' && !!document.querySelector('#root > *')`);
+        if (ready) break;
       } catch {}
       await delay(500);
     }
-    if (!p3Title.includes('NoticeLens')) {
-      throw new Error(`Expected fresh profile to load NoticeLens before cutting network, got: "${p3Title}"`);
+    if (!ready) {
+      throw new Error('Expected fresh profile to fully mount NoticeLens and initialize OCR before cutting network');
     }
 
     console.log('[3.2] Setting network to OFFLINE BEFORE running OCR on fresh profile...');
