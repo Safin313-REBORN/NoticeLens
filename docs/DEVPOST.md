@@ -30,7 +30,7 @@ NoticeLens is a local-first notice intelligence application featuring:
 - **Notice-to-Action Executive Summary:** Answers the six critical student questions: *What happened? Who is affected? What must be done? When is the deadline? What documents are needed? What information is unverified?*
 - **Date & Timeline Disambiguation Engine:** Categorizes circular dates into Critical Application Deadlines, Examination Schedules, and Publication Notices with visual verification badges.
 - **Interactive Student Action Checklist:** Translates notice requirements into actionable tasks (fee submission, document attachments) with completion tracking and localStorage persistence.
-- **Traceable Source Evidence Grounding:** Clicking any extracted detail highlights the authentic sentence in the original OCR transcript using `<mark>` elements. No ungrounded facts.
+- **Traceable Source Evidence Grounding:** Clicking any extracted detail highlights the authentic sentence in the original OCR transcript using `<mark>` elements. 100% verbatim precision applies to attached evidence quotes, with 84.21% overall grounding coverage across all extracted fields (category classifications omit quotes).
 - **Dedicated Low-Vision Reading Mode:** A high-contrast, distraction-free reading experience with 3-tier font size scaling (`Normal`, `Large`, `Extra-Large`) and linear speech readout.
 - **Deterministic RFC 5545 Calendar Integration:** Generates `.ics` calendar events with automated 24-hour reminder alarms, `Asia/Dhaka` timezone definitions, and a mandatory review gate for missing years.
 - **Private Notice Vault & Shared Terminal Purge:** Complete client-side IndexedDB document vault with a one-click security purge that wipes all stored notices, task states, and worker memory upon leaving a public computer.
@@ -53,7 +53,7 @@ NoticeLens is a local-first notice intelligence application featuring:
 | **Deadline Detection** | Extracts arbitrary numbers/dates | Disambiguates submission deadlines from exam and notice dates |
 | **Actionable Workflow** | Static text display | Interactive Student Action Checklist with completion tracking |
 | **Evidence Traceability** | Bounding box on pixels | Semantic source-span highlight in an editable transcript |
-| **Hallucination Risk** | High (if paired with LLMs) | **Zero fabricated quotes** — 100% evidence span precision with 84.21% overall grounding coverage |
+| **Hallucination Risk** | High (if paired with LLMs) | **Verifiable source grounding** — 100% verbatim precision on attached quotes, 84.21% overall grounding coverage |
 | **Privacy Architecture** | Images uploaded to corporate cloud | **100% Client-Side** — Zero server uploads |
 | **Offline Operation** | Requires active cloud internet connection | Fully operational offline via IndexedDB & CacheStorage |
 | **Speech Adaptability** | Fails or mutes on unsupported OS languages | Native speech with deterministic Bengali phonetic fallback |
@@ -70,12 +70,20 @@ NoticeLens is a local-first notice intelligence application featuring:
   - Mode B (Snapshot OCR Baseline): F1: **77.27%** (P: 79.07%, R: 75.56% | TP: 34, FP: 9, FN: 11)
   - Mode C (Live Real OCR Recognition): F1: **77.27%** (P: 79.07%, R: 75.56% | TP: 34, FP: 9, FN: 11)
 - **Evidence Grounding Integrity:**
-  - **Evidence Span Verbatim Precision:** **100.00%** (48 of 48 attached spans verified verbatim in source transcript at exact character offsets)
-  - **Overall Fact Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields supported by authentic text spans; remaining 9 are taxonomy category tags)
-  - **Gold Fact Evidence Recall:** **81.82%** (27 of 33 gold annotations retrieved with verified supporting snippets)
-  - **Field-to-Evidence Association Accuracy:** **96.43%** (27 of 28 gold fields with evidence point to the authentic supporting sentence)
-- **Dynamically Measured Latency (`performance.now()`, mathematical median):** Parser-only extraction: **2.36 ms** median / **9.63 ms** P90; Per-Document Pipeline (Warm Worker & Models Pre-loaded): **968.7 ms** median / **1559.4 ms** P90; Cold Worker Init: **~504.9 ms**; Warm Worker Reinitialization (Reused Active Thread): **~137.9 ms**; Language Model Pool Load: **~718.1 ms**
-- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, headless Chrome CDP verification passing, and machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
+  - **Evidence Span Verbatim Precision:** **100.00%** (48 of 48 attached spans verified verbatim in source transcript at exact character offsets; applies strictly to attached quotes)
+  - **Overall Fact Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields supported by authentic text spans; remaining 9 are abstract taxonomy category tags)
+  - **Field-Value Extraction Accuracy:** **84.85%** (28 of 33 gold annotations matched in extracted field values)
+  - **Heuristic Gold Evidence Recall:** **75.76%** (25 of 33 gold annotations matched with verified supporting snippets via hardened heuristic matcher)
+  - **Heuristic Field-to-Evidence Association Accuracy:** **89.29%** (25 of 28 gold fields with evidence point to the authentic supporting sentence)
+  - **Joint Value & Evidence Match Rate:** **75.76%** (25 of 33 gold annotations matched in both extracted value and evidence)
+- **Dynamically Measured Latency (`performance.now()`, N = 6 samples, mathematical median):**
+  - OCR Recognition: **959.6 ms** median / **1544.1 ms** P90
+  - Structured Extraction (Parser Only): **1.66 ms** median / **10.31 ms** P90 (historical initial run: 2.36 ms median / 9.63 ms P90)
+  - Per-Document Pipeline Latency (Warm): **966.9 ms** median / **1546.4 ms** P90 (historical initial run: 968.7 ms median / 1559.4 ms P90; measures image read + OCR + extraction with workers initialized and models in memory)
+  - Cold Worker Initialization: **490.2 ms** (historical: ~504.9 ms; includes Web Worker spawn, script evaluation, and IPC handshake)
+  - Warm Worker Reinitialization: **134.0 ms** (historical: ~137.9 ms; active worker thread reinitialize)
+  - Language Model Pool Load: **720.5 ms** (historical: ~718.1 ms; bilingual model dictionary load in memory)
+- **Automated Verification:** 153 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, headless Chrome CDP verification passing, and machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
 
 ---
 

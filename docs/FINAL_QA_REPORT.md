@@ -9,7 +9,7 @@
 
 | Verification Layer | Target Criteria | Actual Measured Result | Conformance Status |
 | :--- | :--- | :--- | :---: |
-| **Unit & Benchmark Test Suite** | 100% Pass Across All Suites | **147 / 147 tests passed** across 9 test files | ✅ **PASS** |
+| **Unit & Benchmark Test Suite** | 100% Pass Across All Suites | **153 / 153 tests passed** across 9 test files | ✅ **PASS** |
 | **Static Code Analysis (ESLint)** | Zero Warnings, Zero Errors | **0 warnings, 0 errors** (`eslint src --max-warnings=0`) | ✅ **PASS** |
 | **TypeScript Compilation** | Strict Mode, No Any/Bypasses | **Zero compilation errors** (`tsc -b`) | ✅ **PASS** |
 | **Production Bundle Security Scan** | Zero Debug Globals or Bypasses | **Zero forbidden symbols** detected in production chunks | ✅ **PASS** |
@@ -17,7 +17,7 @@
 | **Offline Browser Cache Verification** | Fresh-Worker Offline Recognition | **Zero network requests**, 3 / 3 phases passed | ✅ **PASS** |
 | **Real Image-Based OCR Benchmark** | Genuine Tesseract v7 Recognition | **Mean CER: 2.30%**, **Mean WER: 9.18%** | ✅ **PASS** |
 | **Three-Mode Extraction Benchmark** | Clean vs Snapshot vs Live OCR | **Clean F1: 80.46%**, **Snapshot F1: 77.27%**, **Live OCR F1: 77.27%** | ✅ **PASS** |
-| **Evidence Grounding Integrity** | Verbatim Proof & Coverage | **Span Precision: 100.0%**, **Coverage: 84.21%** | ✅ **PASS** |
+| **Evidence Grounding Integrity** | Verbatim Proof & Coverage | **Span Precision: 100.0%** (attached quotes), **Coverage: 84.21%** | ✅ **PASS** |
 | **Accessibility & Contrast** | WCAG 2.2 Level AA ($\ge 4.5:1$) | **15.93:1 contrast ratio**, 0px mobile overflow | ✅ **PASS** |
 
 ---
@@ -26,7 +26,7 @@
 
 ```
 Test Files: 9 passed (9)
-Tests:      147 passed (147)
+Tests:      153 passed (153)
 Runtime:    ~7.5s (Vitest v2.1.9)
 ```
 
@@ -40,7 +40,7 @@ Runtime:    ~7.5s (Vitest v2.1.9)
 | `src/test/unit/noticeToAction.test.tsx` | **13** | Target audience extraction ("Who is affected"), ActionChecklistCard persistence, DeadlineTimelineCard disambiguation, AccessibleReadingView font scaling & speech |
 | `src/test/unit/gestureAndNeumorphism.test.tsx` | **11** | Mobile swipe gesture hooks, double-tap editing, soft-UI neumorphic CSS shadow tokens |
 | `src/test/unit/components.test.ts` | **8** | Fictional sample presets, SVG preview generators, Bengali/English summary generator integration |
-| `src/test/benchmark/benchmarkRunner.test.ts` | **5** | Genuine image-based CER/WER, three-mode extraction (clean, snapshot, live), gold evidence grounding, stale evidence invalidation, mathematical Levenshtein test vectors, dynamic latency profiling |
+| `src/test/benchmark/benchmarkRunner.test.ts` | **11** | Genuine image-based CER/WER, three-mode extraction (clean, snapshot, live), gold evidence grounding, hardened false positive/negative prevention unit tests, stale evidence invalidation, mathematical Levenshtein test vectors, dynamic latency profiling |
 
 ---
 
@@ -96,23 +96,25 @@ Evaluated across our controlled 6-document synthetic pilot corpus rendered from 
 - **Degradation from Real OCR Noise:** -3.19% F1 delta.
 
 ### 5.3 Evidence Grounding Integrity
-- **Evidence Span Verbatim Precision:** **100.00%** (48 / 48 attached quotes verified verbatim in source transcript).
+- **Evidence Span Verbatim Precision:** **100.00%** (48 / 48 attached quotes verified verbatim in source transcript; applies strictly to attached quotes).
 - **Character Offset Mapping Accuracy:** **100.00%** (exact start and end index alignment).
 - **Overall Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields; remaining 9 are taxonomy category classifications).
 - **Total Gold Annotated Facts:** 33 facts across 6 documents.
 - **Gold Facts with Any Evidence Attached:** 28 facts.
-- **Gold Facts with Verified Matching Evidence:** 27 facts.
-- **Gold Fact Evidence Recall:** **81.82%** (27 of 33 gold annotations retrieved with verified supporting snippets).
-- **Field-to-Evidence Association Accuracy:** **96.43%** (27 of 28 gold fields with evidence point to the authentic supporting sentence).
+- **Gold Facts with Matching Field Value:** 28 facts (84.85% field-value extraction accuracy).
+- **Gold Facts with Verified Matching Evidence:** 25 facts.
+- **Heuristic Gold Evidence Recall:** **75.76%** (25 of 33 gold annotations matched with verified supporting snippets via hardened heuristic matcher).
+- **Heuristic Field-to-Evidence Association Accuracy:** **89.29%** (25 of 28 gold fields with evidence point to the authentic supporting sentence).
+- **Joint Value & Evidence Match Rate:** **75.76%** (25 of 33 gold annotations matched in both extracted value and evidence).
 
 ### 5.4 Latency Disaggregation (Linux x86_64, Node v18.19.1)
-- **Image Read from Disk:** 0.56 ms (Median) / 0.67 ms (P90)
-- **Cold Worker Initialization:** ~504.9 ms (fresh worker thread creation)
-- **Warm Worker Reinitialization:** ~137.9 ms (reusing active worker thread)
-- **Language Model Pool Load:** ~718.1 ms (multi-language worker pool)
-- **OCR Recognition Latency:** 961.7 ms (Median) / 1556.6 ms (P90)
-- **Structured Extraction (`processNoticeDocument`):** 2.36 ms (Median) / 9.63 ms (P90)
-- **Per-Document Pipeline Latency (Warm):** **968.7 ms (Median) / 1559.4 ms (P90)** (image read + OCR recognition + extraction with workers already initialized)
+- **Image Read from Disk:** 0.48 ms (Median) / 0.58 ms (P90) (historical baseline: 0.56 ms / 0.67 ms)
+- **Cold Worker Initialization:** 490.2 ms (historical: ~504.9 ms; includes Web Worker spawn, script evaluation, and IPC handshake)
+- **Warm Worker Reinitialization:** 134.0 ms (historical: ~137.9 ms; reusing active worker thread)
+- **Language Model Pool Load:** 720.5 ms (historical: ~718.1 ms; bilingual model dictionary load in memory)
+- **OCR Recognition Latency:** 959.6 ms (Median) / 1544.1 ms (P90) (historical baseline: 961.7 ms / 1556.6 ms)
+- **Structured Extraction (`processNoticeDocument`):** 1.66 ms (Median) / 10.31 ms (P90) (historical baseline: 2.36 ms / 9.63 ms)
+- **Per-Document Pipeline Latency (Warm):** **966.9 ms (Median) / 1546.4 ms (P90)** (historical baseline: 968.7 ms / 1559.4 ms; image read + OCR recognition + extraction with workers already initialized and models in memory)
 
 ---
 

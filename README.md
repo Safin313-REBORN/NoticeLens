@@ -7,7 +7,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8.svg)](https://tailwindcss.com/)
 [![WCAG 2.2 AA Contrast](https://img.shields.io/badge/WCAG%202.2%20AA-15.93:1%20Contrast-emerald.svg)](docs/ACCESSIBILITY_AUDIT.md)
-[![Tests](https://img.shields.io/badge/Tests-147%20Passing-emerald.svg)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/Tests-153%20Passing-emerald.svg)](https://vitest.dev/)
 [![Benchmarked F1](https://img.shields.io/badge/Extraction%20F1-80.46%25-blue.svg)](docs/BENCHMARK_METHODOLOGY.md)
 [![Evidence Precision](https://img.shields.io/badge/Evidence%20Precision-100%25-teal.svg)](docs/ARCHITECTURE.md)
 
@@ -93,18 +93,22 @@ Evaluated across our controlled 6-document synthetic pilot corpus (rendered from
   - **Mode B (Snapshot OCR Baseline):** **F1: 77.27%** (Precision: 79.07%, Recall: 75.56% | TP: 34, FP: 9, FN: 11) — Frozen OCR transcript snapshot for regression testing.
   - **Mode C (Live OCR Recognition):** **F1: 77.27%** (Precision: 79.07%, Recall: 75.56% | TP: 34, FP: 9, FN: 11) — Actual PNG fixture → live Tesseract worker recognition → extraction engine.
 - **Evidence Grounding & Factual Provenance:**
-  - **Factual Evidence Span Precision:** **100.00%** (48/48 attached quotes match source text verbatim)
+  - **Factual Evidence Span Precision:** **100.00%** (48/48 attached quotes match source text verbatim; applies strictly to attached quotes)
   - **Character Offset Mapping Accuracy:** **100.00%** (1-to-1 character range slices map to exact source offsets)
   - **Overall Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category classifications)
-  - **Gold Fact Evidence Recall:** **81.82%** (27/33 gold annotations retrieved with verified supporting snippets)
-  - **Field-to-Evidence Association Accuracy:** **96.43%** (27/28 gold fields with evidence point to the authentic supporting sentence)
+  - **Field-Value Extraction Accuracy:** **84.85%** (28/33 gold annotations matched in extracted values)
+  - **Heuristic Gold Evidence Recall:** **75.76%** (25/33 gold annotations retrieved with verified supporting snippets via hardened heuristic matcher)
+  - **Heuristic Field-to-Evidence Association Accuracy:** **89.29%** (25/28 gold fields with evidence point to the authentic supporting sentence)
+  - **Joint Value & Evidence Match Rate:** **75.76%** (25/33 gold annotations matched in both extracted value and evidence)
 - **High-Contrast Ratio:** **15.93:1** (WCAG AAA requires 7.0:1)
 - **Dynamically Measured Latencies (`performance.now()`, N = 6 samples, mathematical median):**
-  - Image Loading: **0.56 ms** median / **0.67 ms** P90
-  - Worker Initialization: **~504.9 ms** cold / **~137.9 ms** warm reinitialization (reusing active worker thread)
-  - OCR Recognition: **961.7 ms** median / **1556.6 ms** P90
-  - Structured Extraction (Parser Only): **2.36 ms** median / **9.63 ms** P90
-  - Per-Document Pipeline Latency (Warm Worker & Models Pre-loaded): **968.7 ms** median / **1559.4 ms** P90
+  - Image Loading: **0.48 ms** median / **0.58 ms** P90 (historical: 0.56 ms / 0.67 ms)
+  - OCR Recognition: **959.6 ms** median / **1544.1 ms** P90 (historical: 961.7 ms / 1556.6 ms)
+  - Structured Extraction (Parser Only): **1.66 ms** median / **10.31 ms** P90 (historical: 2.36 ms / 9.63 ms)
+  - Per-Document Pipeline Latency (Warm): **966.9 ms** median / **1546.4 ms** P90 (historical: 968.7 ms / 1559.4 ms; measures image read + OCR + extraction with workers initialized and models in memory)
+  - Cold Worker Initialization: **490.2 ms** (historical: ~504.9 ms; includes Web Worker spawn, script evaluation, and IPC handshake)
+  - Warm Worker Reinitialization: **134.0 ms** (historical: ~137.9 ms; active worker thread reinitialize)
+  - Language Model Pool Load: **720.5 ms** (historical: ~718.1 ms; bilingual model dictionary load in memory)
 
 ---
 
@@ -114,7 +118,7 @@ Evaluated across our controlled 6-document synthetic pilot corpus (rendered from
 # 1. Install dependencies cleanly
 npm ci
 
-# 2. Run all 147 unit and benchmark tests
+# 2. Run all 153 unit and benchmark tests
 npm test -- --run
 
 # 3. Run the reproducible technical benchmarking suite
@@ -142,12 +146,12 @@ npm run dev
 | :--- | :--- |
 | `npm run dev` | Starts Vite local development server at `http://127.0.0.1:5173/` |
 | `npm run build` | Compiles TypeScript strict mode (`tsc -b`), builds Vite bundle, and scans production chunks for forbidden debug globals |
-| `npm run test` | Executes all 147 automated Vitest unit, component, and benchmark tests across 9 files |
+| `npm run test` | Executes all 153 automated Vitest unit, component, and benchmark tests across 9 files |
 | `npm run benchmark` | Runs the reproducible technical benchmarking suite measuring CER, WER, Extraction P/R/F1, and Evidence Grounding |
 | `npm run lint` | Runs ESLint checks across the TypeScript codebase (`max-warnings=0`) |
 | `npm run test:e2e` | Runs comprehensive 10-point browser workflow test verifying OCR, evidence highlighting, speech, calendar gates, vault save/reopen, and mobile reflow |
 | `npm run test:offline-browser` | Executes headless Chrome offline OCR verification: terminates in-memory worker, cuts network via CDP, initializes a fresh worker, and asserts offline recognition from IndexedDB cache with Zero external network requests |
-| `npm run verify:release` | Runs full release verification: lint, 147 automated tests, production build, offline browser test, and E2E workflow |
+| `npm run verify:release` | Runs full release verification: lint, 153 automated tests, production build, offline browser test, and E2E workflow |
 | `npm run preview` | Serves the production build locally |
 
 ---

@@ -17,13 +17,13 @@
   - `src/test/unit/gestureAndNeumorphism.test.tsx` (11 tests)
   - `src/test/unit/noticeToAction.test.tsx` (13 tests)
   - `src/test/unit/ocrAndUiAuditFixes.test.ts` (40 tests)
-  - `src/test/benchmark/benchmarkRunner.test.ts` (5 tests)
-- **Total Automated Unit & Integration Tests**: 147 Tests
-- **Tests Passed**: 147 Passed (100% Pass Rate)
+  - `src/test/benchmark/benchmarkRunner.test.ts` (11 tests)
+- **Total Automated Unit & Integration Tests**: 153 Tests
+- **Tests Passed**: 153 Passed (100% Pass Rate)
 - **Tests Failed**: 0 Failed
 - **TypeScript & Production Build**: Succeeded with zero errors (`tsc -b && vite build && node scripts/checkProductionBuild.cjs`) in 1.95s
 - **ESLint Checks**: Succeeded with 0 warnings and 0 errors (`eslint src --max-warnings=0`)
-- **Real Image-Based OCR Benchmark (N = 6 Synthetic Pilot Corpus)**: Succeeded with 2.30% Mean CER, 9.18% Mean WER, Three-Mode Extraction F1 (Clean Text: 80.46%, Snapshot OCR: 77.27%, Live Real OCR: 77.27%), 100% Evidence Span Precision, 84.21% Evidence Coverage, 81.82% Gold Fact Evidence Recall (27/33), 96.43% Field-to-Evidence Association Accuracy (27/28), and per-document pipeline latency (warm worker, models loaded) of 968.7 ms median / 1559.4 ms P90 logged to `docs/benchmark-results.json`
+- **Real Image-Based OCR Benchmark (N = 6 Synthetic Pilot Corpus)**: Succeeded with 2.30% Mean CER, 9.18% Mean WER, Three-Mode Extraction F1 (Clean Text: 80.46%, Snapshot OCR: 77.27%, Live Real OCR: 77.27%), 100% Evidence Span Precision (applies strictly to attached quotes), 84.21% Evidence Coverage (48/57 non-empty fields), 84.85% Field-Value Accuracy (28/33), 75.76% Heuristic Gold Evidence Recall (25/33), 89.29% Heuristic Field-to-Evidence Association Accuracy (25/28), and per-document pipeline latency (warm worker, models loaded) of 966.9 ms median / 1546.4 ms P90 (historical: 968.7 ms / 1559.4 ms) logged to `docs/benchmark-results.json`
 - **Real Browser Offline OCR Test**: Succeeded across all 3 phases (online cache write, worker termination + offline fresh-worker OCR restore with Zero external traineddata requests during offline OCR recognition, fresh-profile cache miss actionable error)
 - **Real Browser Workflow & Screenshot Suite**: Succeeded across all 10 verified workflow checks with 0 false passes and verified audio player bar geometric reachability
 
@@ -372,7 +372,7 @@ Following the final release hardening directives, the verification architecture 
 ## 15. Final Release Sign-Off
 
 NoticeLens is verified production-ready and fully hardened:
-- **129/129 automated tests passing** across 7 test suites (100% pass rate).
+- **153/153 automated tests passing** across 9 test suites (100% pass rate).
 - **ESLint**: 0 errors, 0 warnings (`--max-warnings=0`).
 - **Production Vite Build & Security Scan**: Succeeded with zero forbidden debug globals and zero test bypasses in production bundles (`tsc -b && vite build && node scripts/checkProductionBuild.cjs`).
 - **3-Checkpoint Worker Provenance**: Rigorously guards against false offline verification under connectivity transitions during preprocessing, initialization, and recognition.

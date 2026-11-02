@@ -20,7 +20,7 @@ NoticeLens is an **institutional notice intelligence system**. It takes that raw
 5. *What documents and fees are required?*
 6. *What information is uncertain or needs review?*
 
-Every extracted fact is **evidence-grounded**—clicking an extracted fee or date highlights the authentic sentence in the original transcript. There are **zero probabilistic hallucinations**.
+Every extracted fact is **evidence-grounded**—clicking an extracted fee or date highlights the authentic sentence in the original transcript. 100% verbatim precision applies to attached quotes, with 84.21% overall grounding coverage across fields (category classifications omit quotes).
 
 ---
 
@@ -49,8 +49,8 @@ Generic tools extract the first date they find. NoticeLens parses surrounding li
 
 If a notice mentions a date without an explicit year (e.g., *"20 November"*), NoticeLens halts calendar export with an accessible **Review Modal Gate**, refusing to guess or hallucinate a year.
 
-### 2.4 Evidence Grounding & Zero-Hallucination Integrity
-Unlike Large Language Models that invent missing facts:
+### 2.4 Evidence Grounding & Factual Provenance Integrity
+Unlike generative Large Language Models that invent missing facts:
 - Every extracted field retains an exact character index span into the OCR transcript.
 - When a user edits the transcript, NoticeLens dynamically re-derives fields and purges stale evidence.
 - If a user manually overrides a field, NoticeLens explicitly flags it as `✏️ User Override`, preserving a transparent audit trail.
@@ -70,14 +70,17 @@ Evaluated across our 6-document synthetic pilot corpus (rendered from HTML templ
   - Mode A (Clean Source Text Baseline): F1: **80.46%** (Precision: 83.33%, Recall: 77.78%)
   - Mode B (Snapshot OCR Baseline): F1: **77.27%** (Precision: 79.07%, Recall: 75.56%)
   - Mode C (Live Real OCR Recognition): F1: **77.27%** (Precision: 79.07%, Recall: 75.56%)
-- **Factual Evidence Span Precision:** **100.00%** (48/48 attached quotes match source text verbatim at exact character offsets)
-- **Gold Fact Evidence Recall:** **81.82%** (27/33 gold annotated facts retrieved with verified supporting snippets; evaluated against gold `expectedSnippet`)
-- **Field-to-Evidence Association Accuracy:** **96.43%** (27/28 extracted gold fields with evidence point to the authentic supporting sentence)
+- **Factual Evidence Span Precision:** **100.00%** (48/48 attached quotes match source text verbatim at exact character offsets; applies strictly to attached quotes)
 - **Overall Fact Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category tags)
+- **Field-Value Extraction Accuracy:** **84.85%** (28/33 gold annotations matched in extracted field values)
+- **Heuristic Gold Evidence Recall:** **75.76%** (25/33 gold annotated facts retrieved with verified supporting snippets via hardened heuristic matcher)
+- **Heuristic Field-to-Evidence Association Accuracy:** **89.29%** (25/28 extracted gold fields with evidence point to the authentic supporting sentence)
+- **Joint Value & Evidence Match Rate:** **75.76%** (25/33 gold annotations matched in both extracted value and evidence)
 - **High-Contrast Ratio:** **15.93:1** (WCAG AAA requires 7.0:1)
-- **Structured Extraction Latency (Parser Only):** **2.14 ms** median per document
-- **Total Pipeline Latency (Image Read → Tesseract OCR → NLP Engine):** **968.7 ms** median / **1559.4 ms** P90 (per-document pipeline measurement with workers already initialized and models loaded; warm worker reinitialization: ~137.9 ms; cold worker spawn: ~504.9 ms)
-- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
+- **Structured Extraction Latency (Parser Only):** **1.66 ms** median / **10.31 ms** P90 (historical initial run: 2.14 ms median / 9.63 ms P90)
+- **Per-Document Pipeline Latency (Warm):** **966.9 ms** median / **1546.4 ms** P90 (historical initial run: 968.7 ms median / 1559.4 ms P90; per-document pipeline measurement with workers already initialized and models loaded; warm worker reinitialization: 134.0 ms [historical: ~137.9 ms]; cold worker initialization: 490.2 ms [historical: ~504.9 ms; includes Web Worker spawn, script evaluation, and IPC handshake])
+- **Language Model Pool Load:** **720.5 ms** (historical: ~718.1 ms; bilingual model dictionary load in memory)
+- **Automated Verification:** 153 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
 
 ---
 

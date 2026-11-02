@@ -66,7 +66,7 @@ To protect against corrupted, truncated, or malicious cache entries:
 - **Structure Validation (`isValidTrainedDataBinary`):** Inspects the 16-byte Tesseract traineddata header (`TessdataManager` directory offset), verifies minimum payload size (> 50KB), checks directory entries count ($\ge 10$), and ensures the binary is not zero-filled.
 - **Cryptographic Provenance:** Uses Web Crypto API (`crypto.subtle.digest('SHA-256')`) to calculate the exact SHA-256 fingerprint of the cached model. Offline verification records are keyed to the specific language and binary hash. If a cached model changes or fails hash validation, the record is immediately invalidated.
 
-### 2.3 Evidence Grounding & Zero-Hallucination Architecture
+### 2.3 Evidence Grounding & Factual Provenance Architecture
 NoticeLens separates itself from probabilistic LLMs through strict deterministic extraction:
 - Every extracted field (`deadline`, `eventDate`, `venue`, `fees`, `requiredDocuments`, `contact`) maintains an `evidence` object containing the exact substring and index range from the OCR transcript.
 - When an extracted fact is clicked, the UI renders a native `<mark>` highlight over the authentic transcript text.

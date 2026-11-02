@@ -47,7 +47,7 @@ Transition into the **Notice Workspace**.
 4. Click **"Edit Transcript"**, alter fee to `৮৫০/-`, and click **"Apply Changes"**; show downstream cards update synchronously with stale evidence purged.
 
 **Presenter Narration:**  
-> "Here is our core competitive advantage: **Notice-to-Action Intelligence**. NoticeLens understands institutional hierarchy. It never confuses an exam start date with an application deadline. And every single extracted fact is backed by verifiable source evidence. When I click on the fee or venue, NoticeLens highlights the authentic sentence in the transcript. There are zero AI hallucinations. And when a student checks off an action item, progress is saved privately on device."
+> "Here is our core competitive advantage: **Notice-to-Action Intelligence**. NoticeLens understands institutional hierarchy. It never confuses an exam start date with an application deadline. And every single extracted fact is backed by verifiable source evidence. When I click on the fee or venue, NoticeLens highlights the authentic sentence in the transcript. Every attached evidence quote is verified 100% verbatim against the source transcript. And when a student checks off an action item, progress is saved privately on device."
 
 ---
 

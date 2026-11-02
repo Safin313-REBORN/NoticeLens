@@ -1,6 +1,6 @@
 {
-  "executionTimestamp": "2026-11-02T10:46:02.214Z",
-  "gitCommit": "1f9cd5dc45258a710854e7ae4e946e6b726b7e1c",
+  "executionTimestamp": "2026-11-02T14:37:32.887Z",
+  "gitCommit": "2fcbf82b3f0e4da5d2074a90a02e0a4b4b9fc4e8",
   "appVersion": "1.0.0",
   "tesseractVersion": "7.0.0",
   "datasetVersion": "1.2.0",
@@ -40,9 +40,14 @@
         "groundingCoverage": 0.8421052631578947,
         "totalGoldAnnotatedFacts": 33,
         "goldFactsWithAnyEvidence": 28,
-        "goldFactsWithMatchingEvidence": 27,
-        "goldEvidenceRecall": 0.8181818181818182,
-        "fieldToEvidenceAssociationAccuracy": 0.9642857142857143
+        "goldFactsWithMatchingEvidence": 25,
+        "goldFactsWithValueMatch": 28,
+        "goldFactsWithBothValueAndEvidenceMatch": 25,
+        "fieldValueExtractionAccuracy": 0.8484848484848485,
+        "heuristicGoldEvidenceRecall": 0.7575757575757576,
+        "heuristicFieldToEvidenceAssociationAccuracy": 0.8928571428571429,
+        "jointValueAndEvidenceAccuracy": 0.7575757575757576,
+        "methodologyNote": "Gold evidence recall and field-to-evidence association accuracy are heuristic annotation-matching metrics comparing extracted evidence text against gold expected snippets. Verbatim precision (100%) applies strictly to the attached quotes verifying they appear verbatim in the source transcript at exact character offsets. Grounding coverage is 84.21% (48/57 fields) because abstract category classifications do not carry quotation spans."
       }
     },
     "snapshotOcr": {
@@ -57,8 +62,8 @@
         "fn": 11
       },
       "evidenceGrounding": {
-        "goldEvidenceRecall": 0.8181818181818182,
-        "fieldToEvidenceAssociationAccuracy": 0.9642857142857143
+        "heuristicGoldEvidenceRecall": 0.7575757575757576,
+        "heuristicFieldToEvidenceAssociationAccuracy": 0.8928571428571429
       }
     },
     "cleanText": {
@@ -71,21 +76,25 @@
         "fn": 10
       },
       "evidenceGrounding": {
-        "goldEvidenceRecall": 0.7878787878787878,
-        "fieldToEvidenceAssociationAccuracy": 0.9629629629629629
+        "heuristicGoldEvidenceRecall": 0.7575757575757576,
+        "heuristicFieldToEvidenceAssociationAccuracy": 0.9259259259259259
       }
     },
     "latency": {
-      "imageLoadMedianMs": 0.5310585000552237,
-      "imageLoadP90Ms": 0.6072079995647073,
-      "coldWorkerInitMs": 431.00311499927193,
-      "warmWorkerInitMs": 126.70947900041938,
-      "ocrRecognitionMedianMs": 945.4789410000667,
-      "ocrRecognitionP90Ms": 1552.9346770001575,
-      "structuredExtractionMedianMs": 2.398644500412047,
-      "structuredExtractionP90Ms": 9.363322000019252,
-      "perDocumentPipelineMedianMs": 952.4552710000426,
-      "perDocumentPipelineP90Ms": 1557.205615999177,
+      "imageLoadMedianMs": 0.3455404993146658,
+      "imageLoadP90Ms": 0.5272829979658127,
+      "coldWorkerInitMs": 498.9651880003512,
+      "coldWorkerInitDescription": "Cold worker initialization includes Web Worker spawn, script evaluation (worker.min.js), and IPC handshake.",
+      "warmWorkerInitMs": 137.0332800000906,
+      "warmWorkerInitDescription": "Warm worker reinitialization reuses active worker thread via reinitialize(\"eng\").",
+      "languageModelPoolLoadMs": 769.6898220032454,
+      "languageModelPoolLoadDescription": "Loading bilingual language models (ben + eng) into memory.",
+      "ocrRecognitionMedianMs": 969.1088944990188,
+      "ocrRecognitionP90Ms": 1551.7581380009651,
+      "structuredExtractionMedianMs": 1.7593224998563528,
+      "structuredExtractionP90Ms": 9.74253099784255,
+      "perDocumentPipelineMedianMs": 976.0332454964519,
+      "perDocumentPipelineP90Ms": 1554.311893004924,
       "sampleCount": 6,
       "scopeDescription": "Per-document pipeline latency measures image read + OCR recognition + structured extraction with worker threads already initialized and models loaded in memory."
     }
@@ -96,6 +105,9 @@
       "name": "DU CSE 8th Semester Exam Circular (Bengali)",
       "language": "ben",
       "category": "Examination",
+      "dimensions": "900x1200",
+      "isSynthetic": true,
+      "provenance": "Controlled synthetic notice modeled on University of Dhaka Faculty of Science departmental circulars.",
       "liveCER": 0.024390243902439025,
       "liveWER": 0.08080808080808081,
       "snapshotCER": 0.024390243902439025,
@@ -107,6 +119,9 @@
       "name": "BUET CSE Hackathon 2024 Announcement (English)",
       "language": "eng",
       "category": "Event",
+      "dimensions": "900x1100",
+      "isSynthetic": true,
+      "provenance": "Controlled synthetic notice modeled on BUET Department of Computer Science & Engineering official notices.",
       "liveCER": 0.013175230566534914,
       "liveWER": 0.0380952380952381,
       "snapshotCER": 0.013175230566534914,
@@ -118,6 +133,9 @@
       "name": "JU IIT Postgraduate Admission Circular (Mixed)",
       "language": "ben+eng",
       "category": "Admission",
+      "dimensions": "900x1050",
+      "isSynthetic": true,
+      "provenance": "Controlled synthetic notice modeled on Jahangirnagar University IIT postgraduate program circulars.",
       "liveCER": 0.021352313167259787,
       "liveWER": 0.11688311688311688,
       "snapshotCER": 0.021352313167259787,
@@ -129,6 +147,9 @@
       "name": "Khulna University Course Enrollment Notice (Bengali)",
       "language": "ben",
       "category": "General",
+      "dimensions": "900x1050",
+      "isSynthetic": true,
+      "provenance": "Controlled synthetic notice simulating a camera-captured printed notice with subtle lighting gradient and border perspective.",
       "liveCER": 0.05242718446601942,
       "liveWER": 0.14285714285714285,
       "snapshotCER": 0.05242718446601942,
@@ -140,6 +161,9 @@
       "name": "BRAC University Merit Scholarship Circular (English)",
       "language": "eng",
       "category": "Admission",
+      "dimensions": "900x1100",
+      "isSynthetic": true,
+      "provenance": "Controlled synthetic notice modeled on BRAC University Financial Aid and Scholarship notices.",
       "liveCER": 0.0053475935828877,
       "liveWER": 0.03896103896103896,
       "snapshotCER": 0.0053475935828877,
@@ -151,6 +175,9 @@
       "name": "Rajshahi University Academic Schedule (Mixed Table)",
       "language": "ben+eng",
       "category": "Examination",
+      "dimensions": "900x1000",
+      "isSynthetic": true,
+      "provenance": "Controlled synthetic notice modeled on University of Rajshahi Faculty of Engineering departmental circulars.",
       "liveCER": 0.02107728337236534,
       "liveWER": 0.13333333333333333,
       "snapshotCER": 0.02107728337236534,
