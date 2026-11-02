@@ -45,6 +45,17 @@ export interface OfflineVerificationRecord {
   error?: string;
 }
 
+export function getTesseractAssetPaths(): { workerPath: string; corePath: string } {
+  const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
+    ? import.meta.env.BASE_URL
+    : '/';
+  const normalizedBase = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+  return {
+    workerPath: `${normalizedBase}tesseract/worker.min.js`,
+    corePath: `${normalizedBase}tesseract`,
+  };
+}
+
 let activeWorker: Worker | null = null;
 let currentLanguage: string | null = null;
 let activeWorkerProvenance: WorkerProvenance | null = null;
@@ -219,9 +230,10 @@ export async function runOcrRecognition(
 
       try {
         const creator = customWorkerCreator || createWorker;
+        const tesseractPaths = getTesseractAssetPaths();
         activeWorker = await creator(language, 1, {
-          workerPath: '/tesseract/worker.min.js',
-          corePath: '/tesseract',
+          workerPath: tesseractPaths.workerPath,
+          corePath: tesseractPaths.corePath,
           workerBlobURL: false,
           langPath: 'https://tessdata.projectnaptha.com/4.0.0',
           logger: (m: { status?: string; progress?: number }) => {
@@ -266,7 +278,8 @@ export async function runOcrRecognition(
         // 1. Worker script loading failure
         if (errMsg.includes('worker.min.js') || errMsg.includes('worker script') || errMsg.includes('Worker is not defined')) {
           phase = 'worker_init';
-          const scriptMsg = 'OCR Worker Script Missing: The local Tesseract worker script (/tesseract/worker.min.js) could not be loaded.';
+          const tesseractPaths = getTesseractAssetPaths();
+          const scriptMsg = `OCR Worker Script Missing: The local Tesseract worker script (${tesseractPaths.workerPath}) could not be loaded.`;
           recordDiagnostic({
             timestamp: new Date().toISOString(),
             phase: 'worker_init',
@@ -1243,9 +1256,10 @@ export async function precacheLanguageModel(
   let worker: Worker | null = null;
   try {
     const creator = customWorkerCreator || createWorker;
+    const tesseractPaths = getTesseractAssetPaths();
     worker = await creator(language, 1, {
-      workerPath: '/tesseract/worker.min.js',
-      corePath: '/tesseract',
+      workerPath: tesseractPaths.workerPath,
+      corePath: tesseractPaths.corePath,
       workerBlobURL: false,
       langPath: 'https://tessdata.projectnaptha.com/4.0.0',
       logger: (m: { status?: string; progress?: number }) => {

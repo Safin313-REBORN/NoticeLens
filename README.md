@@ -7,7 +7,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8.svg)](https://tailwindcss.com/)
 [![WCAG 2.2 AA Contrast](https://img.shields.io/badge/WCAG%202.2%20AA-15.93:1%20Contrast-emerald.svg)](docs/ACCESSIBILITY_AUDIT.md)
-[![Tests](https://img.shields.io/badge/Tests-153%20Passing-emerald.svg)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/Tests-159%20Passing-emerald.svg)](https://vitest.dev/)
 [![Benchmarked F1](https://img.shields.io/badge/Extraction%20F1-80.46%25-blue.svg)](docs/BENCHMARK_METHODOLOGY.md)
 [![Evidence Precision](https://img.shields.io/badge/Evidence%20Precision-100%25-teal.svg)](docs/ARCHITECTURE.md)
 
@@ -144,15 +144,35 @@ npm run dev
 
 | Command | Description |
 | :--- | :--- |
-| `npm run dev` | Starts Vite local development server at `http://127.0.0.1:5173/` |
-| `npm run build` | Compiles TypeScript strict mode (`tsc -b`), builds Vite bundle, and scans production chunks for forbidden debug globals |
-| `npm run test` | Executes all 153 automated Vitest unit, component, and benchmark tests across 9 files |
+| `npm run dev` | Starts Vite local development server at `http://127.0.0.1:5173/NoticeLens/` |
+| `npm run build` | Compiles TypeScript strict mode (`tsc -b`), builds Vite bundle with base `/NoticeLens/`, generates `404.html`, and scans production chunks for forbidden debug globals |
+| `npm run test` | Executes all 159 automated Vitest unit, component, and benchmark tests across 9 files |
 | `npm run benchmark` | Runs the reproducible technical benchmarking suite measuring CER, WER, Extraction P/R/F1, and Evidence Grounding |
 | `npm run lint` | Runs ESLint checks across the TypeScript codebase (`max-warnings=0`) |
 | `npm run test:e2e` | Runs comprehensive 10-point browser workflow test verifying OCR, evidence highlighting, speech, calendar gates, vault save/reopen, and mobile reflow |
 | `npm run test:offline-browser` | Executes headless Chrome offline OCR verification: terminates in-memory worker, cuts network via CDP, initializes a fresh worker, and asserts offline recognition from IndexedDB cache with Zero external network requests |
-| `npm run verify:release` | Runs full release verification: lint, 153 automated tests, production build, offline browser test, and E2E workflow |
+| `npm run verify:release` | Runs full release verification: lint, 159 automated tests, production build, offline browser test, and E2E workflow |
 | `npm run preview` | Serves the production build locally |
+
+---
+
+## Technology Stack
+
+- **Frontend Core:** React 18 (`react`, `react-dom`), TypeScript 5.6 (Strict Mode)
+- **Styling & Neumorphism:** Tailwind CSS 3.4 (`tailwind-merge`, `clsx`), custom soft-UI shadow and high-contrast variant tokens
+- **Build System:** Vite 5.4 with code-splitting (`vendor`, `icons`), PostCSS, Autoprefixer
+- **In-Browser OCR:** Tesseract.js 7.0.0 (WebAssembly, SIMD, Relaxed SIMD, LSTM neural engine)
+- **Offline Persistence:** IndexedDB (`idb-keyval` for model weights; native IndexedDB for Notice Vault), Web Crypto SHA-256 binary validation
+- **Assistive Speech:** Web Speech API (`SpeechSynthesis`) with custom Bengali-to-Romanized phonetic transliteration fallback
+- **Calendar Interoperability:** RFC 5545 iCalendar (`.ics`) generator with UTF-8 octet line-folding and `Asia/Dhaka` VTIMEZONE
+- **Testing & Verification:** Vitest 2.1, Happy-DOM, Chrome DevTools Protocol (CDP) automated browser validation, ESLint 9
+
+---
+
+## Live Demo & GitHub Pages
+
+- **Live Web Application:** [https://Safin313-REBORN.github.io/NoticeLens/](https://Safin313-REBORN.github.io/NoticeLens/)
+- **Repository:** [https://github.com/Safin313-REBORN/NoticeLens](https://github.com/Safin313-REBORN/NoticeLens)
 
 ---
 

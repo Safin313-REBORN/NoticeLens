@@ -1,10 +1,15 @@
 // NoticeLens Lean Static Assets Service Worker for Offline OCR Support
 const CACHE_NAME = 'noticelens-ocr-cache-v2';
 
+// Dynamically determine the base path from the service worker location
+// E.g. '/NoticeLens/sw.js' -> '/NoticeLens/', '/sw.js' -> '/'
+const swPath = self.location.pathname;
+const BASE_PATH = swPath.substring(0, swPath.lastIndexOf('/') + 1) || '/';
+
 // Essential core scripts pre-cached during install (~109 KB instead of ~35 MB)
 // Core WASM variants are cached on first successful use rather than all downloaded at installation
 const ESSENTIAL_PRECACHE_ASSETS = [
-  '/tesseract/worker.min.js',
+  `${BASE_PATH}tesseract/worker.min.js`.replace(/\/+/g, '/'),
 ];
 
 self.addEventListener('install', (event) => {
@@ -33,8 +38,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Intercept local static tesseract engine and wasm assets
-  if (url.origin === self.location.origin && url.pathname.startsWith('/tesseract/')) {
+  // Intercept local static tesseract engine and wasm assets under root or repository subpath
+  if (url.origin === self.location.origin && url.pathname.includes('/tesseract/')) {
     event.respondWith(
       (async () => {
         // 1. Offline cache lookup performed before network fallback

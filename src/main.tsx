@@ -11,7 +11,10 @@ createRoot(document.getElementById('root')!).render(
 
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    const rawBase = import.meta.env.BASE_URL || '/';
+    const normalizedBase = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+    const swUrl = `${normalizedBase}sw.js`;
+    navigator.serviceWorker.register(swUrl).catch((err) => {
       console.warn('[NoticeLens SW] Registration notice:', err);
     });
   });

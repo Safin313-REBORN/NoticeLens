@@ -86,7 +86,7 @@ async function run() {
     '--disable-gpu',
     '--disable-dev-shm-usage',
     `--user-data-dir=${profileDir}`,
-    'http://127.0.0.1:5173/'
+    'http://127.0.0.1:5173/NoticeLens/'
   ]);
 
   let ws = null;
@@ -202,7 +202,7 @@ async function run() {
     await delay(500);
 
     // Explicitly navigate to ensure Chrome loads the application shell
-    await send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+    await send('Page.navigate', { url: 'http://127.0.0.1:5173/NoticeLens/' });
 
     let homeTitle = '';
     let currentUrl = '';
@@ -214,7 +214,7 @@ async function run() {
 
         // If Chrome rendered an error page (title "127.0.0.1" / chromewebdata), re-trigger navigation
         if (homeTitle === '127.0.0.1' || currentUrl.includes('chromewebdata')) {
-          await send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+          await send('Page.navigate', { url: 'http://127.0.0.1:5173/NoticeLens/' });
         }
       } catch {
         // wait for page

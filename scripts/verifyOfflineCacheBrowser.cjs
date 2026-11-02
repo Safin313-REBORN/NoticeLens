@@ -50,7 +50,7 @@ async function launchChrome(profileDir, port) {
     '--disable-gpu',
     '--disable-dev-shm-usage',
     `--user-data-dir=${profileDir}`,
-    'http://127.0.0.1:5173/'
+    'http://127.0.0.1:5173/NoticeLens/'
   ]);
 
   let ws = null;
@@ -278,7 +278,7 @@ async function run() {
 
   try {
     // Explicitly navigate to ensure application shell is loaded
-    await session1.send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+    await session1.send('Page.navigate', { url: 'http://127.0.0.1:5173/NoticeLens/' });
 
     let title = '';
     let currentUrl = '';
@@ -289,7 +289,7 @@ async function run() {
         if (title.includes('NoticeLens')) break;
 
         if (title === '127.0.0.1' || currentUrl.includes('chromewebdata')) {
-          await session1.send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+          await session1.send('Page.navigate', { url: 'http://127.0.0.1:5173/NoticeLens/' });
         }
       } catch {
         // wait
@@ -626,7 +626,7 @@ async function run() {
 
   try {
     // Explicitly navigate and wait for application shell and scripts to load before cutting network
-    await session2.send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+    await session2.send('Page.navigate', { url: 'http://127.0.0.1:5173/NoticeLens/' });
     let ready = false;
     for (let i = 0; i < 30; i++) {
       try {
