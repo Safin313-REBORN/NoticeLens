@@ -191,9 +191,300 @@ export function calculateWER(recognized: string, groundTruth: string): {
   };
 }
 
+export function extractDiscreteNumbers(text: string): number[] {
+  if (!text) return [];
+  const norm = bengaliToEnglishNumerals(text.normalize('NFC'));
+  const matches = norm.match(/\d+/g);
+  if (!matches) return [];
+  return matches.map((m) => parseInt(m, 10)).filter((n) => !isNaN(n));
+}
+
+export const MONTH_NAMES_MAP: Record<string, number> = {
+  january: 1, jan: 1,
+  february: 2, feb: 2,
+  march: 3, mar: 3,
+  april: 4, apr: 4,
+  may: 5,
+  june: 6, jun: 6,
+  july: 7, jul: 7,
+  august: 8, aug: 8,
+  september: 9, sep: 9, sept: 9,
+  october: 10, oct: 10,
+  november: 11, nov: 11,
+  december: 12, dec: 12,
+  'জানুয়ারি': 1, 'ফেব্রুয়ারি': 2, 'মার্চ': 3, 'এপ্রিল': 4,
+  'মে': 5, 'জুন': 6, 'জুলাই': 7, 'আগস্ট': 8,
+  'সেপ্টেম্বর': 9, 'অক্টোবর': 10, 'নভেম্বর': 11, 'ডিসেম্বর': 12,
+};
+
+export interface ParsedDateComponent {
+  day: number | null;
+  month: number;
+  year: number | null;
+}
+
+export function extractDateExpressions(text: string): ParsedDateComponent[] {
+  if (!text) return [];
+  const norm = bengaliToEnglishNumerals(text.normalize('NFC')).toLowerCase();
+  const results: ParsedDateComponent[] = [];
+
+  for (const [mName, mNum] of Object.entries(MONTH_NAMES_MAP)) {
+    const regex = new RegExp(`(?:^|[^a-z0-9\u0980-\u09FF])${mName}(?:$|[^a-z0-9\u0980-\u09FF])`, 'gu');
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(norm)) !== null) {
+      const matchIdx = match.index + (match[0].length - mName.length - (match[0].endsWith(' ') || match[0].endsWith('\n') ? 1 : 0));
+      const before = norm.slice(Math.max(0, matchIdx - 25), matchIdx).trim();
+      const after = norm.slice(matchIdx + mName.length, matchIdx + mName.length + 25).trim();
+
+      let day: number | null = null;
+      const dayBeforeMatch = before.match(/(\d{1,2})(?:st|nd|rd|th)?\s*$/);
+      if (dayBeforeMatch) {
+        const d = parseInt(dayBeforeMatch[1], 10);
+        if (d >= 1 && d <= 31) day = d;
+      }
+
+      let year: number | null = null;
+      const yearAfterMatch = after.match(/^\s*[:,-]?\s*(\d{4})\b/);
+      if (yearAfterMatch) {
+        year = parseInt(yearAfterMatch[1], 10);
+      }
+
+      if (day === null) {
+        const dayAfterMatch = after.match(/^\s*(\d{1,2})(?:st|nd|rd|th)?\b/);
+        if (dayAfterMatch) {
+          const d = parseInt(dayAfterMatch[1], 10);
+          if (d >= 1 && d <= 31) {
+            day = d;
+            const remaining = after.slice(dayAfterMatch[0].length).trim();
+            const yrMatch = remaining.match(/^[,]?\s*(\d{4})\b/);
+            if (yrMatch) {
+              year = parseInt(yrMatch[1], 10);
+            }
+          }
+        }
+      }
+
+      if (year === null) {
+        const yrBeforeMatch = before.match(/\b(\d{4})\s*$/);
+        if (yrBeforeMatch) {
+          year = parseInt(yrBeforeMatch[1], 10);
+        }
+      }
+
+      results.push({ day, month: mNum, year });
+    }
+  }
+
+  const numMatches = norm.matchAll(/\b(\d{1,2})[/-](\d{1,2})[/-](\d{4})\b/g);
+  for (const m of numMatches) {
+    const d = parseInt(m[1], 10);
+    const mo = parseInt(m[2], 10);
+    const yr = parseInt(m[3], 10);
+    if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
+      results.push({ day: d, month: mo, year: yr });
+    }
+  }
+
+  return results;
+}
+
+export function tokenizeBilingual(text: string): string[] {
+  if (!text) return [];
+  const normalized = bengaliToEnglishNumerals(text.normalize('NFC')).toLowerCase();
+  return normalized
+    .split(/[^a-zA-Z0-9\u0980-\u09FF]+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+export const BILINGUAL_SYNONYMS: Record<string, string[]> = {
+  // Currency terms - strictly currency terms, NOT fee concepts!
+  taka: ['টাকা', 'টাকার', 'bdt', 'tk', '৳'],
+  'টাকা': ['taka', 'bdt', 'tk', '৳'],
+  'টাকার': ['taka', 'টাকা', 'bdt', 'tk', '৳'],
+  bdt: ['taka', 'টাকা', 'tk', '৳'],
+  tk: ['taka', 'টাকা', 'bdt', '৳'],
+
+  // Fee concepts - strictly payment/fee concepts, NOT currency!
+  fee: ['fees', 'ফি', 'চার্জ'],
+  fees: ['fee', 'ফি', 'চার্জ'],
+  'ফি': ['fee', 'fees', 'চার্জ'],
+  'চার্জ': ['fee', 'fees', 'ফি', 'charge'],
+  charge: ['চার্জ', 'fee', 'fees'],
+
+  // Free indicators
+  free: ['ফ্রি', 'বিনামূল্যে'],
+  'ফ্রি': ['free', 'বিনামূল্যে'],
+  'বিনামূল্যে': ['free', 'ফ্রি'],
+
+  // Venue & Room terms (classroom is NOT a synonym for room!)
+  room: ['কক্ষ', 'রুম'],
+  'কক্ষ': ['room', 'রুম'],
+  'রুম': ['room', 'কক্ষ'],
+  venue: ['স্থান'],
+  'স্থান': ['venue'],
+  building: ['ভবন'],
+  'ভবন': ['building', 'ভবন-২'],
+
+  // Deadlines & actions
+  deadline: ['শেষ', 'তারিখের', 'তারিখ'],
+};
+
+// Automatically populate bidirectional month name synonyms for English and Bengali
+for (const [m1, num1] of Object.entries(MONTH_NAMES_MAP)) {
+  for (const [m2, num2] of Object.entries(MONTH_NAMES_MAP)) {
+    if (num1 === num2 && m1 !== m2) {
+      if (!BILINGUAL_SYNONYMS[m1]) BILINGUAL_SYNONYMS[m1] = [];
+      if (!BILINGUAL_SYNONYMS[m1].includes(m2)) {
+        BILINGUAL_SYNONYMS[m1].push(m2);
+      }
+    }
+  }
+}
+
+export function tokenMatches(tokenA: string, tokenB: string): boolean {
+  if (tokenA === tokenB) return true;
+  const synsA = BILINGUAL_SYNONYMS[tokenA] || [];
+  if (synsA.includes(tokenB)) return true;
+  const synsB = BILINGUAL_SYNONYMS[tokenB] || [];
+  if (synsB.includes(tokenA)) return true;
+
+  // OCR typo tolerance only for longer words (length >= 5)
+  if (tokenA.length >= 5 && tokenB.length >= 5) {
+    if (Math.abs(tokenA.length - tokenB.length) <= 1 && levenshteinDistance(tokenA, tokenB).distance <= 1) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const NON_FEE_EXPENSE_REGEX = /\b(?:bus\s*fare|train\s*fare|air\s*fare|fare|coffee|tea|lunch|dinner|snack|food|travel|hotel|taxi)\b/i;
+
+/**
+ * Hardened Heuristic Grounding Matcher
+ * Verifies whether an extracted evidence snippet supports a gold-annotated fact:
+ * 1. Safe normalization (NFC, lowercase, bengaliToEnglishNumerals).
+ * 2. Strict discrete number matching: A value of 50 must NEVER match 500.
+ *    Every discrete number in gold MUST be present as an exact discrete number in extracted snippet.
+ * 3. Complete date component verification: All date components (day, month, year) must match.
+ *    "January 2025" does NOT match "15 January 2025".
+ * 4. Token-boundary aware and semantic phrase matching:
+ *    "classroom 402" does NOT match "room 402".
+ *    "Bus fare 500 taka" does NOT match "fee 500 taka".
+ */
+export function doesEvidenceSupportGoldFact(
+  extractedSnippet: string | undefined,
+  expectedGoldSnippet: string
+): boolean {
+  if (!extractedSnippet || typeof extractedSnippet !== 'string') return false;
+  if (!expectedGoldSnippet || typeof expectedGoldSnippet !== 'string') return false;
+
+  const rawExt = extractedSnippet.trim();
+  const rawGold = expectedGoldSnippet.trim();
+  if (!rawExt || !rawGold) return false;
+
+  const normExt = bengaliToEnglishNumerals(rawExt.normalize('NFC'))
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const normGold = bengaliToEnglishNumerals(rawGold.normalize('NFC'))
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 1. Contextual non-fee check: Reject non-fee expenses like bus fare, coffee
+  const extHasNonFee = NON_FEE_EXPENSE_REGEX.test(normExt);
+  const goldHasNonFee = NON_FEE_EXPENSE_REGEX.test(normGold);
+  if (extHasNonFee !== goldHasNonFee) {
+    return false;
+  }
+
+  // 2. Date Component Verification
+  const goldDates = extractDateExpressions(rawGold);
+  const extDates = extractDateExpressions(rawExt);
+
+  if (goldDates.length > 0) {
+    const hasMatchingDate = goldDates.every((gDate) => {
+      return extDates.some((eDate) => {
+        if (eDate.month !== gDate.month) return false;
+        if ((gDate.year === null) !== (eDate.year === null)) return false;
+        if (gDate.year !== null && eDate.year !== null && gDate.year !== eDate.year) return false;
+        if ((gDate.day === null) !== (eDate.day === null)) return false;
+        if (gDate.day !== null && eDate.day !== null && gDate.day !== eDate.day) return false;
+        return true;
+      });
+    });
+
+    if (!hasMatchingDate) {
+      return false;
+    }
+  } else if (extDates.length > 0) {
+    const hasMonthInGold = Object.keys(MONTH_NAMES_MAP).some((m) =>
+      new RegExp(`(?:^|[^a-z0-9\u0980-\u09FF])${m}(?:$|[^a-z0-9\u0980-\u09FF])`, 'i').test(normGold)
+    );
+    if (hasMonthInGold) {
+      return false;
+    }
+  }
+
+  // 3. Discrete Number Matching
+  const goldNumbers = extractDiscreteNumbers(rawGold);
+  const extNumbers = extractDiscreteNumbers(rawExt);
+
+  if (goldNumbers.length > 0) {
+    for (const gn of goldNumbers) {
+      if (!extNumbers.includes(gn)) {
+        return false;
+      }
+    }
+    // For short standalone snippets, enforce exact number count equality
+    if (normGold.split(/\s+/).length <= 3 && normExt.split(/\s+/).length <= 3) {
+      if (goldNumbers.length !== extNumbers.length) {
+        return false;
+      }
+    }
+  }
+
+  // 4. Token-boundary matching and Semantic verification
+  const goldTokens = tokenizeBilingual(normGold);
+  const extTokens = tokenizeBilingual(normExt);
+
+  // Require fee concept if gold explicitly mentions fee
+  const FEE_CONCEPTS = ['fee', 'fees', 'ফি', 'চার্জ'];
+  const goldHasFee = goldTokens.some((t) => FEE_CONCEPTS.includes(t));
+  if (goldHasFee) {
+    const extHasFee = extTokens.some((t) => FEE_CONCEPTS.includes(t));
+    if (!extHasFee) {
+      return false;
+    }
+  }
+
+  // Filter optional grammatical markers/stopwords for robust token matching
+  const STOP_WORDS = new Set([
+    'no', 'নং', 'নম্বর', 'number', 'ও', 'and', 'the', 'in', 'at', 'on', 'of', 'for', 'to', 'is', 'এর', 'হতে', 'থেকে', 'দ্বারা', 'বাবদ', 'নির্ধারিত'
+  ]);
+
+  const sigGoldTokens = goldTokens.filter((t) => !STOP_WORDS.has(t));
+  const sigExtTokens = extTokens.filter((t) => !STOP_WORDS.has(t));
+
+  if (sigGoldTokens.length === 0) return false;
+
+  // Check if all significant gold tokens are matched by tokens in extracted snippet
+  const allGoldTokensMatched = sigGoldTokens.every((gt) => {
+    return sigExtTokens.some((et) => tokenMatches(gt, et));
+  });
+
+  if (!allGoldTokensMatched) {
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * Strict Field-Specific Match Evaluator
- * Enforces semantic boundaries and penalizes hallucinations
+ * Enforces semantic boundaries, field-specific numeric equality, and token-boundary-aware matching
  */
 export function evaluateFieldMatch(
   fieldKey: string,
@@ -203,43 +494,132 @@ export function evaluateFieldMatch(
   if (!extractedValue || !extractedValue.trim()) return false;
   if (!expectedValue || !expectedValue.trim()) return false;
 
-  const normExtracted = extractedValue.toLowerCase().normalize('NFC').trim();
-  const normExpected = expectedValue.toLowerCase().normalize('NFC').trim();
+  const rawExt = extractedValue.trim();
+  const rawExp = expectedValue.trim();
 
-  if (fieldKey === 'deadline' || fieldKey === 'eventDate') {
-    const extDigits = (bengaliToEnglishNumerals(normExtracted).match(/\d+/g) || []).join('');
-    const expDigits = (bengaliToEnglishNumerals(normExpected).match(/\d+/g) || []).join('');
-    if (extDigits === expDigits && extDigits.length > 0) return true;
-    if (normExtracted.includes(normExpected) || normExpected.includes(normExtracted)) return true;
-    return false;
+  const normExt = bengaliToEnglishNumerals(rawExt.normalize('NFC')).toLowerCase().trim();
+  const normExp = bengaliToEnglishNumerals(rawExp.normalize('NFC')).toLowerCase().trim();
+
+  // 1. Category: exact category match
+  if (fieldKey === 'category') {
+    return normExt === normExp;
   }
 
+  // 2. Fees
   if (fieldKey === 'fees') {
-    if (/free/i.test(normExpected) && /free/i.test(normExtracted)) return true;
-    const extDigits = (bengaliToEnglishNumerals(normExtracted).match(/\d+/g) || []).join('');
-    const expDigits = (bengaliToEnglishNumerals(normExpected).match(/\d+/g) || []).join('');
-    if (extDigits.includes(expDigits) || expDigits.includes(extDigits)) return true;
-    return false;
-  }
+    const isExpFree = /^(?:free|ফ্রি|বিনামূল্যে)/i.test(normExp) || /\bfree\b/i.test(normExp) || /ফ্রি|বিনামূল্যে/.test(normExp);
+    const isExtFree = /^(?:free|ফ্রি|বিনামূল্যে)/i.test(normExt) || /\bfree\b/i.test(normExt) || /ফ্রি|বিনামূল্যে/.test(normExt);
+    if (isExpFree || isExtFree) {
+      return isExpFree && isExtFree;
+    }
 
-  if (fieldKey === 'institution') {
-    const keywords = [
-      'ঢাকা বিশ্ববিদ্যালয়',
-      'buet',
-      'জাহাঙ্গীরনগর বিশ্ববিদ্যালয়',
-      'খুলনা বিশ্ববিদ্যালয়',
-      'brac',
-      'রাজশাহী বিশ্ববিদ্যালয়',
-    ];
-    for (const kw of keywords) {
-      if (normExpected.includes(kw.toLowerCase()) && normExtracted.includes(kw.toLowerCase())) {
-        return true;
+    // Contextual phrase check: reject non-fee expenses like bus fare, coffee, etc.
+    const extHasNonFee = NON_FEE_EXPENSE_REGEX.test(normExt);
+    const expHasNonFee = NON_FEE_EXPENSE_REGEX.test(normExp);
+    if (extHasNonFee !== expHasNonFee) {
+      return false;
+    }
+
+    // Require fee concept if expected explicitly mentions fee
+    const FEE_CONCEPTS = ['fee', 'fees', 'ফি', 'চার্জ'];
+    const expTokens = tokenizeBilingual(normExp);
+    const extTokens = tokenizeBilingual(normExt);
+    const expHasFee = expTokens.some((t) => FEE_CONCEPTS.includes(t));
+    if (expHasFee) {
+      const extHasFee = extTokens.some((t) => FEE_CONCEPTS.includes(t));
+      if (!extHasFee) {
+        return false;
       }
     }
-    return normExtracted.includes(normExpected) || normExpected.includes(normExtracted);
+
+    // Strict discrete number matching
+    const extNums = extractDiscreteNumbers(rawExt);
+    const expNums = extractDiscreteNumbers(rawExp);
+    if (extNums.length === 0 || expNums.length === 0) return false;
+
+    // Reject numeric inequality (e.g. 50 !== 500, 5000 !== 500)
+    // The expected fee amount (expNums[0]) must be present in extNums
+    const expectedFeeAmount = expNums[0];
+    if (!extNums.includes(expectedFeeAmount)) {
+      return false;
+    }
+
+    // In standalone amounts (e.g. "50 taka" vs "500 taka", "5000 taka" vs "500 taka"),
+    // neither should have extra conflicting numbers
+    if (extTokens.length <= 4 && expTokens.length <= 4) {
+      if (extNums.length !== expNums.length || extNums[0] !== expNums[0]) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
+  // 3. Deadline & EventDate
+  if (fieldKey === 'deadline' || fieldKey === 'eventDate') {
+    const extDates = extractDateExpressions(rawExt);
+    const expDates = extractDateExpressions(rawExp);
+
+    if (expDates.length > 0) {
+      // Complete date component verification: all date components (day, month, year) must match
+      return expDates.some((gDate) => {
+        return extDates.some((eDate) => {
+          if (eDate.month !== gDate.month) return false;
+          // Year verification
+          if ((gDate.year === null) !== (eDate.year === null)) return false;
+          if (gDate.year !== null && eDate.year !== null && gDate.year !== eDate.year) return false;
+          // Day verification
+          if ((gDate.day === null) !== (eDate.day === null)) return false;
+          if (gDate.day !== null && eDate.day !== null && gDate.day !== eDate.day) return false;
+          return true;
+        });
+      });
+    }
+
+    // Fallback for years or numeric dates without month names
+    const extNums = extractDiscreteNumbers(rawExt);
+    const expNums = extractDiscreteNumbers(rawExp);
+    if (expNums.length > 0 && extNums.length > 0) {
+      if (expNums.length === 1 && extNums.length === 1) {
+        return expNums[0] === extNums[0];
+      }
+      return expNums.length === extNums.length && expNums.every((n, i) => n === extNums[i]);
+    }
+
+    return false;
+  }
+
+  // 4. Venue: Token-boundary aware matching and discrete number equality
   if (fieldKey === 'venue') {
+    const extNums = extractDiscreteNumbers(rawExt);
+    const expNums = extractDiscreteNumbers(rawExp);
+
+    // If expected venue has numbers (e.g. room 402, 204), all expected numbers must match
+    if (expNums.length > 0) {
+      for (const en of expNums) {
+        if (!extNums.includes(en)) {
+          return false;
+        }
+      }
+      if (expNums.length === 1 && extNums.length === 1 && expNums[0] !== extNums[0]) {
+        return false;
+      }
+    }
+
+    // Token-boundary check for venue terms (e.g. room vs classroom)
+    const expTokens = tokenizeBilingual(normExp).filter(
+      (t) => !['no', 'নং', 'নম্বর', 'number', 'ও', 'and', 'the', 'in', 'at'].includes(t)
+    );
+    const extTokens = tokenizeBilingual(normExt);
+
+    // Every significant token in expected venue must find a matching token in extracted venue
+    const allSignificantTokensMatch = expTokens.every((et) => {
+      return extTokens.some((xt) => tokenMatches(et, xt));
+    });
+
+    if (allSignificantTokensMatch) return true;
+
+    // Landmark verification
     const venueMarkers = [
       'কুদরত-এ-খুদা',
       'ece building',
@@ -249,32 +629,68 @@ export function evaluateFieldMatch(
       'তৃতীয় বিজ্ঞান ভবন',
     ];
     for (const vm of venueMarkers) {
-      if (normExpected.includes(vm.toLowerCase()) && normExtracted.includes(vm.toLowerCase())) {
+      if (normExp.includes(vm.toLowerCase()) && normExt.includes(vm.toLowerCase())) {
         return true;
       }
     }
-    return normExtracted.includes(normExpected) || normExpected.includes(normExtracted);
+    return false;
   }
 
+  // 5. Institution
+  if (fieldKey === 'institution') {
+    const institutions = [
+      { name: 'ঢাকা বিশ্ববিদ্যালয়', aliases: ['university of dhaka', 'du'] },
+      { name: 'buet', aliases: ['bangladesh university of engineering and technology'] },
+      { name: 'জাহাঙ্গীরনগর বিশ্ববিদ্যালয়', aliases: ['jahangirnagar university', 'ju'] },
+      { name: 'খুলনা বিশ্ববিদ্যালয়', aliases: ['khulna university', 'ku'] },
+      { name: 'brac university', aliases: ['brac', 'bracu'] },
+      { name: 'রাজশাহী বিশ্ববিদ্যালয়', aliases: ['university of rajshahi', 'ru'] },
+    ];
+    for (const inst of institutions) {
+      const allAliases = [inst.name, ...inst.aliases];
+      const expMatches = allAliases.some((alias) => normExp.includes(alias));
+      const extMatches = allAliases.some((alias) => normExt.includes(alias));
+      if (expMatches && extMatches) return true;
+    }
+    // Token boundary matching
+    const expTokens = tokenizeBilingual(normExp);
+    const extTokens = tokenizeBilingual(normExt);
+    return expTokens.every((et) => extTokens.some((xt) => tokenMatches(et, xt)));
+  }
+
+  // 6. Contact: Email or exact identifier match
   if (fieldKey === 'contact') {
-    return normExtracted.includes(normExpected) || normExpected.includes(normExtracted);
-  }
-
-  if (fieldKey === 'requiredDocuments') {
-    const docMarkers = ['প্রবেশপত্র', 'student id', 'মার্কশিট', 'transcript'];
-    for (const dm of docMarkers) {
-      if (normExpected.includes(dm.toLowerCase()) && normExtracted.includes(dm.toLowerCase())) {
-        return true;
-      }
+    const extEmail = normExt.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/)?.[0];
+    const expEmail = normExp.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/)?.[0];
+    if (extEmail && expEmail) {
+      return extEmail === expEmail;
     }
-    return normExtracted.includes(normExpected) || normExpected.includes(normExtracted);
+    return normExt.includes(normExp) || normExp.includes(normExt);
   }
 
-  if (fieldKey === 'category') {
-    return normExtracted === normExpected;
+  // 7. Required Documents: Semantic keywords with token boundaries
+  if (fieldKey === 'requiredDocuments') {
+    const docConcepts = [
+      ['প্রবেশপত্র', 'admit card'],
+      ['student id', 'student identification'],
+      ['মার্কশিট', 'transcript', 'academic transcript'],
+      ['সার্টিফিকেট', 'certificate'],
+      ['recommendation'],
+    ];
+    for (const group of docConcepts) {
+      const expHas = group.some((term) => normExp.includes(term));
+      const extHas = group.some((term) => normExt.includes(term));
+      if (expHas && extHas) return true;
+    }
+    return false;
   }
 
-  return normExtracted.includes(normExpected) || normExpected.includes(normExtracted);
+  // 8. Title and other fields: token boundary matching
+  const expTokens = tokenizeBilingual(normExp).filter((t) => t.length > 2);
+  const extTokens = tokenizeBilingual(normExt);
+  if (expTokens.length === 0) return false;
+  const matchCount = expTokens.filter((et) => extTokens.some((xt) => tokenMatches(et, xt))).length;
+  return matchCount / expTokens.length >= 0.6;
 }
 
 const EVAL_FIELDS = [
@@ -365,236 +781,6 @@ function evaluateExtraction(
   const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
 
   return { totalTP, totalFP, totalFN, precision, recall, f1, docResults };
-}
-
-export function extractDiscreteNumbers(text: string): string[] {
-  if (!text) return [];
-  const norm = bengaliToEnglishNumerals(text.normalize('NFC'));
-  return norm.split(/\D+/).filter((s) => s.length > 0);
-}
-
-const MONTH_NAMES_MAP: Record<string, number> = {
-  january: 1, jan: 1,
-  february: 2, feb: 2,
-  march: 3, mar: 3,
-  april: 4, apr: 4,
-  may: 5,
-  june: 6, jun: 6,
-  july: 7, jul: 7,
-  august: 8, aug: 8,
-  september: 9, sep: 9, sept: 9,
-  october: 10, oct: 10,
-  november: 11, nov: 11,
-  december: 12, dec: 12,
-  'জানুয়ারি': 1, 'ফেব্রুয়ারি': 2, 'মার্চ': 3, 'এপ্রিল': 4,
-  'মে': 5, 'জুন': 6, 'জুলাই': 7, 'আগস্ট': 8,
-  'সেপ্টেম্বর': 9, 'অক্টোবর': 10, 'নভেম্বর': 11, 'ডিসেম্বর': 12,
-};
-
-export interface ParsedDateComponent {
-  day: number | null;
-  month: number;
-  year: number | null;
-}
-
-export function extractDateExpressions(text: string): ParsedDateComponent[] {
-  if (!text) return [];
-  const norm = bengaliToEnglishNumerals(text.normalize('NFC')).toLowerCase();
-  const results: ParsedDateComponent[] = [];
-
-  for (const [mName, mNum] of Object.entries(MONTH_NAMES_MAP)) {
-    const regex = new RegExp(`(?:^|[^a-z0-9\u0980-\u09FF])${mName}(?:$|[^a-z0-9\u0980-\u09FF])`, 'gu');
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(norm)) !== null) {
-      const matchIdx = match.index + (match[0].length - mName.length - (match[0].endsWith(' ') || match[0].endsWith('\n') ? 1 : 0));
-      const before = norm.slice(Math.max(0, matchIdx - 25), matchIdx).trim();
-      const after = norm.slice(matchIdx + mName.length, matchIdx + mName.length + 25).trim();
-
-      let day: number | null = null;
-      const dayBeforeMatch = before.match(/(\d{1,2})(?:st|nd|rd|th)?\s*$/);
-      if (dayBeforeMatch) {
-        const d = parseInt(dayBeforeMatch[1], 10);
-        if (d >= 1 && d <= 31) day = d;
-      }
-
-      let year: number | null = null;
-      const yearAfterMatch = after.match(/^\s*[:,-]?\s*(\d{4})\b/);
-      if (yearAfterMatch) {
-        year = parseInt(yearAfterMatch[1], 10);
-      }
-
-      if (day === null) {
-        const dayAfterMatch = after.match(/^\s*(\d{1,2})(?:st|nd|rd|th)?\b/);
-        if (dayAfterMatch) {
-          const d = parseInt(dayAfterMatch[1], 10);
-          if (d >= 1 && d <= 31) {
-            day = d;
-            const remaining = after.slice(dayAfterMatch[0].length).trim();
-            const yrMatch = remaining.match(/^[,]?\s*(\d{4})\b/);
-            if (yrMatch) {
-              year = parseInt(yrMatch[1], 10);
-            }
-          }
-        }
-      }
-
-      if (year === null) {
-        const yrBeforeMatch = before.match(/\b(\d{4})\s*$/);
-        if (yrBeforeMatch) {
-          year = parseInt(yrBeforeMatch[1], 10);
-        }
-      }
-
-      results.push({ day, month: mNum, year });
-    }
-  }
-
-  const numMatches = norm.matchAll(/\b(\d{1,2})[/-](\d{1,2})[/-](\d{4})\b/g);
-  for (const m of numMatches) {
-    const d = parseInt(m[1], 10);
-    const mo = parseInt(m[2], 10);
-    const yr = parseInt(m[3], 10);
-    if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
-      results.push({ day: d, month: mo, year: yr });
-    }
-  }
-
-  return results;
-}
-
-const BILINGUAL_SYNONYMS: Record<string, string[]> = {
-  taka: ['টাকা', 'টাকার', 'ফি', 'fee', '/-'],
-  'টাকা': ['taka', 'bdt', 'ফি', 'fee', '/-'],
-  fee: ['ফি', 'টাকা', 'taka', '/-'],
-  'ফি': ['fee', 'টাকা', 'taka', '/-'],
-  free: ['ফ্রি', 'বিনামূল্যে', 'free'],
-  'ফ্রি': ['free', 'বিনামূল্যে'],
-  room: ['কক্ষ', 'রুম'],
-  'কক্ষ': ['room', 'রুম'],
-  'রুম': ['room', 'কক্ষ'],
-  deadline: ['শেষ', 'তারিখের', 'তারিখ'],
-  venue: ['স্থান'],
-  'স্থান': ['venue', 'ভবন', 'building'],
-  building: ['ভবন'],
-  'ভবন': ['building', 'ভবন-২'],
-};
-
-// Automatically populate bidirectional month name synonyms for English and Bengali
-for (const [m1, num1] of Object.entries(MONTH_NAMES_MAP)) {
-  for (const [m2, num2] of Object.entries(MONTH_NAMES_MAP)) {
-    if (num1 === num2 && m1 !== m2) {
-      if (!BILINGUAL_SYNONYMS[m1]) BILINGUAL_SYNONYMS[m1] = [];
-      BILINGUAL_SYNONYMS[m1].push(m2);
-    }
-  }
-}
-
-/**
- * Hardened Heuristic Grounding Matcher
- * Verifies whether an extracted evidence snippet supports a gold-annotated fact:
- * 1. Safe normalization (NFC, lowercase, bengaliToEnglishNumerals).
- * 2. Strict discrete number matching: A value of 50 must NEVER match 500.
- *    Every discrete number in gold MUST be present as an exact discrete number in extracted snippet.
- * 3. Complete date component verification: All date components (day, month, year) must match.
- *    "January 2025" does NOT match "15 January 2025".
- * 4. Punctuation/whitespace/OCR tolerant text matching without loose token-overlap heuristics.
- */
-export function doesEvidenceSupportGoldFact(
-  extractedSnippet: string | undefined,
-  expectedGoldSnippet: string
-): boolean {
-  if (!extractedSnippet || typeof extractedSnippet !== 'string') return false;
-  if (!expectedGoldSnippet || typeof expectedGoldSnippet !== 'string') return false;
-
-  const rawExt = extractedSnippet.trim();
-  const rawGold = expectedGoldSnippet.trim();
-  if (!rawExt || !rawGold) return false;
-
-  const normExt = bengaliToEnglishNumerals(rawExt.normalize('NFC'))
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const normGold = bengaliToEnglishNumerals(rawGold.normalize('NFC'))
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // 1. Date Component Verification
-  const goldDates = extractDateExpressions(rawGold);
-  const extDates = extractDateExpressions(rawExt);
-
-  if (goldDates.length > 0) {
-    const hasMatchingDate = goldDates.some((gDate) => {
-      return extDates.some((eDate) => {
-        if (eDate.month !== gDate.month) return false;
-        if (gDate.year !== null && eDate.year !== null && gDate.year !== eDate.year) return false;
-        if ((gDate.year === null) !== (eDate.year === null)) return false;
-        if (gDate.day !== null && eDate.day !== null && gDate.day !== eDate.day) return false;
-        if ((gDate.day === null) !== (eDate.day === null)) return false;
-        return true;
-      });
-    });
-
-    if (!hasMatchingDate) {
-      return false;
-    }
-  } else if (extDates.length > 0) {
-    const hasMonthInGold = Object.keys(MONTH_NAMES_MAP).some((m) => normGold.includes(m));
-    if (hasMonthInGold && goldDates.length === 0) {
-      return false;
-    }
-  }
-
-  // 2. Discrete Number Matching
-  const goldNumbers = extractDiscreteNumbers(rawGold);
-  const extNumbers = extractDiscreteNumbers(rawExt);
-
-  if (goldNumbers.length > 0) {
-    for (const gn of goldNumbers) {
-      if (!extNumbers.includes(gn)) {
-        return false;
-      }
-    }
-  }
-
-  // 3. Textual / Semantic Verification
-  if (normExt.includes(normGold)) {
-    return true;
-  }
-
-  if (normGold.includes(normExt) && normExt.length >= 10 && goldNumbers.length === extNumbers.length) {
-    return true;
-  }
-
-  const cleanTokens = (t: string) =>
-    t
-      .replace(/[•*|_[\]/—–\\:(),।]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .split(' ')
-      .filter((w) => w.length > 2);
-
-  const goldTokens = cleanTokens(normGold);
-  const extTokens = cleanTokens(normExt);
-
-  if (goldTokens.length > 0) {
-    const allTokensPresent = goldTokens.every((gt) => {
-      if (extTokens.includes(gt) || normExt.includes(gt)) return true;
-      const syns = BILINGUAL_SYNONYMS[gt] || [];
-      if (syns.some((syn) => extTokens.includes(syn) || normExt.includes(syn))) return true;
-      if (gt.length >= 5) {
-        return extTokens.some((et) => et.length >= 4 && levenshteinDistance(gt, et).distance <= 1);
-      }
-      return false;
-    });
-
-    if (allTokensPresent) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 export function evaluateEvidenceGrounding(
@@ -757,31 +943,78 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
     });
   });
 
-  // REQUIREMENT: Unit Tests for Hardened Grounding Matcher (False Positives & False Negatives)
-  describe('Hardened Grounding Matcher Unit Tests (False Positive & Negative Prevention)', () => {
-    it('strictly rejects partial numeric substring matches (50 taka vs 500 taka)', () => {
-      // 50 vs 500 in English and Bengali
-      expect(doesEvidenceSupportGoldFact('ফ্রি বাবদ ৫০ টাকা', '৫০০ টাকা')).toBe(false);
-      expect(doesEvidenceSupportGoldFact('fee 50 taka', '500 taka')).toBe(false);
+  // REQUIREMENT: Unit Tests for evaluateFieldMatch (Token-Boundary, Numeric Equality, & Counterexamples)
+  describe('evaluateFieldMatch Unit Tests (Counterexample & Normalization Verification)', () => {
+    it('strictly rejects non-fee expenses when evaluating fee amounts', () => {
+      expect(evaluateFieldMatch('fees', 'Bus fare 500 taka', 'fee 500 taka')).toBe(false);
+      expect(evaluateFieldMatch('fees', 'fee 500 taka', 'Bus fare 500 taka')).toBe(false);
+      expect(evaluateFieldMatch('fees', 'coffee 500 taka', 'fee 500 taka')).toBe(false);
+      expect(evaluateFieldMatch('fees', 'fee 500 taka', 'coffee 500 taka')).toBe(false);
+    });
+
+    it('strictly rejects substring venue matches without token boundaries (classroom 402 vs room 402)', () => {
+      expect(evaluateFieldMatch('venue', 'classroom 402', 'room 402')).toBe(false);
+      expect(evaluateFieldMatch('venue', 'room 402', 'classroom 402')).toBe(false);
+    });
+
+    it('strictly rejects partial numeric matches in fees (50 taka vs 500 taka, 5000 taka vs 500 taka)', () => {
+      expect(evaluateFieldMatch('fees', '50 taka', '500 taka')).toBe(false);
+      expect(evaluateFieldMatch('fees', '500 taka', '50 taka')).toBe(false);
+      expect(evaluateFieldMatch('fees', '5000 taka', '500 taka')).toBe(false);
+      expect(evaluateFieldMatch('fees', '500 taka', '5000 taka')).toBe(false);
+      expect(evaluateFieldMatch('fees', '৫০ টাকা', '৫০০ টাকা')).toBe(false);
+      expect(evaluateFieldMatch('fees', '৫০০০ টাকা', '৫০০ টাকা')).toBe(false);
+    });
+
+    it('strictly rejects conflicting years and incomplete date matches (2025 vs 2026, January 2025 vs 15 January 2025)', () => {
+      expect(evaluateFieldMatch('deadline', '2025', '2026')).toBe(false);
+      expect(evaluateFieldMatch('deadline', '2026', '2025')).toBe(false);
+      expect(evaluateFieldMatch('deadline', 'January 2025', '15 January 2025')).toBe(false);
+      expect(evaluateFieldMatch('deadline', '15 January 2025', 'January 2025')).toBe(false);
+      expect(evaluateFieldMatch('deadline', '১৫ জানুয়ারি ২০২৫', 'জানুয়ারি ২০২৫')).toBe(false);
+      expect(evaluateFieldMatch('deadline', 'জানুয়ারি ২০২৫', '১৫ জানুয়ারি ২০২৫')).toBe(false);
+    });
+
+    it('preserves legitimate Bengali-English normalizations', () => {
+      expect(evaluateFieldMatch('fees', '৫০০ টাকা', '500 taka')).toBe(true);
+      expect(evaluateFieldMatch('fees', '500 taka', '৫০০ টাকা')).toBe(true);
+      expect(evaluateFieldMatch('deadline', '২৫ অক্টোবর ২০২৪', '25 October 2024')).toBe(true);
+      expect(evaluateFieldMatch('deadline', '25 October 2024', '২৫ অক্টোবর ২০২৪')).toBe(true);
+      expect(evaluateFieldMatch('venue', 'রুম ২০৪', 'Room No. 204')).toBe(true);
+      expect(evaluateFieldMatch('venue', 'Room No. 204', 'রুম ২০৪')).toBe(true);
+    });
+  });
+
+  // REQUIREMENT: Unit Tests for doesEvidenceSupportGoldFact (Token-Boundary, Semantic Concepts, & Counterexamples)
+  describe('doesEvidenceSupportGoldFact Unit Tests (Counterexample & Grounding Verification)', () => {
+    it('strictly rejects non-fee expenses vs fee requirements', () => {
+      expect(doesEvidenceSupportGoldFact('Bus fare 500 taka', 'fee 500 taka')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('fee 500 taka', 'Bus fare 500 taka')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('coffee 500 taka', 'fee 500 taka')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('fee 500 taka', 'coffee 500 taka')).toBe(false);
+    });
+
+    it('strictly rejects substring venue matches without token boundaries (classroom 402 vs room 402)', () => {
+      expect(doesEvidenceSupportGoldFact('classroom 402', 'room 402')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('room 402', 'classroom 402')).toBe(false);
+    });
+
+    it('strictly rejects partial numeric matches in evidence (50 taka vs 500 taka, 5000 taka vs 500 taka)', () => {
+      expect(doesEvidenceSupportGoldFact('50 taka', '500 taka')).toBe(false);
       expect(doesEvidenceSupportGoldFact('500 taka', '50 taka')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('5000 taka', '500 taka')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('500 taka', '5000 taka')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('ফ্রি বাবদ ৫০ টাকা', '৫০০ টাকা')).toBe(false);
       expect(doesEvidenceSupportGoldFact('fee 50 taka', '500/- taka')).toBe(false);
-      expect(doesEvidenceSupportGoldFact('the cost is 50 bdt', '500 bdt')).toBe(false);
     });
 
-    it('strictly rejects conflicting year components (2025 vs 2026)', () => {
-      expect(doesEvidenceSupportGoldFact('Event scheduled for 2025', 'Event in 2026')).toBe(false);
-      expect(doesEvidenceSupportGoldFact('Event scheduled for 2026', 'Event in 2025')).toBe(false);
+    it('strictly rejects conflicting years and incomplete date matches (2025 vs 2026, January 2025 vs 15 January 2025)', () => {
       expect(doesEvidenceSupportGoldFact('2025', '2026')).toBe(false);
-      expect(doesEvidenceSupportGoldFact('২০২৫', '২০২৬')).toBe(false);
-    });
-
-    it('strictly rejects incomplete date matches where day is missing (15 January 2025 vs January 2025)', () => {
-      // Extracted missing day component required by gold
-      expect(doesEvidenceSupportGoldFact('Deadline is January 2025', '15 January 2025')).toBe(false);
-      // Gold missing day component present in extracted (incomplete-date mismatch)
+      expect(doesEvidenceSupportGoldFact('2026', '2025')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('Event scheduled for 2025', 'Event in 2026')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('January 2025', '15 January 2025')).toBe(false);
       expect(doesEvidenceSupportGoldFact('15 January 2025', 'January 2025')).toBe(false);
-      // Conflicting day components
-      expect(doesEvidenceSupportGoldFact('16 January 2025', '15 January 2025')).toBe(false);
+      expect(doesEvidenceSupportGoldFact('Deadline is January 2025', '15 January 2025')).toBe(false);
       expect(doesEvidenceSupportGoldFact('১৫ জানুয়ারি ২০২৫', 'জানুয়ারি ২০২৫')).toBe(false);
       expect(doesEvidenceSupportGoldFact('জানুয়ারি ২০২৫', '১৫ জানুয়ারি ২০২৫')).toBe(false);
     });
@@ -793,10 +1026,14 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
       expect(doesEvidenceSupportGoldFact('কক্ষ নং ৪০৩', 'কক্ষ নং ৪০২')).toBe(false);
     });
 
-    it('accepts Bengali digits with equivalent English digits and currency terms', () => {
-      expect(doesEvidenceSupportGoldFact('ফি ৫০০ টাকা', '500 taka')).toBe(true);
+    it('preserves legitimate Bengali-English normalizations', () => {
+      expect(doesEvidenceSupportGoldFact('৫০০ টাকা', '500 taka')).toBe(true);
+      expect(doesEvidenceSupportGoldFact('500 taka', '৫০০ টাকা')).toBe(true);
+      expect(doesEvidenceSupportGoldFact('২৫ অক্টোবর ২০২৪', '25 October 2024')).toBe(true);
       expect(doesEvidenceSupportGoldFact('25 October 2024', '২৫ অক্টোবর ২০২৪')).toBe(true);
+      expect(doesEvidenceSupportGoldFact('রুম ২০৪', 'Room No. 204')).toBe(true);
       expect(doesEvidenceSupportGoldFact('Room No. 204', 'রুম ২০৪')).toBe(true);
+      expect(doesEvidenceSupportGoldFact('ফি ৫০০ টাকা', '500 taka')).toBe(true);
       expect(doesEvidenceSupportGoldFact('১২০০/- টাকা', '1200 taka')).toBe(true);
       expect(doesEvidenceSupportGoldFact('৭৫০/- টাকা', '750/-')).toBe(true);
     });
@@ -1005,13 +1242,13 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
     console.log('   DYNAMICALLY MEASURED EXECUTION LATENCIES (performance.now() real measurements)       ');
     console.log('----------------------------------------------------------------------------------------');
     console.log(`1. Image Read from Disk:                 Median: ${imgLoadStats.median.toFixed(2)} ms | P90: ${imgLoadStats.p90.toFixed(2)} ms`);
-    console.log(`2. Cold Worker Initialization:           ${coldWorkerInitMs.toFixed(1)} ms (Web Worker creation, script eval & IPC handshake)`);
-    console.log(`3. Warm Worker Reinitialization (Reused):${warmWorkerInitMs.toFixed(1)} ms (active worker thread reinitialize)`);
-    console.log(`4. Language Model Worker Pool Load:      ${modelLoadTimeMs.toFixed(1)} ms (bilingual model dictionary load in memory)`);
+    console.log(`2. Cold Worker Initialization:           ${coldWorkerInitMs.toFixed(1)} ms (createWorker() includes worker setup, core loading, language loading and initialization)`);
+    console.log(`3. Warm Worker Reinitialization (Reused):${warmWorkerInitMs.toFixed(1)} ms (warm reinitialization reuses the existing worker)`);
+    console.log(`4. Language Model Worker Pool Load:      ${modelLoadTimeMs.toFixed(1)} ms (measures three sequential worker creations for ben, eng, ben+eng)`);
     console.log(`5. OCR Recognition Latency:              Median: ${recStats.median.toFixed(1)} ms | P90: ${recStats.p90.toFixed(1)} ms`);
     console.log(`6. Structured Extraction Latency:        Median: ${extStats.median.toFixed(2)} ms | P90: ${extStats.p90.toFixed(2)} ms`);
     console.log(`7. Per-Doc Pipeline Latency (Warm):      Median: ${e2eStats.median.toFixed(1)} ms | P90: ${e2eStats.p90.toFixed(1)} ms`);
-    console.log('   (Note: Per-document pipeline latency measures read + OCR + extraction with workers already initialized and models in memory)');
+    console.log('   (Note: Per-document warm pipeline timing excludes worker and language-model setup; measures image read + OCR + extraction)');
     console.log('========================================================================================\n');
 
     // 8. Evidence Grounding Evaluation across all 3 Modes
@@ -1117,13 +1354,13 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
           imageLoadP90Ms: imgLoadStats.p90,
           coldWorkerInitMs,
           coldWorkerInitDescription:
-            'Cold worker initialization includes Web Worker spawn, script evaluation (worker.min.js), and IPC handshake.',
+            'createWorker() includes worker setup, core loading, language loading and initialization.',
           warmWorkerInitMs,
           warmWorkerInitDescription:
-            'Warm worker reinitialization reuses active worker thread via reinitialize("eng").',
+            'Warm reinitialization reuses the existing worker.',
           languageModelPoolLoadMs: modelLoadTimeMs,
           languageModelPoolLoadDescription:
-            'Loading bilingual language models (ben + eng) into memory.',
+            'The current worker-pool timing measures three sequential worker creations (ben, eng, ben+eng), each including worker setup, core loading, language loading and initialization.',
           ocrRecognitionMedianMs: recStats.median,
           ocrRecognitionP90Ms: recStats.p90,
           structuredExtractionMedianMs: extStats.median,
@@ -1132,7 +1369,7 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
           perDocumentPipelineP90Ms: e2eStats.p90,
           sampleCount: BENCHMARK_DATASET.length,
           scopeDescription:
-            'Per-document pipeline latency measures image read + OCR recognition + structured extraction with worker threads already initialized and models loaded in memory.',
+            'Per-document warm pipeline timing excludes worker and language-model setup.',
         },
       },
       documents: BENCHMARK_DATASET.map((doc, idx) => ({

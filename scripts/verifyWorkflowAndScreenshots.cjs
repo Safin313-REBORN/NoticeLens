@@ -199,20 +199,33 @@ async function run() {
       deviceScaleFactor: 1,
       mobile: false
     });
-    await delay(1000);
-    // Explicitly navigate if needed and wait for DOM and title to load
+    await delay(500);
+
+    // Explicitly navigate to ensure Chrome loads the application shell
+    await send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+
     let homeTitle = '';
+    let currentUrl = '';
     for (let i = 0; i < 30; i++) {
       try {
+        currentUrl = (await evaluate('window.location.href')) || '';
         homeTitle = (await evaluate('document.title')) || '';
         if (homeTitle.includes('NoticeLens')) break;
+
+        // If Chrome rendered an error page (title "127.0.0.1" / chromewebdata), re-trigger navigation
+        if (homeTitle === '127.0.0.1' || currentUrl.includes('chromewebdata')) {
+          await send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+        }
       } catch {
         // wait for page
       }
       await delay(500);
     }
-    console.log(`   Document Title: "${homeTitle}"`);
+    console.log(`   Document Title: "${homeTitle}" (URL: ${currentUrl})`);
     if (!homeTitle.includes('NoticeLens')) {
+      if (homeTitle === '127.0.0.1' || currentUrl.includes('chromewebdata')) {
+        throw new Error(`Diagnosis: Headless Chrome loaded internal error page (URL: "${currentUrl}", Title: "${homeTitle}"). The Vite dev server at http://127.0.0.1:5173 was not reachable. Ensure "npm run dev -- --host 127.0.0.1 --port 5173" is running.`);
+      }
       throw new Error(`Expected title to include "NoticeLens", got "${homeTitle}"`);
     }
 

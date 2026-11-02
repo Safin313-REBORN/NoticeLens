@@ -277,18 +277,30 @@ async function run() {
   const session1 = await launchChrome(p1Dir, port1);
 
   try {
+    // Explicitly navigate to ensure application shell is loaded
+    await session1.send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+
     let title = '';
+    let currentUrl = '';
     for (let i = 0; i < 30; i++) {
       try {
+        currentUrl = (await session1.evaluate('window.location.href')) || '';
         title = (await session1.evaluate('document.title')) || '';
         if (title.includes('NoticeLens')) break;
+
+        if (title === '127.0.0.1' || currentUrl.includes('chromewebdata')) {
+          await session1.send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+        }
       } catch {
         // wait
       }
       await delay(500);
     }
-    console.log(`[1.2] Loaded page title: "${title}"`);
+    console.log(`[1.2] Loaded page title: "${title}" (URL: ${currentUrl})`);
     if (!title.includes('NoticeLens')) {
+      if (title === '127.0.0.1' || currentUrl.includes('chromewebdata')) {
+        throw new Error(`Diagnosis: Headless Chrome loaded internal error page (URL: "${currentUrl}", Title: "${title}"). The Vite dev server at http://127.0.0.1:5173 was not reachable. Ensure "npm run dev -- --host 127.0.0.1 --port 5173" is running.`);
+      }
       throw new Error(`Expected title to include "NoticeLens", got "${title}"`);
     }
 
@@ -613,7 +625,19 @@ async function run() {
   const session2 = await launchChrome(p2Dir, port2);
 
   try {
-    await delay(1500);
+    // Explicitly navigate and wait for application shell to load before cutting network
+    await session2.send('Page.navigate', { url: 'http://127.0.0.1:5173/' });
+    let p3Title = '';
+    for (let i = 0; i < 30; i++) {
+      try {
+        p3Title = (await session2.evaluate('document.title')) || '';
+        if (p3Title.includes('NoticeLens')) break;
+      } catch {}
+      await delay(500);
+    }
+    if (!p3Title.includes('NoticeLens')) {
+      throw new Error(`Expected fresh profile to load NoticeLens before cutting network, got: "${p3Title}"`);
+    }
 
     console.log('[3.2] Setting network to OFFLINE BEFORE running OCR on fresh profile...');
     await session2.send('Network.emulateNetworkConditions', {

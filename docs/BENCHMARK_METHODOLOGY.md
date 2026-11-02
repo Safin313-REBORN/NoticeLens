@@ -71,7 +71,7 @@ $$\text{Gold Fact Evidence Recall} = \frac{\text{Gold Facts with Verified Suppor
 $$\text{Field-to-Evidence Association Accuracy} = \frac{\text{Gold Facts with Verified Supporting Evidence}}{\text{Total Gold Facts Extracted with Evidence}}$$
 
 > [!NOTE]
-> In NoticeLens, **Evidence Span Verbatim Precision is 100.00%** (every attached evidence span is verified verbatim against the source transcript at exact character offsets) with **100.00% Character Offset Accuracy**, while **Overall Grounding Coverage is 84.21%** (48/57 fields; abstract taxonomic fields like `category` and inferred headers do not carry direct quote snippets). **Field-Value Extraction Accuracy is 84.85%** (28/33). Under our hardened heuristic evidence matcher, **Heuristic Gold Evidence Recall is 75.76%** (25/33 gold annotations matched with verified supporting snippets), and **Heuristic Field-to-Evidence Association Accuracy is 89.29%** (25/28 extracted gold fields with evidence point to the authentic supporting sentence), with a **Joint Value & Evidence Match Rate of 75.76%** (25/33). We explicitly describe these as heuristic annotation-matching metrics and do NOT describe verbatim substring presence as "proof of zero hallucinations."
+> In NoticeLens, **Evidence Span Verbatim Precision is 100.00%** (every attached evidence span is verified verbatim against the source transcript at exact character offsets) with **100.00% Character Offset Accuracy**, while **Overall Grounding Coverage is 84.21%** (48/57 fields; abstract taxonomic fields like `category` and inferred headers do not carry direct quote snippets). **Field-Value Extraction Accuracy is 81.82%** (27/33). Under our hardened heuristic evidence matcher, **Heuristic Gold Evidence Recall is 72.73%** (24/33 gold annotations matched with verified supporting snippets), and **Heuristic Field-to-Evidence Association Accuracy is 85.71%** (24/28 extracted gold fields with evidence point to the authentic supporting sentence), with a **Joint Value & Evidence Match Rate of 72.73%** (24/33). We explicitly describe these as heuristic annotation-matching metrics and do NOT describe verbatim substring presence as "proof of zero hallucinations."
 
 ---
 
@@ -137,13 +137,13 @@ Evaluating the extraction engine across three distinct operational modes reveals
 - **Overall Grounding Coverage:** **84.21%** (48 / 57 fields; remaining 9 fields are abstract category taxonomy tags)
 - **Total Gold Annotated Facts:** 33
 - **Gold Facts with Any Evidence Attached:** 28
-- **Gold Facts with Matching Field Value:** 28
-- **Gold Facts with Verified Matching Evidence:** 25
-- **Gold Facts with Both Value & Evidence Match:** 25
-- **Field-Value Extraction Accuracy:** **84.85%** (28 / 33 gold annotations matched in extracted values)
-- **Heuristic Gold Evidence Recall:** **75.76%** (25 / 33 gold annotations matched with verified supporting snippets via hardened heuristic matcher)
-- **Heuristic Field-to-Evidence Association Accuracy:** **89.29%** (25 / 28 gold fields with evidence point to the authentic supporting sentence)
-- **Joint Value & Evidence Match Rate:** **75.76%** (25 / 33 gold annotations matched in both extracted value and evidence)
+- **Gold Facts with Matching Field Value:** 27
+- **Gold Facts with Verified Matching Evidence:** 24
+- **Gold Facts with Both Value & Evidence Match:** 24
+- **Field-Value Extraction Accuracy:** **81.82%** (27 / 33 gold annotations matched in extracted values)
+- **Heuristic Gold Evidence Recall:** **72.73%** (24 / 33 gold annotations matched with verified supporting snippets via hardened heuristic matcher)
+- **Heuristic Field-to-Evidence Association Accuracy:** **85.71%** (24 / 28 gold fields with evidence point to the authentic supporting sentence)
+- **Joint Value & Evidence Match Rate:** **72.73%** (24 / 33 gold annotations matched in both extracted value and evidence)
 - **Stale Evidence Invalidation:** Verified via automated regression (mutating transcript automatically purges out-of-date evidence offsets).
 
 ---
@@ -154,13 +154,13 @@ All latency measurements are measured dynamically using `performance.now()` acro
 
 | Pipeline Stage | Measurement Mode | Current Dynamic Latency | Historical Baseline | Scope & Measurement Notes |
 | :--- | :---: | :---: | :---: | :--- |
-| **1. Image File Ingest / Read** | Repeated File Read | **0.48 ms (Median) / 0.58 ms (P90)** | 0.56 ms (Med) / 0.67 ms (P90) | `fs.promises.readFile` of fixture PNGs |
-| **2. Cold Worker Initialization** | Fresh Process Launch | **490.2 ms** | 504.9 ms | Cold worker initialization includes Web Worker spawn, script evaluation (`worker.min.js`), and IPC handshake (not pure thread-spawn time) |
-| **3. Warm Worker Reinitialization** | Reused Active Thread | **134.0 ms** | 137.9 ms | `benchWorker.reinitialize('eng')` on active worker thread |
-| **4. Language Model Pool Load** | Pre-warming (`ben`, `eng`, `ben+eng`) | **720.5 ms** | 718.1 ms | Concurrent multi-language model dictionary load in memory |
-| **5. OCR Recognition Latency** | Full-Page Recognition | **959.6 ms (Median) / 1544.1 ms (P90)** | 961.7 ms (Med) / 1556.6 ms (P90) | Range: ~750 ms (English) to ~1600 ms (Mixed bilingual) |
-| **6. Structured Extraction (`processNoticeDocument`)** | Pure In-Memory NLP | **1.66 ms (Median) / 10.31 ms (P90)** | 2.36 ms (Med) / 9.63 ms (P90) | High-speed regex + deterministic parser |
-| **Per-Document Pipeline Latency (Warm)** | Complete Per-Document Pipeline | **966.9 ms (Median) / 1546.4 ms (P90)** | 968.7 ms (Med) / 1559.4 ms (P90) | **Image Read + OCR Recognition + Extraction (worker initialized & models loaded)** |
+| **1. Image File Ingest / Read** | Repeated File Read | **0.43 ms (Median) / 0.61 ms (P90)** | 0.56 ms (Med) / 0.67 ms (P90) | `fs.promises.readFile` of fixture PNGs |
+| **2. Cold Worker Initialization** | Fresh Process Launch | **452.0 ms** | 504.9 ms | `createWorker()` includes worker setup, core loading, language loading and initialization |
+| **3. Warm Worker Reinitialization** | Reused Active Thread | **131.1 ms** | 137.9 ms | Warm reinitialization reuses the existing worker via `benchWorker.reinitialize('eng')` |
+| **4. Language Model Pool Load** | Sequential Worker Pool Creation (`ben`, `eng`, `ben+eng`) | **712.8 ms** | 718.1 ms | Measures three sequential worker creations, each including worker setup, core loading, language loading and initialization |
+| **5. OCR Recognition Latency** | Full-Page Recognition | **951.1 ms (Median) / 1552.2 ms (P90)** | 961.7 ms (Med) / 1556.6 ms (P90) | Range: ~750 ms (English) to ~1600 ms (Mixed bilingual) |
+| **6. Structured Extraction (`processNoticeDocument`)** | Pure In-Memory NLP | **1.62 ms (Median) / 9.82 ms (P90)** | 2.36 ms (Med) / 9.63 ms (P90) | High-speed regex + deterministic parser |
+| **Per-Document Pipeline Latency (Warm)** | Complete Per-Document Pipeline | **958.1 ms (Median) / 1554.8 ms (P90)** | 968.7 ms (Med) / 1559.4 ms (P90) | **Image Read + OCR Recognition + Extraction (excludes worker and language-model setup)** |
 
 ---
 

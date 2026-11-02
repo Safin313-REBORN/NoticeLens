@@ -96,19 +96,19 @@ Evaluated across our controlled 6-document synthetic pilot corpus (rendered from
   - **Factual Evidence Span Precision:** **100.00%** (48/48 attached quotes match source text verbatim; applies strictly to attached quotes)
   - **Character Offset Mapping Accuracy:** **100.00%** (1-to-1 character range slices map to exact source offsets)
   - **Overall Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category classifications)
-  - **Field-Value Extraction Accuracy:** **84.85%** (28/33 gold annotations matched in extracted values)
-  - **Heuristic Gold Evidence Recall:** **75.76%** (25/33 gold annotations retrieved with verified supporting snippets via hardened heuristic matcher)
-  - **Heuristic Field-to-Evidence Association Accuracy:** **89.29%** (25/28 gold fields with evidence point to the authentic supporting sentence)
-  - **Joint Value & Evidence Match Rate:** **75.76%** (25/33 gold annotations matched in both extracted value and evidence)
+  - **Field-Value Extraction Accuracy:** **81.82%** (27/33 gold annotations matched in extracted values)
+  - **Heuristic Gold Evidence Recall:** **72.73%** (24/33 gold annotations retrieved with verified supporting snippets via hardened heuristic matcher)
+  - **Heuristic Field-to-Evidence Association Accuracy:** **85.71%** (24/28 gold fields with evidence point to the authentic supporting sentence)
+  - **Joint Value & Evidence Match Rate:** **72.73%** (24/33 gold annotations matched in both extracted value and evidence)
 - **High-Contrast Ratio:** **15.93:1** (WCAG AAA requires 7.0:1)
 - **Dynamically Measured Latencies (`performance.now()`, N = 6 samples, mathematical median):**
-  - Image Loading: **0.48 ms** median / **0.58 ms** P90 (historical: 0.56 ms / 0.67 ms)
-  - OCR Recognition: **959.6 ms** median / **1544.1 ms** P90 (historical: 961.7 ms / 1556.6 ms)
-  - Structured Extraction (Parser Only): **1.66 ms** median / **10.31 ms** P90 (historical: 2.36 ms / 9.63 ms)
-  - Per-Document Pipeline Latency (Warm): **966.9 ms** median / **1546.4 ms** P90 (historical: 968.7 ms / 1559.4 ms; measures image read + OCR + extraction with workers initialized and models in memory)
-  - Cold Worker Initialization: **490.2 ms** (historical: ~504.9 ms; includes Web Worker spawn, script evaluation, and IPC handshake)
-  - Warm Worker Reinitialization: **134.0 ms** (historical: ~137.9 ms; active worker thread reinitialize)
-  - Language Model Pool Load: **720.5 ms** (historical: ~718.1 ms; bilingual model dictionary load in memory)
+  - Image Loading: **0.43 ms** median / **0.61 ms** P90 (historical initial run: 0.56 ms / 0.67 ms)
+  - OCR Recognition: **951.1 ms** median / **1552.2 ms** P90 (historical initial run: 961.7 ms / 1556.6 ms)
+  - Structured Extraction (Parser Only): **1.62 ms** median / **9.82 ms** P90 (historical initial run: 2.36 ms / 9.63 ms)
+  - Per-Document Pipeline Latency (Warm): **958.1 ms** median / **1554.8 ms** P90 (historical initial run: 968.7 ms / 1559.4 ms; per-document warm pipeline timing excludes worker and language-model setup, measuring image read + OCR + extraction)
+  - Cold Worker Initialization: **452.0 ms** (historical initial run: ~504.9 ms; `createWorker()` includes worker setup, core loading, language loading and initialization)
+  - Warm Worker Reinitialization: **131.1 ms** (historical initial run: ~137.9 ms; warm reinitialization reuses the existing worker)
+  - Language Model Pool Load: **712.8 ms** (historical initial run: ~718.1 ms; worker-pool timing measures three sequential worker creations for ben, eng, ben+eng)
 
 ---
 
@@ -118,7 +118,7 @@ Evaluated across our controlled 6-document synthetic pilot corpus (rendered from
 # 1. Install dependencies cleanly
 npm ci
 
-# 2. Run all 153 unit and benchmark tests
+# 2. Run all 159 unit and benchmark tests
 npm test -- --run
 
 # 3. Run the reproducible technical benchmarking suite

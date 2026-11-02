@@ -72,18 +72,18 @@ NoticeLens is a local-first notice intelligence application featuring:
 - **Evidence Grounding Integrity:**
   - **Evidence Span Verbatim Precision:** **100.00%** (48 of 48 attached spans verified verbatim in source transcript at exact character offsets; applies strictly to attached quotes)
   - **Overall Fact Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields supported by authentic text spans; remaining 9 are abstract taxonomy category tags)
-  - **Field-Value Extraction Accuracy:** **84.85%** (28 of 33 gold annotations matched in extracted field values)
-  - **Heuristic Gold Evidence Recall:** **75.76%** (25 of 33 gold annotations matched with verified supporting snippets via hardened heuristic matcher)
-  - **Heuristic Field-to-Evidence Association Accuracy:** **89.29%** (25 of 28 gold fields with evidence point to the authentic supporting sentence)
-  - **Joint Value & Evidence Match Rate:** **75.76%** (25 of 33 gold annotations matched in both extracted value and evidence)
+  - **Field-Value Extraction Accuracy:** **81.82%** (27 of 33 gold annotations matched in extracted field values)
+  - **Heuristic Gold Evidence Recall:** **72.73%** (24 of 33 gold annotations matched with verified supporting snippets via hardened heuristic matcher)
+  - **Heuristic Field-to-Evidence Association Accuracy:** **85.71%** (24 of 28 gold fields with evidence point to the authentic supporting sentence)
+  - **Joint Value & Evidence Match Rate:** **72.73%** (24 of 33 gold annotations matched in both extracted value and evidence)
 - **Dynamically Measured Latency (`performance.now()`, N = 6 samples, mathematical median):**
-  - OCR Recognition: **959.6 ms** median / **1544.1 ms** P90
-  - Structured Extraction (Parser Only): **1.66 ms** median / **10.31 ms** P90 (historical initial run: 2.36 ms median / 9.63 ms P90)
-  - Per-Document Pipeline Latency (Warm): **966.9 ms** median / **1546.4 ms** P90 (historical initial run: 968.7 ms median / 1559.4 ms P90; measures image read + OCR + extraction with workers initialized and models in memory)
-  - Cold Worker Initialization: **490.2 ms** (historical: ~504.9 ms; includes Web Worker spawn, script evaluation, and IPC handshake)
-  - Warm Worker Reinitialization: **134.0 ms** (historical: ~137.9 ms; active worker thread reinitialize)
-  - Language Model Pool Load: **720.5 ms** (historical: ~718.1 ms; bilingual model dictionary load in memory)
-- **Automated Verification:** 153 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, headless Chrome CDP verification passing, and machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
+  - OCR Recognition: **951.1 ms** median / **1552.2 ms** P90 (historical initial run: 961.7 ms / 1556.6 ms)
+  - Structured Extraction (Parser Only): **1.62 ms** median / **9.82 ms** P90 (historical initial run: 2.36 ms / 9.63 ms)
+  - Per-Document Pipeline Latency (Warm): **958.1 ms** median / **1554.8 ms** P90 (historical initial run: 968.7 ms / 1559.4 ms; per-document warm pipeline timing excludes worker and language-model setup, measuring image read + OCR + extraction)
+  - Cold Worker Initialization: **452.0 ms** (historical initial run: ~504.9 ms; `createWorker()` includes worker setup, core loading, language loading and initialization)
+  - Warm Worker Reinitialization: **131.1 ms** (historical initial run: ~137.9 ms; warm reinitialization reuses the existing worker)
+  - Language Model Pool Load: **712.8 ms** (historical initial run: ~718.1 ms; worker-pool timing measures three sequential worker creations for ben, eng, ben+eng)
+- **Automated Verification:** 159 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, headless Chrome CDP verification passing, and machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
 
 ---
 

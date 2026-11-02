@@ -9,7 +9,7 @@
 
 | Verification Layer | Target Criteria | Actual Measured Result | Conformance Status |
 | :--- | :--- | :--- | :---: |
-| **Unit & Benchmark Test Suite** | 100% Pass Across All Suites | **153 / 153 tests passed** across 9 test files | ✅ **PASS** |
+| **Unit & Benchmark Test Suite** | 100% Pass Across All Suites | **159 / 159 tests passed** across 9 test files | ✅ **PASS** |
 | **Static Code Analysis (ESLint)** | Zero Warnings, Zero Errors | **0 warnings, 0 errors** (`eslint src --max-warnings=0`) | ✅ **PASS** |
 | **TypeScript Compilation** | Strict Mode, No Any/Bypasses | **Zero compilation errors** (`tsc -b`) | ✅ **PASS** |
 | **Production Bundle Security Scan** | Zero Debug Globals or Bypasses | **Zero forbidden symbols** detected in production chunks | ✅ **PASS** |
@@ -26,7 +26,7 @@
 
 ```
 Test Files: 9 passed (9)
-Tests:      153 passed (153)
+Tests:      159 passed (159)
 Runtime:    ~7.5s (Vitest v2.1.9)
 ```
 
@@ -40,7 +40,7 @@ Runtime:    ~7.5s (Vitest v2.1.9)
 | `src/test/unit/noticeToAction.test.tsx` | **13** | Target audience extraction ("Who is affected"), ActionChecklistCard persistence, DeadlineTimelineCard disambiguation, AccessibleReadingView font scaling & speech |
 | `src/test/unit/gestureAndNeumorphism.test.tsx` | **11** | Mobile swipe gesture hooks, double-tap editing, soft-UI neumorphic CSS shadow tokens |
 | `src/test/unit/components.test.ts` | **8** | Fictional sample presets, SVG preview generators, Bengali/English summary generator integration |
-| `src/test/benchmark/benchmarkRunner.test.ts` | **11** | Genuine image-based CER/WER, three-mode extraction (clean, snapshot, live), gold evidence grounding, hardened false positive/negative prevention unit tests, stale evidence invalidation, mathematical Levenshtein test vectors, dynamic latency profiling |
+| `src/test/benchmark/benchmarkRunner.test.ts` | **17** | Genuine image-based CER/WER, three-mode extraction (clean, snapshot, live), gold evidence grounding, hardened false positive/negative prevention unit tests, stale evidence invalidation, mathematical Levenshtein test vectors, dynamic latency profiling |
 
 ---
 
@@ -101,20 +101,20 @@ Evaluated across our controlled 6-document synthetic pilot corpus rendered from 
 - **Overall Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields; remaining 9 are taxonomy category classifications).
 - **Total Gold Annotated Facts:** 33 facts across 6 documents.
 - **Gold Facts with Any Evidence Attached:** 28 facts.
-- **Gold Facts with Matching Field Value:** 28 facts (84.85% field-value extraction accuracy).
-- **Gold Facts with Verified Matching Evidence:** 25 facts.
-- **Heuristic Gold Evidence Recall:** **75.76%** (25 of 33 gold annotations matched with verified supporting snippets via hardened heuristic matcher).
-- **Heuristic Field-to-Evidence Association Accuracy:** **89.29%** (25 of 28 gold fields with evidence point to the authentic supporting sentence).
-- **Joint Value & Evidence Match Rate:** **75.76%** (25 of 33 gold annotations matched in both extracted value and evidence).
+- **Gold Facts with Matching Field Value:** 27 facts (81.82% field-value extraction accuracy).
+- **Gold Facts with Verified Matching Evidence:** 24 facts.
+- **Heuristic Gold Evidence Recall:** **72.73%** (24 of 33 gold annotations matched with verified supporting snippets via hardened heuristic matcher).
+- **Heuristic Field-to-Evidence Association Accuracy:** **85.71%** (24 of 28 gold fields with evidence point to the authentic supporting sentence).
+- **Joint Value & Evidence Match Rate:** **72.73%** (24 of 33 gold annotations matched in both extracted value and evidence).
 
 ### 5.4 Latency Disaggregation (Linux x86_64, Node v18.19.1)
 - **Image Read from Disk:** 0.48 ms (Median) / 0.58 ms (P90) (historical baseline: 0.56 ms / 0.67 ms)
-- **Cold Worker Initialization:** 490.2 ms (historical: ~504.9 ms; includes Web Worker spawn, script evaluation, and IPC handshake)
-- **Warm Worker Reinitialization:** 134.0 ms (historical: ~137.9 ms; reusing active worker thread)
-- **Language Model Pool Load:** 720.5 ms (historical: ~718.1 ms; bilingual model dictionary load in memory)
+- **Cold Worker Initialization:** 490.2 ms (historical: ~504.9 ms; `createWorker()` includes Web Worker spawn, script evaluation, WASM core loading, language traineddata loading, and IPC initialization)
+- **Warm Worker Reinitialization:** 134.0 ms (historical: ~137.9 ms; reuses existing active worker thread via `reinitialize()`)
+- **Language Model Pool Load:** 720.5 ms (historical: ~718.1 ms; measures three sequential worker creations for `ben`, `eng`, and `ben+eng`)
 - **OCR Recognition Latency:** 959.6 ms (Median) / 1544.1 ms (P90) (historical baseline: 961.7 ms / 1556.6 ms)
 - **Structured Extraction (`processNoticeDocument`):** 1.66 ms (Median) / 10.31 ms (P90) (historical baseline: 2.36 ms / 9.63 ms)
-- **Per-Document Pipeline Latency (Warm):** **966.9 ms (Median) / 1546.4 ms (P90)** (historical baseline: 968.7 ms / 1559.4 ms; image read + OCR recognition + extraction with workers already initialized and models in memory)
+- **Per-Document Pipeline Latency (Warm):** **966.9 ms (Median) / 1546.4 ms (P90)** (historical baseline: 968.7 ms / 1559.4 ms; strictly evaluates image read + OCR recognition + extraction with warm workers and loaded language models, excluding worker and language-model setup overhead)
 
 ---
 
