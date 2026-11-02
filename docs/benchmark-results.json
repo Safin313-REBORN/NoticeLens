@@ -1,6 +1,6 @@
 {
-  "executionTimestamp": "2026-11-02T10:04:08.898Z",
-  "gitCommit": "a490467d5dd3949be7b2f6cbed7f2fa20efd1bfa",
+  "executionTimestamp": "2026-11-02T10:06:16.019Z",
+  "gitCommit": "d0edfa0228f63c862b94787fe4800c73911531f3",
   "appVersion": "1.0.0",
   "tesseractVersion": "7.0.0",
   "datasetVersion": "1.1.0",
@@ -57,16 +57,16 @@
       }
     },
     "latency": {
-      "imageLoadMedianMs": 0.40540000004693866,
-      "imageLoadP90Ms": 0.6156870000995696,
-      "coldWorkerInitMs": 297.74544599978253,
-      "warmWorkerInitMs": 230.04315999988467,
-      "ocrRecognitionMedianMs": 982.5993090001866,
-      "ocrRecognitionP90Ms": 1561.2947440003045,
-      "structuredExtractionMedianMs": 2.1707720002159476,
-      "structuredExtractionP90Ms": 9.497487999964505,
-      "totalEndToEndMedianMs": 992.5703220004216,
-      "totalEndToEndP90Ms": 1563.7985900002532,
+      "imageLoadMedianMs": 0.5476039997301996,
+      "imageLoadP90Ms": 0.8538629999384284,
+      "coldWorkerInitMs": 311.30058400006965,
+      "warmWorkerInitMs": 248.82264700019732,
+      "ocrRecognitionMedianMs": 997.1207249998115,
+      "ocrRecognitionP90Ms": 1564.3609919999726,
+      "structuredExtractionMedianMs": 2.7066230000928044,
+      "structuredExtractionP90Ms": 9.995574000291526,
+      "totalEndToEndMedianMs": 1007.9701620000415,
+      "totalEndToEndP90Ms": 1567.5609189998358,
       "sampleCount": 6
     }
   },
