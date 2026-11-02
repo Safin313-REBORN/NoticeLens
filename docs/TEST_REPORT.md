@@ -23,7 +23,7 @@
 - **Tests Failed**: 0 Failed
 - **TypeScript & Production Build**: Succeeded with zero errors (`tsc -b && vite build && node scripts/checkProductionBuild.cjs`) in 1.95s
 - **ESLint Checks**: Succeeded with 0 warnings and 0 errors (`eslint src --max-warnings=0`)
-- **Real Image-Based OCR Benchmark (N = 6 Pilot Corpus)**: Succeeded with 2.30% Mean CER, 9.18% Mean WER, Three-Mode Extraction F1 (Clean Text: 80.46%, Snapshot OCR: 77.27%, Live Real OCR: 77.27%), 100% Evidence Span Precision, 84.21% Evidence Coverage, dynamically measured latencies logged to `docs/benchmark-results.json`
+- **Real Image-Based OCR Benchmark (N = 6 Synthetic Pilot Corpus)**: Succeeded with 2.30% Mean CER, 9.18% Mean WER, Three-Mode Extraction F1 (Clean Text: 80.46%, Snapshot OCR: 77.27%, Live Real OCR: 77.27%), 100% Evidence Span Precision, 84.21% Evidence Coverage, 81.82% Gold Fact Evidence Recall (27/33), 96.43% Field-to-Evidence Association Accuracy (27/28), and per-document pipeline latency (warm worker, models loaded) of 968.7 ms median / 1559.4 ms P90 logged to `docs/benchmark-results.json`
 - **Real Browser Offline OCR Test**: Succeeded across all 3 phases (online cache write, worker termination + offline fresh-worker OCR restore with Zero external traineddata requests during offline OCR recognition, fresh-profile cache miss actionable error)
 - **Real Browser Workflow & Screenshot Suite**: Succeeded across all 10 verified workflow checks with 0 false passes and verified audio player bar geometric reachability
 

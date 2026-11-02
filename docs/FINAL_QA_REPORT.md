@@ -79,34 +79,40 @@ Executed across 3 isolated browser profiles:
 
 ---
 
-## 5. Technical Benchmarks Summary (Pilot Corpus, N = 6)
+## 5. Technical Benchmarks Summary (Synthetic Pilot Corpus, N = 6)
 
-Evaluated across the 6-document pilot corpus of authentic Bangladeshi university formats:
+Evaluated across our controlled 6-document synthetic pilot corpus rendered from HTML templates modeled on authentic Bangladeshi university notice formats (fixtures are 900 px wide × 1000–1200 px high; `isSynthetic: true`; DOC-04 simulates camera perspective distortion):
 
 ### 5.1 Real OCR Recognition Accuracy (Tesseract.js v7.0.0 on Rendered PNG Fixtures)
 - **English Subgroup Mean:** CER = **0.93%**, WER = **3.85%**
 - **Bengali Subgroup Mean:** CER = **3.84%**, WER = **11.18%**
 - **Mixed Bilingual Mean:** CER = **2.12%**, WER = **12.51%**
-- **Aggregate Overall Mean ($N = 6$):** CER = **2.30%**, WER = **9.18%**
+- **Aggregate Overall Mean ($N = 6$):** CER = **2.30%**, WER = **9.18%** (evaluated on Unicode code points via `Array.from(str.normalize('NFC'))`)
 
-### 5.2 Information Extraction Performance (Dual-Mode Comparison)
-- **Pipeline A (Clean Source Text):** Precision = **83.33%**, Recall = **77.78%**, F1 = **80.46%**
-- **Pipeline B (Real OCR Input):** Precision = **79.07%**, Recall = **75.56%**, F1 = **77.27%**
+### 5.2 Information Extraction Performance (Three-Mode Comparison)
+- **Mode A (Clean Ground-Truth Text):** Precision = **83.33%**, Recall = **77.78%**, F1 = **80.46%** (TP: 35, FP: 7, FN: 10)
+- **Mode B (Snapshot OCR Transcript):** Precision = **79.07%**, Recall = **75.56%**, F1 = **77.27%** (TP: 34, FP: 9, FN: 11)
+- **Mode C (Live Real OCR Recognition):** Precision = **79.07%**, Recall = **75.56%**, F1 = **77.27%** (TP: 34, FP: 9, FN: 11)
 - **Degradation from Real OCR Noise:** -3.19% F1 delta.
 
 ### 5.3 Evidence Grounding Integrity
-- **Evidence Span Verbatim Precision:** **100.00%** (100% of attached evidence spans match source text verbatim at exact character offsets).
-- **Character Offset Mapping Accuracy:** **100.00%**.
-- **Overall Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields; remaining 9 are taxonomy category tags).
-- **Gold Fact Recall:** **84.85%** (28 of 33 expected facts covered by evidence).
+- **Evidence Span Verbatim Precision:** **100.00%** (48 / 48 attached quotes verified verbatim in source transcript).
+- **Character Offset Mapping Accuracy:** **100.00%** (exact start and end index alignment).
+- **Overall Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields; remaining 9 are taxonomy category classifications).
+- **Total Gold Annotated Facts:** 33 facts across 6 documents.
+- **Gold Facts with Any Evidence Attached:** 28 facts.
+- **Gold Facts with Verified Matching Evidence:** 27 facts.
+- **Gold Fact Evidence Recall:** **81.82%** (27 of 33 gold annotations retrieved with verified supporting snippets).
+- **Field-to-Evidence Association Accuracy:** **96.43%** (27 of 28 gold fields with evidence point to the authentic supporting sentence).
 
-### 5.4 Latency Disaggregation (Linux x86_64, Node v20 / Chrome 156)
-- **Image Preprocessing:** 12.4 ms
-- **Worker Initialization:** 165.0 ms (Cold) / 8.2 ms (Warm)
-- **Language Model Load:** 110.0 ms
-- **OCR Recognition Latency:** 546.0 ms (Median) / 911.0 ms (P90)
-- **Structured Extraction (`processNoticeDocument`):** 0.56 ms (Median) / 1.03 ms (P90)
-- **Total Pipeline Latency:** **546.6 ms (Median) / 912.0 ms (P90)**
+### 5.4 Latency Disaggregation (Linux x86_64, Node v18.19.1)
+- **Image Read from Disk:** 0.56 ms (Median) / 0.67 ms (P90)
+- **Cold Worker Initialization:** ~504.9 ms (fresh worker thread creation)
+- **Warm Worker Reinitialization:** ~137.9 ms (reusing active worker thread)
+- **Language Model Pool Load:** ~718.1 ms (multi-language worker pool)
+- **OCR Recognition Latency:** 961.7 ms (Median) / 1556.6 ms (P90)
+- **Structured Extraction (`processNoticeDocument`):** 2.36 ms (Median) / 9.63 ms (P90)
+- **Per-Document Pipeline Latency (Warm):** **968.7 ms (Median) / 1559.4 ms (P90)** (image read + OCR recognition + extraction with workers already initialized)
 
 ---
 

@@ -277,9 +277,20 @@ async function run() {
   const session1 = await launchChrome(p1Dir, port1);
 
   try {
-    await delay(1500);
-    const title = await session1.evaluate('document.title');
+    let title = '';
+    for (let i = 0; i < 30; i++) {
+      try {
+        title = (await session1.evaluate('document.title')) || '';
+        if (title.includes('NoticeLens')) break;
+      } catch {
+        // wait
+      }
+      await delay(500);
+    }
     console.log(`[1.2] Loaded page title: "${title}"`);
+    if (!title.includes('NoticeLens')) {
+      throw new Error(`Expected title to include "NoticeLens", got "${title}"`);
+    }
 
     // Verify online state
     const isOnlineInitial = await session1.evaluate('navigator.onLine');

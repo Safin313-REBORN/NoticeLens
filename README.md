@@ -83,24 +83,28 @@ Every extracted detail retains a verbatim index pointer into the OCR transcript.
 
 ---
 
-## Technical Benchmarks (Empirically Measured on Pilot Corpus, N = 6)
+## Technical Benchmarks (Empirically Measured on Synthetic Pilot Corpus, N = 6)
 
-Evaluated across our 6-document pilot benchmark corpus (`npm run benchmark`) using genuine Tesseract.js v7.0.0 local recognition on rendered image fixtures (persisted in [`docs/benchmark-results.json`](docs/benchmark-results.json)):
-- **Character Error Rate (CER):** **2.30%** (Real OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
+Evaluated across our controlled 6-document synthetic pilot corpus (rendered from HTML templates modeled on authentic Bangladeshi university notice formats; fixtures are 900 px wide × 1000–1200 px high; `isSynthetic: true`; DOC-04 simulates camera perspective distortion) using genuine Tesseract.js v7.0.0 recognition (`npm run benchmark`, persisted in [`docs/benchmark-results.json`](docs/benchmark-results.json)):
+- **Character Error Rate (CER):** **2.30%** (Real OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12% | Evaluated on Unicode code points with NFC normalization)
 - **Word Error Rate (WER):** **9.18%** (Real OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
 - **Three-Mode Extraction Evaluation:**
   - **Mode A (Clean Text Baseline):** **F1: 80.46%** (Precision: 83.33%, Recall: 77.78% | TP: 35, FP: 7, FN: 10) — Ground-truth transcript directly to extraction engine.
   - **Mode B (Snapshot OCR Baseline):** **F1: 77.27%** (Precision: 79.07%, Recall: 75.56% | TP: 34, FP: 9, FN: 11) — Frozen OCR transcript snapshot for regression testing.
   - **Mode C (Live OCR Recognition):** **F1: 77.27%** (Precision: 79.07%, Recall: 75.56% | TP: 34, FP: 9, FN: 11) — Actual PNG fixture → live Tesseract worker recognition → extraction engine.
-- **Factual Evidence Span Precision:** **100.00%** (100% of attached evidence spans match source text verbatim)
-- **Overall Fact Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category tags)
+- **Evidence Grounding & Factual Provenance:**
+  - **Factual Evidence Span Precision:** **100.00%** (48/48 attached quotes match source text verbatim)
+  - **Character Offset Mapping Accuracy:** **100.00%** (1-to-1 character range slices map to exact source offsets)
+  - **Overall Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category classifications)
+  - **Gold Fact Evidence Recall:** **81.82%** (27/33 gold annotations retrieved with verified supporting snippets)
+  - **Field-to-Evidence Association Accuracy:** **96.43%** (27/28 gold fields with evidence point to the authentic supporting sentence)
 - **High-Contrast Ratio:** **15.93:1** (WCAG AAA requires 7.0:1)
-- **Dynamically Measured Latencies (`performance.now()`, N = 6 samples):**
-  - Image Loading: **0.44 ms** median / **0.50 ms** P90
-  - Worker Initialization: **~297.6 ms** cold / **~232.5 ms** warm
-  - OCR Recognition: **966.3 ms** median / **1558.2 ms** P90
-  - Structured Extraction (Parser Only): **2.42 ms** median / **12.98 ms** P90
-  - Total End-to-End Pipeline: **979.5 ms** median / **1561.1 ms** P90
+- **Dynamically Measured Latencies (`performance.now()`, N = 6 samples, mathematical median):**
+  - Image Loading: **0.56 ms** median / **0.67 ms** P90
+  - Worker Initialization: **~504.9 ms** cold / **~137.9 ms** warm reinitialization (reusing active worker thread)
+  - OCR Recognition: **961.7 ms** median / **1556.6 ms** P90
+  - Structured Extraction (Parser Only): **2.36 ms** median / **9.63 ms** P90
+  - Per-Document Pipeline Latency (Warm Worker & Models Pre-loaded): **968.7 ms** median / **1559.4 ms** P90
 
 ---
 

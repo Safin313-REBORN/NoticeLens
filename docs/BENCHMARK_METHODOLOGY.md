@@ -30,7 +30,7 @@ Where:
 - $N_{\text{chars}}$ = Total character count in ground-truth transcript $T_{\text{gt}}$
 
 #### Bengali & Multilingual Normalization Protocol for CER:
-- **Unicode Canonical Composition (NFC):** Both ground-truth and recognized text are strictly normalized using `text.normalize('NFC')`. This resolves combining grapheme cluster representations (such as *hasant* `্` and vowel signs like *kar* `ো` vs `ে` + `া`).
+- **Unicode Canonical Composition (NFC):** Both ground-truth and recognized text are normalized using `text.normalize('NFC')`. Character arrays are mapped using `Array.from(str)` to evaluate Unicode code points, correctly preserving surrogate pairs and canonical diacritic representations without truncation.
 - **Whitespace Collapsing:** Repeated whitespace characters (`[\s]+`) are collapsed to single spaces and trimmed to evaluate character recognition accuracy rather than visual layout margin differences.
 - **Punctuation Preservation:** Administrative punctuation (Bengali Dari `।`, colons, hyphens, slashes, quotation marks) is preserved during evaluation because punctuation directly demarcates date, fee, and prerequisite boundaries.
 - **Numeral Handling:** Bengali numerals (`০১২৩৪৫৬৭৮৯`) and Arabic digits (`0123456789`) are evaluated in their exact script representation to measure OCR script fidelity without arbitrary transliteration.
@@ -58,7 +58,7 @@ $$F_1 = 2 \times \frac{P \times R}{P + R}$$
 - **False Positives for Unexpected Fields:** Populating a field that is absent from the ground truth is strictly counted as a False Positive.
 
 ### 2.4 Evidence Grounding Metrics
-NoticeLens separates evidence span authenticity from evidence coverage:
+NoticeLens separates evidence span authenticity from evidence coverage and factual alignment:
 
 $$\text{Evidence Span Precision} = \frac{\text{Authentic Verbatim Source Spans}}{\text{Total Provided Evidence Spans}}$$
 
@@ -66,23 +66,27 @@ $$\text{Overall Grounding Coverage} = \frac{\text{Extracted Fields with Evidence
 
 $$\text{Character Offset Accuracy} = \frac{\text{Spans where } T[\text{start}:\text{end}] = \text{Snippet}}{\text{Total Provided Spans}}$$
 
+$$\text{Gold Fact Evidence Recall} = \frac{\text{Gold Facts with Verified Supporting Evidence}}{\text{Total Gold Annotated Facts}}$$
+
+$$\text{Field-to-Evidence Association Accuracy} = \frac{\text{Gold Facts with Verified Supporting Evidence}}{\text{Total Gold Facts Extracted with Evidence}}$$
+
 > [!NOTE]
-> In NoticeLens, **Evidence Span Precision is 100.00%** (every attached evidence span is verified verbatim against the source transcript), while **Overall Grounding Coverage is 84.21%** (abstract taxonomic fields like `category` and inferred headers do not carry direct quote snippets). We explicitly do NOT describe substring presence as "proof of zero hallucinations."
+> In NoticeLens, **Evidence Span Precision is 100.00%** (every attached evidence span is verified verbatim against the source transcript) with **100.00% Character Offset Accuracy**, while **Overall Grounding Coverage is 84.21%** (abstract taxonomic fields like `category` and inferred headers do not carry direct quote snippets). **Gold Fact Evidence Recall is 81.82%** (27/33 gold annotations matched with verified supporting snippets), and **Field-to-Evidence Association Accuracy is 96.43%** (27/28 extracted gold fields with evidence point to the authentic supporting sentence). We explicitly do NOT describe substring presence as "proof of zero hallucinations."
 
 ---
 
-## 3. Ground-Truth Pilot Evaluation Corpus ($N = 6$)
+## 3. Ground-Truth Synthetic Pilot Evaluation Corpus ($N = 6$)
 
-The pilot evaluation corpus consists of 6 authentic institutional notice layouts modeled on Bangladeshi universities:
+The pilot evaluation corpus consists of 6 controlled synthetic notice layouts (`isSynthetic: true`) rendered from HTML templates modeled on authentic Bangladeshi university notice formats (fixtures are 900 px wide × 1000–1200 px high; DOC-04 includes camera perspective distortion simulation):
 
 | Document ID | Language | Category | Format & Capture Quality | Dimensions | Provenance & Origin |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **DOC-01** | Bengali (`ben`) | Examination | Clean digital notice | 900x1200 | Modeled on University of Dhaka CSE 8th semester circulars. |
-| **DOC-02** | English (`eng`) | Event | Clean digital notice | 900x1100 | Modeled on BUET CSE Hackathon official circulars. |
-| **DOC-03** | Mixed (`ben+eng`) | Admission | Bilingual digital circular | 900x1050 | Modeled on Jahangirnagar University IIT postgraduate notices. |
-| **DOC-04** | Bengali (`ben`) | General | Camera photo simulation | 900x1050 | Modeled on Khulna University course registration circular with subtle lighting gradient and border perspective. |
-| **DOC-05** | English (`eng`) | Admission | Dense circular typography | 900x1100 | Modeled on BRAC University Financial Aid scholarship circulars. |
-| **DOC-06** | Mixed (`ben+eng`) | Examination | Table-like academic schedule | 900x1000 | Modeled on Rajshahi University Faculty of Engineering exam notices. |
+| **DOC-01** | Bengali (`ben`) | Examination | Clean digital notice | 900x1200 | Controlled synthetic notice modeled on University of Dhaka CSE 8th semester circulars. |
+| **DOC-02** | English (`eng`) | Event | Clean digital notice | 900x1100 | Controlled synthetic notice modeled on BUET CSE Hackathon official circulars. |
+| **DOC-03** | Mixed (`ben+eng`) | Admission | Bilingual digital circular | 900x1050 | Controlled synthetic notice modeled on Jahangirnagar University IIT postgraduate notices. |
+| **DOC-04** | Bengali (`ben`) | General | Camera photo simulation | 900x1050 | Controlled synthetic notice modeled on Khulna University course registration circular with subtle lighting gradient and border perspective. |
+| **DOC-05** | English (`eng`) | Admission | Dense circular typography | 900x1100 | Controlled synthetic notice modeled on BRAC University Financial Aid scholarship circulars. |
+| **DOC-06** | Mixed (`ben+eng`) | Examination | Table-like academic schedule | 900x1000 | Controlled synthetic notice modeled on Rajshahi University Faculty of Engineering exam notices. |
 
 ---
 
@@ -131,24 +135,28 @@ Evaluating the extraction engine across three distinct operational modes reveals
 - **Evidence Span Verbatim Precision:** **100.00%** (48 / 48 verified verbatim in source transcript)
 - **Character Offset Mapping Accuracy:** **100.00%** (exact start and end index alignment)
 - **Overall Grounding Coverage:** **84.21%** (48 / 57 fields; remaining 9 fields are abstract category taxonomy tags)
-- **Gold Ground-Truth Fact Recall:** **84.85%** (28 / 33 expected facts covered by evidence)
+- **Total Gold Annotated Facts:** 33
+- **Gold Facts with Any Evidence Attached:** 28
+- **Gold Facts with Verified Matching Evidence:** 27
+- **Gold Fact Evidence Recall:** **81.82%** (27 / 33 gold annotations matched with verified supporting snippets)
+- **Field-to-Evidence Association Accuracy:** **96.43%** (27 / 28 gold fields with evidence point to the authentic supporting sentence)
 - **Stale Evidence Invalidation:** Verified via automated regression (mutating transcript automatically purges out-of-date evidence offsets).
 
 ---
 
 ### 4.4 Dynamically Measured Latency Profile (Benchmark Environment: Linux x86_64, Node v18)
 
-All latency measurements are measured in real time using `performance.now()` across all 6 benchmark documents:
+All latency measurements are measured dynamically using `performance.now()` across all 6 benchmark documents (mathematical median: average of middle two observations for even sample size):
 
 | Pipeline Stage | Measurement Mode | Dynamically Measured Latency | Notes |
 | :--- | :---: | :---: | :--- |
-| **1. Image File Ingest / Read** | Repeated File Read | **0.44 ms (Median) / 0.57 ms (P90)** | `fs.promises.readFile` of fixture PNGs |
-| **2. Cold Worker Initialization** | Fresh Process Launch | **307.5 ms** | First `createWorker()` call |
-| **3. Warm Worker Initialization** | Reused Process | **226.3 ms** | Subsequent worker spawn |
-| **4. Language Model Pool Load** | Pre-warming (`ben`, `eng`, `ben+eng`) | **674.7 ms** | Concurrent multi-language worker creation |
-| **5. OCR Recognition Latency** | Full-Page Recognition | **993.0 ms (Median) / 1577.8 ms (P90)** | Range: 753 ms (English) to 1645 ms (Mixed bilingual) |
-| **6. Structured Extraction (`processNoticeDocument`)** | Pure In-Memory NLP | **2.14 ms (Median) / 9.88 ms (P90)** | High-speed regex + deterministic parser |
-| **Total End-to-End Latency (Image → Action)** | Complete Pipeline | **1003.2 ms (Median) / 1580.1 ms (P90)** | **Under 1.6s for dense bilingual notices** |
+| **1. Image File Ingest / Read** | Repeated File Read | **0.56 ms (Median) / 0.67 ms (P90)** | `fs.promises.readFile` of fixture PNGs |
+| **2. Cold Worker Initialization** | Fresh Process Launch | **504.9 ms** | First `createWorker()` call (fresh worker thread) |
+| **3. Warm Worker Reinitialization** | Reused Active Thread | **137.9 ms** | `benchWorker.reinitialize('eng')` on active worker |
+| **4. Language Model Pool Load** | Pre-warming (`ben`, `eng`, `ben+eng`) | **718.1 ms** | Concurrent multi-language worker creation |
+| **5. OCR Recognition Latency** | Full-Page Recognition | **961.7 ms (Median) / 1556.6 ms (P90)** | Range: ~750 ms (English) to ~1600 ms (Mixed bilingual) |
+| **6. Structured Extraction (`processNoticeDocument`)** | Pure In-Memory NLP | **2.36 ms (Median) / 9.63 ms (P90)** | High-speed regex + deterministic parser |
+| **Per-Document Pipeline Latency (Warm)** | Complete Per-Document Pipeline | **968.7 ms (Median) / 1559.4 ms (P90)** | **Image Read + OCR Recognition + Extraction (workers initialized)** |
 
 ---
 

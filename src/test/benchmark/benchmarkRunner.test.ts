@@ -367,7 +367,133 @@ function evaluateExtraction(
   return { totalTP, totalFP, totalFN, precision, recall, f1, docResults };
 }
 
+/**
+ * Verifies whether an extracted evidence snippet actually supports a gold-annotated fact.
+ * Compares against expectedSnippet, checking:
+ * 1. Normalized substring containment (extracted contains expected, or expected contains extracted)
+ * 2. Numeric / monetary equivalence (e.g. ৫০০/- vs 500)
+ * 3. Token overlap of meaningful keywords
+ */
+export function doesEvidenceSupportGoldFact(
+  extractedSnippet: string | undefined,
+  expectedGoldSnippet: string
+): boolean {
+  if (!extractedSnippet || !extractedSnippet.trim()) return false;
+  if (!expectedGoldSnippet || !expectedGoldSnippet.trim()) return false;
+
+  const normExt = extractedSnippet.toLowerCase().normalize('NFC').replace(/\s+/g, ' ').trim();
+  const normGold = expectedGoldSnippet.toLowerCase().normalize('NFC').replace(/\s+/g, ' ').trim();
+
+  // 1. Direct containment
+  if (normExt.includes(normGold) || normGold.includes(normExt)) {
+    return true;
+  }
+
+  // 2. Numeric / monetary equivalence with context keyword
+  const extDigits = (bengaliToEnglishNumerals(normExt).match(/\d+/g) || []).join('');
+  const goldDigits = (bengaliToEnglishNumerals(normGold).match(/\d+/g) || []).join('');
+  if (extDigits && goldDigits && (extDigits.includes(goldDigits) || goldDigits.includes(extDigits))) {
+    const goldWords = normGold.split(/[\s,।/:—–-]+/).filter((w) => w.length > 2);
+    if (goldWords.length === 0 || goldWords.some((w) => normExt.includes(w))) {
+      return true;
+    }
+  }
+
+  // 3. Token overlap (at least 50% of gold terms present in extracted evidence span)
+  const goldTokens = normGold.split(/[\s,।/:—–-]+/).filter((w) => w.length > 2);
+  if (goldTokens.length > 0) {
+    const hits = goldTokens.filter((token) => normExt.includes(token)).length;
+    if (hits / goldTokens.length >= 0.5) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function evaluateEvidenceGrounding(
+  dataset: GroundTruthNotice[],
+  getTextFn: (doc: GroundTruthNotice) => string
+) {
+  let totalProvidedEvidenceSpans = 0;
+  let totalAuthenticEvidenceSpans = 0;
+  let totalAccurateCharacterOffsets = 0;
+  let totalNonEmptyFields = 0;
+  let totalFieldsWithEvidenceAttached = 0;
+
+  let totalGoldAnnotatedFacts = 0;
+  let totalGoldFactsWithAnyEvidence = 0;
+  let totalGoldFactsWithMatchingEvidence = 0;
+
+  dataset.forEach((doc) => {
+    const text = getTextFn(doc);
+    const processed = processNoticeDocument(text);
+
+    // 1. Evaluate extracted field evidence authenticity and offset validity
+    Object.entries(processed.fields).forEach(([, field]) => {
+      if (field.status !== 'not_found' && field.value) {
+        totalNonEmptyFields++;
+        if (field.evidence && field.evidence.text) {
+          totalProvidedEvidenceSpans++;
+          totalFieldsWithEvidenceAttached++;
+
+          // Must appear verbatim in source transcript
+          if (text.includes(field.evidence.text)) {
+            totalAuthenticEvidenceSpans++;
+          }
+
+          // Check character offset accuracy
+          const slice = text.substring(field.evidence.startIndex, field.evidence.endIndex);
+          if (slice.normalize('NFC').trim() === field.evidence.text.normalize('NFC').trim()) {
+            totalAccurateCharacterOffsets++;
+          }
+        }
+      }
+    });
+
+    // 2. Evaluate against Gold Evidence Annotations
+    doc.goldEvidenceAnnotations.forEach((gold) => {
+      totalGoldAnnotatedFacts++;
+      const extracted = processed.fields[gold.fieldKey as keyof typeof processed.fields];
+      if (extracted && extracted.evidence && extracted.evidence.text) {
+        totalGoldFactsWithAnyEvidence++;
+        const supports = doesEvidenceSupportGoldFact(extracted.evidence.text, gold.expectedSnippet);
+        if (supports) {
+          totalGoldFactsWithMatchingEvidence++;
+        }
+      }
+    });
+  });
+
+  const evidenceSpanPrecision =
+    totalProvidedEvidenceSpans > 0 ? totalAuthenticEvidenceSpans / totalProvidedEvidenceSpans : 1.0;
+  const offsetAccuracy =
+    totalProvidedEvidenceSpans > 0 ? totalAccurateCharacterOffsets / totalProvidedEvidenceSpans : 1.0;
+  const overallGroundingCoverage =
+    totalNonEmptyFields > 0 ? totalFieldsWithEvidenceAttached / totalNonEmptyFields : 0;
+  const goldEvidenceRecall =
+    totalGoldAnnotatedFacts > 0 ? totalGoldFactsWithMatchingEvidence / totalGoldAnnotatedFacts : 0;
+  const fieldToEvidenceAccuracy =
+    totalGoldFactsWithAnyEvidence > 0 ? totalGoldFactsWithMatchingEvidence / totalGoldFactsWithAnyEvidence : 0;
+
+  return {
+    totalNonEmptyFields,
+    totalFieldsWithEvidenceAttached,
+    evidenceSpanPrecision,
+    offsetAccuracy,
+    overallGroundingCoverage,
+    totalGoldAnnotatedFacts,
+    totalGoldFactsWithAnyEvidence,
+    totalGoldFactsWithMatchingEvidence,
+    goldEvidenceRecall,
+    fieldToEvidenceAccuracy,
+  };
+}
+
 describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => {
+  // Shared live OCR recognition cache across benchmark tests in this suite
+  const liveOcrTexts: Record<string, string> = {};
+
   // REQUIREMENT 3: Correct Levenshtein DP implementation with standard test vectors
   describe('Levenshtein Distance & Edit Operations Verification', () => {
     it('verifies standard edit test vectors with mathematical invariance (dist === S + I + D)', () => {
@@ -435,18 +561,17 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
     const extractionTimes: number[] = [];
     const endToEndTimes: number[] = [];
 
-    // Measure cold worker initialization
+    // Measure cold worker initialization (fresh worker thread creation + initial model load)
     const tColdStart = performance.now();
-    const coldWorker = await createWorker('eng');
+    const benchWorker = await createWorker('eng');
     const coldWorkerInitMs = performance.now() - tColdStart;
 
-    // Measure warm worker initialization
+    // Measure warm worker reinitialization (reusing the already running active worker thread)
     const tWarmStart = performance.now();
-    const warmWorker = await createWorker('eng');
+    await benchWorker.reinitialize('eng');
     const warmWorkerInitMs = performance.now() - tWarmStart;
 
-    await coldWorker.terminate();
-    await warmWorker.terminate();
+    await benchWorker.terminate();
 
     // 3. Initialize dedicated worker pool for benchmark execution
     const tModelLoadStart = performance.now();
@@ -458,7 +583,7 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
     const modelLoadTimeMs = performance.now() - tModelLoadStart;
 
     // 4. Execute Real Live OCR Recognition on all 6 documents
-    const liveOcrTexts: Record<string, string> = {};
+    for (const key of Object.keys(liveOcrTexts)) delete liveOcrTexts[key];
 
     for (const doc of BENCHMARK_DATASET) {
       const fixtureFullPath = path.resolve(process.cwd(), doc.imageFixturePath);
@@ -492,14 +617,20 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
       await w.terminate();
     }
 
-    // Latency statistics helper
+    // Latency statistics helper (mathematical median: average of two middle values for even sample size)
     function getStats(arr: number[]) {
       const sorted = [...arr].sort((a, b) => a - b);
+      const n = sorted.length;
+      const median =
+        n % 2 === 0
+          ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
+          : sorted[Math.floor(n / 2)];
+      const p90 = sorted[Math.floor(n * 0.9)];
       return {
-        median: sorted[Math.floor(sorted.length / 2)],
-        p90: sorted[Math.floor(sorted.length * 0.9)],
+        median,
+        p90,
         min: sorted[0],
-        max: sorted[sorted.length - 1],
+        max: sorted[n - 1],
       };
     }
 
@@ -604,14 +735,29 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
     console.log('----------------------------------------------------------------------------------------');
     console.log(`1. Image Read from Disk:                 Median: ${imgLoadStats.median.toFixed(2)} ms | P90: ${imgLoadStats.p90.toFixed(2)} ms`);
     console.log(`2. Cold Worker Initialization:           ${coldWorkerInitMs.toFixed(1)} ms`);
-    console.log(`3. Warm Worker Initialization:           ${warmWorkerInitMs.toFixed(1)} ms`);
+    console.log(`3. Warm Worker Reinitialization (Reused):${warmWorkerInitMs.toFixed(1)} ms`);
     console.log(`4. Language Model Worker Pool Load:      ${modelLoadTimeMs.toFixed(1)} ms`);
     console.log(`5. OCR Recognition Latency:              Median: ${recStats.median.toFixed(1)} ms | P90: ${recStats.p90.toFixed(1)} ms`);
     console.log(`6. Structured Extraction Latency:        Median: ${extStats.median.toFixed(2)} ms | P90: ${extStats.p90.toFixed(2)} ms`);
-    console.log(`7. Total Pipeline Latency (End-to-End):  Median: ${e2eStats.median.toFixed(1)} ms | P90: ${e2eStats.p90.toFixed(1)} ms`);
+    console.log(`7. Per-Doc Pipeline Latency (Warm):      Median: ${e2eStats.median.toFixed(1)} ms | P90: ${e2eStats.p90.toFixed(1)} ms`);
+    console.log('   (Note: Per-document pipeline latency measures read + OCR + extraction with workers already initialized)');
     console.log('========================================================================================\n');
 
-    // 8. Generate Machine-Readable JSON Benchmark Report
+    // 8. Evidence Grounding Evaluation across all 3 Modes
+    const evidenceLive = evaluateEvidenceGrounding(
+      BENCHMARK_DATASET,
+      (d) => liveOcrTexts[d.id] || d.actualOcrTranscript
+    );
+    const evidenceSnapshot = evaluateEvidenceGrounding(
+      BENCHMARK_DATASET,
+      (d) => d.actualOcrTranscript
+    );
+    const evidenceClean = evaluateEvidenceGrounding(
+      BENCHMARK_DATASET,
+      (d) => d.rawText
+    );
+
+    // 9. Generate Machine-Readable JSON Benchmark Report
     let gitCommit = 'unknown';
     try {
       gitCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
@@ -624,7 +770,7 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
       gitCommit,
       appVersion: '1.0.0',
       tesseractVersion: '7.0.0',
-      datasetVersion: '1.1.0',
+      datasetVersion: '1.2.0',
       environment: {
         nodeVersion: process.version,
         platform: os.platform(),
@@ -632,6 +778,8 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
         arch: os.arch(),
       },
       pilotCorpusSize: BENCHMARK_DATASET.length,
+      corpusDescription:
+        'Controlled six-document synthetic pilot corpus rendered from HTML templates modeled on authentic Bangladeshi university notice formats (DOC-04 simulates camera perspective distortion).',
       aggregateMetrics: {
         liveOcr: {
           meanCER: meanLiveCer,
@@ -646,6 +794,16 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
             fp: modeCLive.totalFP,
             fn: modeCLive.totalFN,
           },
+          evidenceGrounding: {
+            verbatimSpanPrecision: evidenceLive.evidenceSpanPrecision,
+            offsetAccuracy: evidenceLive.offsetAccuracy,
+            groundingCoverage: evidenceLive.overallGroundingCoverage,
+            totalGoldAnnotatedFacts: evidenceLive.totalGoldAnnotatedFacts,
+            goldFactsWithAnyEvidence: evidenceLive.totalGoldFactsWithAnyEvidence,
+            goldFactsWithMatchingEvidence: evidenceLive.totalGoldFactsWithMatchingEvidence,
+            goldEvidenceRecall: evidenceLive.goldEvidenceRecall,
+            fieldToEvidenceAssociationAccuracy: evidenceLive.fieldToEvidenceAccuracy,
+          },
         },
         snapshotOcr: {
           meanCER: meanSnapshotCer,
@@ -658,6 +816,10 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
             fp: modeBSnapshot.totalFP,
             fn: modeBSnapshot.totalFN,
           },
+          evidenceGrounding: {
+            goldEvidenceRecall: evidenceSnapshot.goldEvidenceRecall,
+            fieldToEvidenceAssociationAccuracy: evidenceSnapshot.fieldToEvidenceAccuracy,
+          },
         },
         cleanText: {
           extraction: {
@@ -667,6 +829,10 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
             tp: modeAClean.totalTP,
             fp: modeAClean.totalFP,
             fn: modeAClean.totalFN,
+          },
+          evidenceGrounding: {
+            goldEvidenceRecall: evidenceClean.goldEvidenceRecall,
+            fieldToEvidenceAssociationAccuracy: evidenceClean.fieldToEvidenceAccuracy,
           },
         },
         latency: {
@@ -678,9 +844,11 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
           ocrRecognitionP90Ms: recStats.p90,
           structuredExtractionMedianMs: extStats.median,
           structuredExtractionP90Ms: extStats.p90,
-          totalEndToEndMedianMs: e2eStats.median,
-          totalEndToEndP90Ms: e2eStats.p90,
+          perDocumentPipelineMedianMs: e2eStats.median,
+          perDocumentPipelineP90Ms: e2eStats.p90,
           sampleCount: BENCHMARK_DATASET.length,
+          scopeDescription:
+            'Per-document pipeline latency measures image read + OCR recognition + structured extraction with worker threads already initialized and models loaded in memory.',
         },
       },
       documents: BENCHMARK_DATASET.map((doc, idx) => ({
@@ -709,74 +877,33 @@ describe('NoticeLens Technical Benchmarking Suite (Pilot Corpus, N = 6)', () => 
 
   // REQUIREMENT 6: Evidence Grounding Evaluation
   it('evaluates Evidence Span Precision, Field-to-Evidence Association, and Grounding Coverage', () => {
-    let totalProvidedEvidenceSpans = 0;
-    let totalAuthenticEvidenceSpans = 0;
-    let totalAccurateCharacterOffsets = 0;
-    let totalNonEmptyFields = 0;
-    let totalFieldsWithEvidenceAttached = 0;
-    let totalGoldAnnotatedFacts = 0;
-    let totalGoldFactsWithEvidence = 0;
-
-    BENCHMARK_DATASET.forEach((doc) => {
-      const processed = processNoticeDocument(doc.actualOcrTranscript);
-      const text = doc.actualOcrTranscript;
-
-      // 1. Evaluate extracted field evidence
-      Object.entries(processed.fields).forEach(([, field]) => {
-        if (field.status !== 'not_found' && field.value) {
-          totalNonEmptyFields++;
-          if (field.evidence && field.evidence.text) {
-            totalProvidedEvidenceSpans++;
-            totalFieldsWithEvidenceAttached++;
-
-            // Must appear verbatim in source transcript
-            if (text.includes(field.evidence.text)) {
-              totalAuthenticEvidenceSpans++;
-            }
-
-            // Check character offset accuracy
-            const slice = text.substring(field.evidence.startIndex, field.evidence.endIndex);
-            if (slice.normalize('NFC').trim() === field.evidence.text.normalize('NFC').trim()) {
-              totalAccurateCharacterOffsets++;
-            }
-          }
-        }
-      });
-
-      // 2. Evaluate against Gold Evidence Annotations
-      doc.goldEvidenceAnnotations.forEach((gold) => {
-        totalGoldAnnotatedFacts++;
-        const extracted = processed.fields[gold.fieldKey as keyof typeof processed.fields];
-        if (extracted && extracted.evidence && extracted.evidence.text) {
-          totalGoldFactsWithEvidence++;
-        }
-      });
-    });
-
-    const evidenceSpanPrecision =
-      totalProvidedEvidenceSpans > 0 ? totalAuthenticEvidenceSpans / totalProvidedEvidenceSpans : 1.0;
-    const offsetAccuracy =
-      totalProvidedEvidenceSpans > 0 ? totalAccurateCharacterOffsets / totalProvidedEvidenceSpans : 1.0;
-    const overallGroundingCoverage =
-      totalNonEmptyFields > 0 ? totalFieldsWithEvidenceAttached / totalNonEmptyFields : 0;
-    const goldEvidenceRecall =
-      totalGoldAnnotatedFacts > 0 ? totalGoldFactsWithEvidence / totalGoldAnnotatedFacts : 0;
+    // Evaluate across Live OCR output
+    const evidenceLive = evaluateEvidenceGrounding(
+      BENCHMARK_DATASET,
+      (d) => liveOcrTexts[d.id] || d.actualOcrTranscript
+    );
 
     console.log('\n========================================================================================');
     console.log('   EVIDENCE GROUNDING & FACTUAL PROVENANCE BENCHMARK REPORT                             ');
+    console.log('   (Evaluated on Live OCR Recognitions vs Ground-Truth Annotations)                     ');
     console.log('========================================================================================');
-    console.log(`Total Non-Empty Extracted Fields:        ${totalNonEmptyFields}`);
-    console.log(`Fields with Attached Evidence Spans:     ${totalFieldsWithEvidenceAttached}`);
-    console.log(`Evidence Span Verbatim Precision:        ${(evidenceSpanPrecision * 100).toFixed(2)}% (100% Authentic Source Spans)`);
-    console.log(`Character Offset Mapping Accuracy:       ${(offsetAccuracy * 100).toFixed(2)}%`);
-    console.log(`Overall Grounding Coverage (All Fields): ${(overallGroundingCoverage * 100).toFixed(2)}%`);
-    console.log(`Gold Ground-Truth Fact Evidence Recall:  ${(goldEvidenceRecall * 100).toFixed(2)}%`);
-    console.log('Note: Category and inferred headers lack quotes, producing ~84% coverage with 100% precision.');
+    console.log(`Total Non-Empty Extracted Fields:        ${evidenceLive.totalNonEmptyFields}`);
+    console.log(`Fields with Attached Evidence Spans:     ${evidenceLive.totalFieldsWithEvidenceAttached}`);
+    console.log(`Evidence Span Verbatim Precision:        ${(evidenceLive.evidenceSpanPrecision * 100).toFixed(2)}% (Authentic Source Spans)`);
+    console.log(`Character Offset Mapping Accuracy:       ${(evidenceLive.offsetAccuracy * 100).toFixed(2)}%`);
+    console.log(`Overall Grounding Coverage (All Fields): ${(evidenceLive.overallGroundingCoverage * 100).toFixed(2)}% (${evidenceLive.totalFieldsWithEvidenceAttached}/${evidenceLive.totalNonEmptyFields})`);
+    console.log(`Total Gold Annotated Facts:              ${evidenceLive.totalGoldAnnotatedFacts}`);
+    console.log(`Gold Facts with Any Evidence Attached:   ${evidenceLive.totalGoldFactsWithAnyEvidence}`);
+    console.log(`Gold Facts with Matching Gold Evidence:  ${evidenceLive.totalGoldFactsWithMatchingEvidence}`);
+    console.log(`Gold Fact Evidence Recall:               ${(evidenceLive.goldEvidenceRecall * 100).toFixed(2)}% (${evidenceLive.totalGoldFactsWithMatchingEvidence}/${evidenceLive.totalGoldAnnotatedFacts})`);
+    console.log(`Field-to-Evidence Association Accuracy:  ${(evidenceLive.fieldToEvidenceAccuracy * 100).toFixed(2)}% (${evidenceLive.totalGoldFactsWithMatchingEvidence}/${evidenceLive.totalGoldFactsWithAnyEvidence})`);
     console.log('========================================================================================\n');
 
-    expect(evidenceSpanPrecision).toBe(1.0); // 100% of provided evidence spans must be authentic
-    expect(offsetAccuracy).toBeGreaterThanOrEqual(0.95);
-    expect(overallGroundingCoverage).toBeGreaterThanOrEqual(0.80);
+    expect(evidenceLive.evidenceSpanPrecision).toBe(1.0); // 100% of provided evidence spans must be authentic
+    expect(evidenceLive.offsetAccuracy).toBeGreaterThanOrEqual(0.95);
+    expect(evidenceLive.overallGroundingCoverage).toBeGreaterThanOrEqual(0.80);
+    expect(evidenceLive.goldEvidenceRecall).toBeGreaterThanOrEqual(0.70);
+    expect(evidenceLive.fieldToEvidenceAccuracy).toBeGreaterThanOrEqual(0.85);
   });
 
   // Stale Evidence Invalidation Test

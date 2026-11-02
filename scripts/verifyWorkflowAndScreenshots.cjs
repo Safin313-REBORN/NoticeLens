@@ -199,9 +199,18 @@ async function run() {
       deviceScaleFactor: 1,
       mobile: false
     });
-    await delay(1500);
-
-    const homeTitle = await evaluate('document.title');
+    await delay(1000);
+    // Explicitly navigate if needed and wait for DOM and title to load
+    let homeTitle = '';
+    for (let i = 0; i < 30; i++) {
+      try {
+        homeTitle = (await evaluate('document.title')) || '';
+        if (homeTitle.includes('NoticeLens')) break;
+      } catch {
+        // wait for page
+      }
+      await delay(500);
+    }
     console.log(`   Document Title: "${homeTitle}"`);
     if (!homeTitle.includes('NoticeLens')) {
       throw new Error(`Expected title to include "NoticeLens", got "${homeTitle}"`);

@@ -63,18 +63,20 @@ Unlike Large Language Models that invent missing facts:
 
 ## 3. What Was Measured (Empirical Benchmarks on Pilot Corpus, N = 6)
 
-Evaluated across our 6-document pilot benchmark corpus using real Tesseract.js v7.0.0 OCR on authentic rendered institutional notice fixtures:
+Evaluated across our 6-document synthetic pilot corpus (rendered from HTML templates modeled on authentic Bangladeshi university notice formats) using real Tesseract.js v7.0.0 OCR on image fixtures (900 px wide × 1000–1200 px high):
 - **Character Error Rate (CER):** **2.30%** (Real OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
 - **Word Error Rate (WER):** **9.18%** (Real OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
 - **Three-Mode Extraction Quality:**
   - Mode A (Clean Source Text Baseline): F1: **80.46%** (Precision: 83.33%, Recall: 77.78%)
   - Mode B (Snapshot OCR Baseline): F1: **77.27%** (Precision: 79.07%, Recall: 75.56%)
   - Mode C (Live Real OCR Recognition): F1: **77.27%** (Precision: 79.07%, Recall: 75.56%)
-- **Factual Evidence Span Precision:** **100.00%** (Zero fabricated source snippets)
+- **Factual Evidence Span Precision:** **100.00%** (48/48 attached quotes match source text verbatim at exact character offsets)
+- **Gold Fact Evidence Recall:** **81.82%** (27/33 gold annotated facts retrieved with verified supporting snippets; evaluated against gold `expectedSnippet`)
+- **Field-to-Evidence Association Accuracy:** **96.43%** (27/28 extracted gold fields with evidence point to the authentic supporting sentence)
 - **Overall Fact Grounding Coverage:** **84.21%** (48/57 fields; remaining 9 are taxonomy category tags)
 - **High-Contrast Ratio:** **15.93:1** (WCAG AAA requires 7.0:1)
 - **Structured Extraction Latency (Parser Only):** **2.14 ms** median per document
-- **Total Pipeline Latency (Image Read → Tesseract OCR → NLP Engine):** **1003.2 ms** median / **1580.1 ms** P90
+- **Total Pipeline Latency (Image Read → Tesseract OCR → NLP Engine):** **968.7 ms** median / **1559.4 ms** P90 (per-document pipeline measurement with workers already initialized and models loaded; warm worker reinitialization: ~137.9 ms; cold worker spawn: ~504.9 ms)
 - **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
 
 ---

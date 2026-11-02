@@ -61,17 +61,21 @@ NoticeLens is a local-first notice intelligence application featuring:
 
 ---
 
-### 8.1 Empirical Benchmarks (Six-Document Pilot Corpus, Real Tesseract.js OCR)
-- **Character Error Rate (CER):** **2.30%** (Live OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12%)
+### 8.1 Empirical Benchmarks (Six-Document Synthetic Pilot Corpus, Real Tesseract.js OCR)
+- **Pilot Corpus:** 6 controlled synthetic notices (`isSynthetic: true`) rendered from HTML templates modeled on authentic Bangladeshi university formats (fixtures are 900 px wide × 1000–1200 px high; DOC-04 simulates camera perspective distortion).
+- **Character Error Rate (CER):** **2.30%** (Live OCR Mean; English: 0.93%, Bengali: 3.84%, Mixed: 2.12% | Evaluated on Unicode code points via `Array.from(str.normalize('NFC'))`)
 - **Word Error Rate (WER):** **9.18%** (Live OCR Mean; English: 3.85%, Bengali: 11.18%, Mixed: 12.51%)
 - **Three-Mode Extraction Quality:**
-  - Mode A (Clean Text Baseline): F1: **80.46%** (P: 83.33%, R: 77.78%)
-  - Mode B (Snapshot OCR Baseline): F1: **77.27%** (P: 79.07%, R: 75.56%)
-  - Mode C (Live Real OCR Recognition): F1: **77.27%** (P: 79.07%, R: 75.56%)
-- **Evidence Span Precision:** **100.00%** (Zero fabricated source snippets; 48 of 48 attached spans verified verbatim in source transcript)
-- **Overall Fact Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields supported by authentic text spans)
-- **Dynamically Measured Latency:** Parser-only extraction: **2.14 ms** median / **9.88 ms** P90; End-to-end pipeline (Image Read → Tesseract OCR → NLP Engine): **1003.2 ms** median / **1580.1 ms** P90
-- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, and machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
+  - Mode A (Clean Text Baseline): F1: **80.46%** (P: 83.33%, R: 77.78% | TP: 35, FP: 7, FN: 10)
+  - Mode B (Snapshot OCR Baseline): F1: **77.27%** (P: 79.07%, R: 75.56% | TP: 34, FP: 9, FN: 11)
+  - Mode C (Live Real OCR Recognition): F1: **77.27%** (P: 79.07%, R: 75.56% | TP: 34, FP: 9, FN: 11)
+- **Evidence Grounding Integrity:**
+  - **Evidence Span Verbatim Precision:** **100.00%** (48 of 48 attached spans verified verbatim in source transcript at exact character offsets)
+  - **Overall Fact Grounding Coverage:** **84.21%** (48 of 57 non-empty extracted fields supported by authentic text spans; remaining 9 are taxonomy category tags)
+  - **Gold Fact Evidence Recall:** **81.82%** (27 of 33 gold annotations retrieved with verified supporting snippets)
+  - **Field-to-Evidence Association Accuracy:** **96.43%** (27 of 28 gold fields with evidence point to the authentic supporting sentence)
+- **Dynamically Measured Latency (`performance.now()`, mathematical median):** Parser-only extraction: **2.36 ms** median / **9.63 ms** P90; Per-Document Pipeline (Warm Worker & Models Pre-loaded): **968.7 ms** median / **1559.4 ms** P90; Cold Worker Init: **~504.9 ms**; Warm Worker Reinitialization (Reused Active Thread): **~137.9 ms**; Language Model Pool Load: **~718.1 ms**
+- **Automated Verification:** 147 automated tests passing across 9 test suites, zero ESLint warnings, production build verified with zero debug globals, headless Chrome CDP verification passing, and machine-readable JSON evaluation report logged to `docs/benchmark-results.json`
 
 ---
 
